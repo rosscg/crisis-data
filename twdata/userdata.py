@@ -17,7 +17,6 @@ def usernamedata(username):
 
     return userdatadict
 
-
 # Returns list of users (targets) followed by a username.
 def userfollowing(username):
     print("Running function: userfollowing")

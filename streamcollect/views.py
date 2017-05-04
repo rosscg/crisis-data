@@ -12,8 +12,10 @@ def monitor_user(request):
 def submit(request):
     info = request.POST['info']
 
+    #Get user information
     userdict = userdata.usernamedata(info)
 
+    #Create user object
     u = User()
 
     u.contributors_enabled = userdict.get('contributors_enabled')
@@ -60,17 +62,25 @@ def submit(request):
 
     u.save()
 
-    users = User.objects.all()
-
-
+    #Get followers
     userfollowing = userdata.userfollowing(info)
 
+    #Create relationship objects
     for targetuser in userfollowing:
         r = Relo()
+        
+        r.sourceuser = u
 
-        r.sourceuser = int(userdict.get('id_str'))
-        r.targetuser = targetuser
+        #Create new users for targets if not already in DB
+        if User.objects.filter(id=targetuser).exists():
+            r.targetuser = User.objects.get(id=targetuser)
+        else:
+            u2 = User()
+            u2.id = targetuser
+            u2.save()
+            r.targetuser = u2
         r.save()
 
 
+    users = User.objects.all()
     return render(request, 'streamcollect/show_user.html', {'users': users})
