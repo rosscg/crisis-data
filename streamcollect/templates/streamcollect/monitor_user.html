@@ -1,0 +1,13 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+    <h1>Add User</h1>
+
+    <form action="submit" method="POST">{% csrf_token %}
+      <input type="text" name="info"><br>
+      <input type="submit" value="Submit">
+    </form>
+
+
+{% endblock %}

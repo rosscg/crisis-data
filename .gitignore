@@ -1,0 +1,11 @@
+*.pyc
+*~
+__pycache__
+venv
+db.sqlite3
+/static
+.DS_Store
+
+/twdata/test.py
+tokendata.txt
+todo.txt
