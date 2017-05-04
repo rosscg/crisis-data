@@ -2,6 +2,7 @@ import json
 import tweepy
 #Import custom modules
 from twdata import auth
+#import auth
 
 
 # Returns all json data for username
@@ -17,40 +18,29 @@ def usernamedata(username):
     return userdatadict
 
 
-# Returns list of users following a username.
+# Returns list of users (targets) followed by a username.
 def userfollowing(username):
     print("Running function: userfollowing")
     api = auth.getapi()
 
-    followinglist = []
+    targetlist = []
+    targets = tweepy.Cursor(api.friends_ids, screen_name=username).items()
 
-    followingcount = 0
-    following = tweepy.Cursor(api.friends_ids, screen_name=username).items()
+    for userid in targets:
+        targetlist.append(userid)
 
-    for userid in following:
-        print("user: {}".format(userid))
-        followinglist.append(userid)
-        followingcount += 1
-
-    print("Username: {} follows {} users".format(username, followingcount))
-    return followinglist
+    return targetlist
 
 
-# Returns list of followed users.
+# Returns list of users following a username.
 # TODO: update to use IDs instead of names, remove followercount lines (followercount included in usernamedata)
 def userfollowers(username):
-    print("Running function: userfollowers")
     api = auth.getapi()
 
     followerlist = []
-
-    followercount = 0
     followers = tweepy.Cursor(api.followers, screen_name=username).items()
 
     for user in followers:
-        print("user:" + user.screen_name)
-        followerlist.append(user.screen_name)
-        followercount += 1
+        followerlist.append(int(user.id_str))
 
-    print("Username: {} is followed by {} users".format(username, followercount))
     return followerlist

@@ -3,7 +3,7 @@ from django.utils import timezone
 
 class User(models.Model):
     contributors_enabled = models.BooleanField()
-    created_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField()
     default_profile = models.BooleanField()
     default_profile_image = models.BooleanField()
     description = models.TextField()
@@ -13,7 +13,7 @@ class User(models.Model):
     friends_count = models.IntegerField()
     geo_enabled = models.BooleanField()
     has_extended_profile = models.BooleanField()
-    id_str = models.CharField(primary_key=True,max_length=200)
+    id = models.IntegerField(primary_key=True)
     is_translation_enabled = models.BooleanField()
     is_translator = models.BooleanField()
     lang = models.CharField(max_length=200)
@@ -44,7 +44,20 @@ class User(models.Model):
     utc_offset = models.CharField(max_length=200, null=True)
     verified = models.BooleanField()
 
-    added_on = models.DateTimeField(default=timezone.now)
+    added_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return self.screen_name
+
+class Relo(models.Model):
+    sourceuser = models.IntegerField()
+    targetuser = models.IntegerField()
+    observed_at = models.DateTimeField(default=timezone.now)
+    end_observed_at = models.DateTimeField(null=True)
+
+    def endrelo(self):
+        self.end_observed_at = timezone.now()
+        self.save
+
+    def __str__(self):
+        return (str(self.sourceuser) + " following: " + str(self.targetuser))

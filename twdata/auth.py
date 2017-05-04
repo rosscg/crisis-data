@@ -3,8 +3,8 @@ import os
 
 def getapi():
     # Reading token data from text filter. Splitlines() used to remove the newline tag.
-    # TODO: Move the tokendata.txt file to a more appropriate folder. See note about where file is run from. (relative to the current process working directory)
     # TODO remove the print path line (and the import os)
+    # TODO add catch for file open failure
     f = open('tokendata.txt')
 
     dir_path = os.path.dirname(os.path.realpath(f.name))

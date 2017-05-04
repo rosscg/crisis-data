@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import User
+from .models import User, Relo
 from .forms import AddUserForm
 from twdata import userdata
 
@@ -27,7 +27,7 @@ def submit(request):
     u.friends_count = userdict.get('friends_count')
     u.geo_enabled = userdict.get('geo_enabled')
     u.has_extended_profile = userdict.get('has_extended_profile')
-    u.id_str = userdict.get('id_str')
+    u.id = int(userdict.get('id_str'))
     u.is_translation_enabled = userdict.get('is_translation_enabled')
     u.is_translator = userdict.get('is_translator')
     u.lang = userdict.get('lang')
@@ -61,5 +61,16 @@ def submit(request):
     u.save()
 
     users = User.objects.all()
+
+
+    userfollowing = userdata.userfollowing(info)
+
+    for targetuser in userfollowing:
+        r = Relo()
+
+        r.sourceuser = int(userdict.get('id_str'))
+        r.targetuser = targetuser
+        r.save()
+
 
     return render(request, 'streamcollect/show_user.html', {'users': users})
