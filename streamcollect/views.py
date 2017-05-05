@@ -51,7 +51,6 @@ def submit(request):
     u.friends_count = userdict.get('friends_count')
     u.geo_enabled = userdict.get('geo_enabled')
     u.has_extended_profile = userdict.get('has_extended_profile')
-    u.id = int(userdict.get('id_str'))
     u.is_translation_enabled = userdict.get('is_translation_enabled')
     u.is_translator = userdict.get('is_translator')
     u.lang = userdict.get('lang')
@@ -79,6 +78,7 @@ def submit(request):
     u.time_zone = userdict.get('time_zone')
     u.translator_type = userdict.get('translator_type')
     u.url = userdict.get('url')
+    u.user_id = int(userdict.get('id_str'))
     u.utc_offset = userdict.get('utc_offset')
     u.verified = userdict.get('verified')
 

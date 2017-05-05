@@ -13,7 +13,6 @@ class User(models.Model):
     friends_count = models.IntegerField(null=True)
     geo_enabled = models.NullBooleanField(null=True)
     has_extended_profile = models.NullBooleanField(null=True)
-    id = models.IntegerField(primary_key=True)
     is_translation_enabled = models.NullBooleanField(null=True)
     is_translator = models.NullBooleanField(null=True)
     lang = models.CharField(max_length=200, null=True)
@@ -41,6 +40,7 @@ class User(models.Model):
     time_zone = models.CharField(max_length=200, null=True)
     translator_type = models.CharField(max_length=200, null=True)
     url = models.CharField(max_length=200, null=True)
+    user_id = models.IntegerField(primary_key=True)
     utc_offset = models.CharField(max_length=200, null=True)
     verified = models.NullBooleanField(null=True)
 
