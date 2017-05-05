@@ -49,6 +49,10 @@ class User(models.Model):
     def __str__(self):
         return str(self.id)
 
+    def as_json(self):
+        return dict(
+            id=str(self.id))
+
 class Relo(models.Model):
     sourceuser = models.ForeignKey(User, related_name='source', on_delete=models.CASCADE)
     targetuser = models.ForeignKey(User, related_name='target', on_delete=models.CASCADE)
@@ -58,6 +62,11 @@ class Relo(models.Model):
     def endrelo(self):
         self.end_observed_at = timezone.now()
         self.save
+
+    def as_json(self):
+        return dict(
+            source=str(self.sourceuser.id),
+            target=str(self.targetuser.id))
 
     def __str__(self):
         return "{} following: {}".format(self.sourceuser, self.targetuser)

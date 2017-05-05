@@ -20,6 +20,6 @@ def getapi():
     auth = tweepy.OAuthHandler(ckey, csecret)
     auth.set_access_token(atoken, asecret)
 
-    api = tweepy.API(auth)
+    api = tweepy.API(auth, wait_on_rate_limit= True, wait_on_rate_limit_notify=True)
 
     return api

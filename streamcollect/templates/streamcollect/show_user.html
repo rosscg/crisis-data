@@ -4,12 +4,19 @@
 
     <h1>Show Users</h1>
       {% for user in users %}
-        <div>
-            <h1>Screen name: {{ user.screen_name }} </hi>
-            <p>Name: {{ user.name}}</p>
-            <p>ID: {{ user.id}}</p>
-            <p>User created at: {{ user.created_at}}</p>
-            <p>Added on: {{ user.added_at}}</p>
-        </div>
+        {% if user.screen_name %}
+          <div>
+              <h1>ID: {{ user.id}}</h1>
+              <p>Screen name: {{ user.screen_name }} </p>
+              <p>Name: {{ user.name}}</p>
+              <p>User created at: {{ user.created_at }}</p>
+              <p>Added on: {{ user.added_at }}</p>
+          </div>
+        {% endif %}
+        {% if user.screen_name is None %}
+          <div>
+              <h1>ID: {{ user.id}}</h1>
+          </div>
+        {% endif %}
       {% endfor %}
 {% endblock %}

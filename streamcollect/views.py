@@ -2,12 +2,34 @@ from django.shortcuts import render
 from .models import User, Relo
 from .forms import AddUserForm
 from twdata import userdata
-
 from dateutil.parser import *
+
+#imported for testing:
+import json
+from django.http import HttpResponse
+
+from django.db.models import Count
+
 
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
 
+def show_user(request):
+    users = User.objects.all()
+    return render(request, 'streamcollect/show_user.html', {'users': users})
+
+def view_network(request):
+    return render(request, 'streamcollect/view_network.html')
+
+def network_data_API(request):
+    print("Pulling network_data...")
+    resultsuser = [ob.as_json() for ob in User.objects.all()]
+    #TODO This line takes too long:
+    resultsrelo = [ob.as_json() for ob in Relo.objects.all()]
+    data = {"nodes" : resultsuser, "links" : resultsrelo}
+    jsondata = json.dumps(data)
+
+    return HttpResponse(jsondata)
 
 def submit(request):
     info = request.POST['info']
@@ -62,13 +84,13 @@ def submit(request):
 
     u.save()
 
-    #Get followers
+    #Get users followed by account
     userfollowing = userdata.userfollowing(info)
 
     #Create relationship objects
     for targetuser in userfollowing:
         r = Relo()
-        
+
         r.sourceuser = u
 
         #Create new users for targets if not already in DB
@@ -79,6 +101,25 @@ def submit(request):
             u2.id = targetuser
             u2.save()
             r.targetuser = u2
+        r.save()
+
+    #Get followers
+    userfollowers = userdata.userfollowers(info)
+
+    #Create relationship objects
+    for sourceuser in userfollowers:
+        r = Relo()
+
+        r.targetuser = u
+
+        #Create new users for targets if not already in DB
+        if User.objects.filter(id=sourceuser).exists():
+            r.sourceuser = User.objects.get(id=sourceuser)
+        else:
+            u2 = User()
+            u2.id = sourceuser
+            u2.save()
+            r.sourceuser = u2
         r.save()
 
 
