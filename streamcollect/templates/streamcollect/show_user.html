@@ -6,7 +6,7 @@
       {% for user in users %}
         {% if user.screen_name %}
           <div>
-              <h1>ID: {{ user.id}}</h1>
+              <h1>ID: {{ user.user_id}}</h1>
               <p>Screen name: {{ user.screen_name }} </p>
               <p>Name: {{ user.name}}</p>
               <p>User created at: {{ user.created_at }}</p>
@@ -15,7 +15,7 @@
         {% endif %}
         {% if user.screen_name is None %}
           <div>
-              <h1>ID: {{ user.id}}</h1>
+              <h1>ID: {{ user.user_id}}</h1>
           </div>
         {% endif %}
       {% endfor %}

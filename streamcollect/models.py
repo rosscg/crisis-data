@@ -45,13 +45,16 @@ class User(models.Model):
     verified = models.NullBooleanField(null=True)
 
     added_at = models.DateTimeField(default=timezone.now)
+    relevant_in_degree = models.IntegerField(default=0)
 
     def __str__(self):
-        return str(self.id)
+        return str(self.user_id)
 
     def as_json(self):
         return dict(
-            id=str(self.id))
+            id=str(self.user_id),
+            group=str(self.relevant_in_degree))
+
 
 class Relo(models.Model):
     sourceuser = models.ForeignKey(User, related_name='source', on_delete=models.CASCADE)
@@ -65,8 +68,8 @@ class Relo(models.Model):
 
     def as_json(self):
         return dict(
-            source=str(self.sourceuser.id),
-            target=str(self.targetuser.id))
+            source=str(self.sourceuser.user_id),
+            target=str(self.targetuser.user_id))
 
     def __str__(self):
         return "{} following: {}".format(self.sourceuser, self.targetuser)
