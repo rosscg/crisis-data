@@ -8,7 +8,7 @@ def getapi():
     f = open('tokendata.txt')
 
     dir_path = os.path.dirname(os.path.realpath(f.name))
-    print("Using authentication file: {}/{}".format(dir_path, f.name))
+    #print("Using authentication file: {}/{}".format(dir_path, f.name))
 
     lines = f.read().splitlines()
 
