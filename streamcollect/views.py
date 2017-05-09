@@ -38,8 +38,14 @@ def network_data_API(request):
 
 def submit(request):
     info = request.POST['info']
-    add_user(info)
+    add_user_network(info)
     return redirect('show_user')
+
+def add_user_network(info):
+    following = add_user(info)
+    for u in following:
+        add_user(u)
+    return
 
 
 def add_user(info):

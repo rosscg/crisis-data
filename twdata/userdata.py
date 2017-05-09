@@ -34,6 +34,7 @@ def userfollowing(username):
 # Returns list of users following a username.
 # TODO: update to use IDs instead of names, remove followercount lines (followercount included in usernamedata)
 def userfollowers(username):
+    print("Running function: userfollowers")
     api = auth.getapi()
 
     #followerlist = []
