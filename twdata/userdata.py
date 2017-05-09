@@ -9,7 +9,7 @@ from twdata import auth
 #TODO: Determine whether JSON is appropriate, or return all data instead
 #TODO: Remove useless parameters here
 def usernamedata(username):
-    print("Running function: usernamedata for user{}".format(username)
+    print("Running function: usernamedata for user{}".format(username))
     api = auth.getapi()
 
     userdata = api.get_user(username)
@@ -19,7 +19,7 @@ def usernamedata(username):
 
 # Returns list of users (targets) followed by a username.
 def userfollowing(username):
-    print("Running function: userfollowing for user{}".format(username)
+    print("Running function: userfollowing for user{}".format(username))
     api = auth.getapi()
 
     targetlist = []
