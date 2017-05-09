@@ -4,12 +4,9 @@ from .forms import AddUserForm
 from twdata import userdata
 from dateutil.parser import *
 from django.shortcuts import redirect
-
-#imported for testing:
 import json
 from django.http import HttpResponse
-
-from django.db.models import Count
+#from django.db.models import Count
 
 
 def monitor_user(request):
@@ -22,34 +19,13 @@ def show_user(request):
 def view_network(request):
     return render(request, 'streamcollect/view_network.html')
 
-def network_data_API(request):
-    print("Pulling network_data...")
-
-    #Include users with an in degree of X or greater
-    relevant_users = User.objects.filter(relevant_in_degree__gte=2)
-    resultsuser = [ob.as_json() for ob in relevant_users]
-    #Get relationships which connect two 'relevant users'
-    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users)]
-
-    data = {"nodes" : resultsuser, "links" : resultsrelo}
-    jsondata = json.dumps(data)
-
-    return HttpResponse(jsondata)
-
 def submit(request):
     info = request.POST['info']
-    add_user_network(info)
+    add_user(info)
     return redirect('show_user')
-
-def add_user_network(info):
-    following = add_user(info)
-    for u in following:
-        add_user(u)
-    return
 
 
 def add_user(info):
-
     #Get user information
     userdict = userdata.usernamedata(info)
 
@@ -164,4 +140,19 @@ def add_user(info):
                 u2.save()
                 r.sourceuser = u2
             r.save()
-    return userfollowing
+    return
+
+#API returns users above a 'relevant in degree' threshold and the links between them
+def network_data_API(request):
+    print("Pulling network_data...")
+
+    #Include users with an in degree of X or greater
+    relevant_users = User.objects.filter(relevant_in_degree__gte=2)
+    resultsuser = [ob.as_json() for ob in relevant_users]
+    #Get relationships which connect two 'relevant users'
+    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users)]
+
+    data = {"nodes" : resultsuser, "links" : resultsrelo}
+    jsondata = json.dumps(data)
+
+    return HttpResponse(jsondata)
