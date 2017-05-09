@@ -12,17 +12,21 @@ from django.http import HttpResponse
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
 
-def show_user(request):
+def list_users(request):
     users = User.objects.all()
-    return render(request, 'streamcollect/show_user.html', {'users': users})
+    return render(request, 'streamcollect/list_users.html', {'users': users})
 
 def view_network(request):
     return render(request, 'streamcollect/view_network.html')
 
+def user_details(request, user_id):
+    user = get_object_or_404(User, user_id=user_id)
+    return render(request, 'streamcollect/user_details.html', {'user': user})
+
 def submit(request):
     info = request.POST['info']
     add_user(info)
-    return redirect('show_user')
+    return redirect('list_users')
 
 
 def add_user(info):

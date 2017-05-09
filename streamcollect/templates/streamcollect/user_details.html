@@ -1,0 +1,19 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+    <h1>Users Details</h1>
+      {% if user.screen_name %}
+        <div>
+            <h1>ID: {{ user.user_id}}</h1>
+            <p>Screen name: {{ user.screen_name }} </p>
+            <p>Name: {{ user.name}}</p>
+            <p>User created at: {{ user.created_at }}</p>
+            <p>Added on: {{ user.added_at }}</p>
+        </div>
+      {% endif %}
+      {% if user.screen_name is None %}
+        <div>
+        </div>
+      {% endif %}
+{% endblock %}

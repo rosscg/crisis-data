@@ -2,11 +2,11 @@
 
 {% block content %}
 
-    <h1>Show Users</h1>
+    <h1>List Users</h1>
       {% for user in users %}
         {% if user.screen_name %}
           <div>
-              <h1>ID: {{ user.user_id}}</h1>
+              <h1><a href="{% url 'user_details' user_id=user.user_id %}">ID: {{ user.user_id}}</a></h1>
               <p>Screen name: {{ user.screen_name }} </p>
               <p>Name: {{ user.name}}</p>
               <p>User created at: {{ user.created_at }}</p>
