@@ -3,6 +3,7 @@ from .models import User, Relo
 from .forms import AddUserForm
 from twdata import userdata
 from dateutil.parser import *
+from django.shortcuts import redirect
 
 #imported for testing:
 import json
@@ -37,11 +38,8 @@ def network_data_API(request):
 
 def submit(request):
     info = request.POST['info']
-
     add_user(info)
-
-    users = User.objects.all()
-    return render(request, 'streamcollect/show_user.html', {'users': users})
+    return redirect('show_user')
 
 
 def add_user(info):
