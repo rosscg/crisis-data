@@ -2,7 +2,7 @@ import json
 import tweepy
 #Import custom modules
 from twdata import auth
-#import auth
+#import auth #This line is used for package testing
 
 
 # Returns all json data for username
@@ -36,10 +36,10 @@ def userfollowing(username):
 def userfollowers(username):
     api = auth.getapi()
 
-    followerlist = []
-    followers = tweepy.Cursor(api.followers, screen_name=username).items()
+    #followerlist = []
+    followers = tweepy.Cursor(api.followers_ids, screen_name=username).items()
 
-    for user in followers:
-        followerlist.append(int(user.id_str))
+    #for user in followers:
+    #    followerlist.append(int(user.id_str))
 
-    return followerlist
+    return followers

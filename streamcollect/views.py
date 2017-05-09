@@ -24,12 +24,11 @@ def view_network(request):
 def network_data_API(request):
     print("Pulling network_data...")
 
-    #Include users with an in degree of 2 or greater
+    #Include users with an in degree of X or greater
     relevant_users = User.objects.filter(relevant_in_degree__gte=2)
     resultsuser = [ob.as_json() for ob in relevant_users]
-    #TODO This line takes too long:
-    #Get relationships which connect to a 'relevant user'
-    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users)]
+    #Get relationships which connect two 'relevant users'
+    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users)]
 
     data = {"nodes" : resultsuser, "links" : resultsrelo}
     jsondata = json.dumps(data)
@@ -43,7 +42,6 @@ def submit(request):
 
     users = User.objects.all()
     return render(request, 'streamcollect/show_user.html', {'users': users})
-
 
 
 def add_user(info):
@@ -162,4 +160,4 @@ def add_user(info):
                 u2.save()
                 r.sourceuser = u2
             r.save()
-    return
+    return userfollowing
