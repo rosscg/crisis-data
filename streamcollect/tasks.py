@@ -15,6 +15,7 @@ def add_user_task(info):
         print("User {} already exists.".format(info))
 
     else:
+        #If user is an existing node_id
         if User.objects.filter(user_id=int(userdict.get('id_str'))).exists():
 
             #Updating user object
@@ -25,6 +26,7 @@ def add_user_task(info):
             #TODO REMOVE THIS
             u.relevant_in_degree = u.relevant_in_degree + 5
 
+        #User is a new observation
         else:
             #Creating user object
             print("Creating record...")

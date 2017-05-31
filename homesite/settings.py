@@ -20,7 +20,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_RESULT_BACKEND = 'redis://localhost'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Europe/London'
-#CELERY_IMPORTS = ['streamcollect.tasks']
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
