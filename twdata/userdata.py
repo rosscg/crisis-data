@@ -9,7 +9,7 @@ from twdata import auth
 #TODO: Determine whether JSON is appropriate, or return all data instead
 #TODO: Remove useless parameters here
 def usernamedata(username):
-    print("Running function: usernamedata for user{}".format(username))
+    print("Running function: usernamedata for user: {}".format(username))
     api = auth.getapi()
 
     userdata = api.get_user(username)
@@ -17,9 +17,9 @@ def usernamedata(username):
 
     return userdatadict
 
-# Returns list of users (targets) followed by a username.
+# Returns list of users (targets) followed by a username, as a list of IDs.
 def userfollowing(username):
-    print("Running function: userfollowing for user{}".format(username))
+    print("Running function: userfollowing for user: {}".format(username))
     api = auth.getapi()
 
     targetlist = []
@@ -31,16 +31,12 @@ def userfollowing(username):
     return targetlist
 
 
-# Returns list of users following a username.
+# Returns list of user IDs following a username.
 # TODO: update to use IDs instead of names, remove followercount lines (followercount included in usernamedata)
 def userfollowers(username):
-    print("Running function: userfollowers for user{}".format(username))
+    print("Running function: userfollowers for user: {}".format(username))
     api = auth.getapi()
 
-    #followerlist = []
     followers = tweepy.Cursor(api.followers_ids, screen_name=username).items()
-
-    #for user in followers:
-    #    followerlist.append(int(user.id_str))
 
     return followers

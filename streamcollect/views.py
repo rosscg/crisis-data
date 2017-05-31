@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 import datetime
 
-from streamcollect.tasks import add_user_task
+from streamcollect.tasks import add_user_task, update_user_relos
 
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
@@ -32,10 +32,17 @@ def submit(request):
     add_user_task.delay(info)
     return redirect('list_users')
 
+#TODO: Remove this, and import datetime line
 def delete_today(request):
+    #update_user_relos()
     yes = datetime.date.today() - datetime.timedelta(days=1)
+    #yes = timezone.date.today() - timezone.timedelta(days=1)
     User.objects.filter(added_at__gt=yes).delete()
     Relo.objects.filter(observed_at__gt=yes).delete()
+    return redirect('list_users')
+
+def update_relos(request):
+    update_user_relos()
     return redirect('list_users')
 
 

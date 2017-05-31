@@ -124,3 +124,23 @@ def add_user_task(info):
                 r.sourceuser = u2
             r.save()
     return
+
+
+@shared_task
+def update_user_relos():
+    users = User.objects.filter(screen_name__isnull=False)
+
+    for user in users:
+        #Get users followed by account
+        user_following = userdata.userfollowing(user.screen_name)
+        #Get recorded list of users followed by account
+        #TODO: Filter out dead relos, but how to handle when recreated?
+        user_following_old = list(Relo.objects.filter(sourceuser=user).values_list('targetuser', flat=True))
+
+        new_links = [a for a in user_following if (a not in user_following_old)]
+        dead_links = [a for a in user_following_old if (a not in user_following)]
+
+        print("New links for user: {}: {}".format(user.screen_name, new_links))
+        print("Dead links for user: {}: {}".format(user.screen_name, dead_links))
+
+        #TODO: add/kill relos as appropriate
