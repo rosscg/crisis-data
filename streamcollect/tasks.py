@@ -1,37 +1,12 @@
-from django.shortcuts import render, get_object_or_404
-from .models import User, Relo
-from .forms import AddUserForm
+from celery import shared_task
+
 from twdata import userdata
+from .models import User, Relo
 from dateutil.parser import *
-from django.shortcuts import redirect
-import json
-from django.http import HttpResponse
-#from django.db.models import Count
+from django.shortcuts import get_object_or_404
 
-from streamcollect.tasks import add_user_task
-
-def monitor_user(request):
-    return render(request, 'streamcollect/monitor_user.html', {})
-
-def list_users(request):
-    users = User.objects.filter(screen_name__isnull=False)
-    return render(request, 'streamcollect/list_users.html', {'users': users})
-
-def view_network(request):
-    return render(request, 'streamcollect/view_network.html')
-
-def user_details(request, user_id):
-    user = get_object_or_404(User, user_id=user_id)
-    return render(request, 'streamcollect/user_details.html', {'user': user})
-
-def submit(request):
-    info = request.POST['info']
-    #add_user(info)
-    add_user_task.delay(info)
-    return redirect('list_users')
-
-
-def add_user(info):
+@shared_task
+def add_user_task(info):
     #Get user information
     userdict = userdata.usernamedata(info)
 
@@ -147,18 +122,3 @@ def add_user(info):
                 r.sourceuser = u2
             r.save()
     return
-
-#API returns users above a 'relevant in degree' threshold and the links between them
-def network_data_API(request):
-    print("Pulling network_data...")
-
-    #Include users with an in degree of X or greater
-    relevant_users = User.objects.filter(relevant_in_degree__gte=2)
-    resultsuser = [ob.as_json() for ob in relevant_users]
-    #Get relationships which connect two 'relevant users'
-    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users)]
-
-    data = {"nodes" : resultsuser, "links" : resultsrelo}
-    jsondata = json.dumps(data)
-
-    return HttpResponse(jsondata)
