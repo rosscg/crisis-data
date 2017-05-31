@@ -9,6 +9,8 @@ urlpatterns = [
     url(r'^list_users$', views.list_users, name='list_users'),
     url(r'^user/(?P<user_id>\d+)/$', views.user_details, name='user_details'),
 
+    url(r'^delete_today$', views.delete_today, name='delete_today'),
+
 
     url(r'^network_data_API$', views.network_data_API, name='network_data_API')
 ]

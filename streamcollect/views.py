@@ -7,6 +7,8 @@ from django.shortcuts import redirect
 import json
 from django.http import HttpResponse
 #from django.db.models import Count
+from django.utils import timezone
+import datetime
 
 from streamcollect.tasks import add_user_task
 
@@ -28,6 +30,12 @@ def submit(request):
     info = request.POST['info']
     #add_user(info)
     add_user_task.delay(info)
+    return redirect('list_users')
+
+def delete_today(request):
+    yes = datetime.date.today() - datetime.timedelta(days=1)
+    User.objects.filter(added_at__gt=yes).delete()
+    Relo.objects.filter(observed_at__gt=yes).delete()
     return redirect('list_users')
 
 

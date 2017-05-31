@@ -45,6 +45,7 @@ class User(models.Model):
     verified = models.NullBooleanField(null=True)
 
     added_at = models.DateTimeField(default=timezone.now)
+    #added_at = models.DateTimeField(auto_now_add=True)
     relevant_in_degree = models.IntegerField(default=0)
 
     def __str__(self):
