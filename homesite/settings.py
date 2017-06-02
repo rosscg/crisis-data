@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'streamcollect',
-    'twdata'
+    'twdata',
+    'django_celery_beat'
 ]
 
 MIDDLEWARE = [

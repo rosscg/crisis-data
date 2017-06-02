@@ -4,6 +4,7 @@ celery==4.0.2
 certifi==2017.4.17
 chardet==3.0.3
 Django==1.11.1
+django-celery-beat==1.0.1
 idna==2.5
 kombu==4.0.2
 oauthlib==2.0.2

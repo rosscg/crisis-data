@@ -120,6 +120,7 @@ def update_user_relos_task():
             create_relo(user, targetuser, True)
     return
 
+#TODO: move this elsewhere and import?
 def create_relo(existing_user, new_user_id, outgoing):
 
     r = Relo()
