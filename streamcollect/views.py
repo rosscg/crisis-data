@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 import datetime
 
-from streamcollect.tasks import add_user_task, update_user_relos
+from streamcollect.tasks import add_user_task, update_user_relos_task
 
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
@@ -42,7 +42,7 @@ def delete_today(request):
     return redirect('list_users')
 
 def update_relos(request):
-    update_user_relos()
+    update_user_relos_task.delay()
     return redirect('list_users')
 
 
@@ -165,12 +165,15 @@ def add_user(info):
 
 #API returns users above a 'relevant in degree' threshold and the links between them
 def network_data_API(request):
-    print("Pulling network_data...")
+    print("Collecting network_data...")
+
+    required_in_degree = 3
 
     #Include users with an in degree of X or greater
-    relevant_users = User.objects.filter(relevant_in_degree__gte=2)
+    relevant_users = User.objects.filter(relevant_in_degree__gte=required_in_degree)
     resultsuser = [ob.as_json() for ob in relevant_users]
     #Get relationships which connect two 'relevant users'
+    #TODO filter or handle 'dead' relationships
     resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users)]
 
     data = {"nodes" : resultsuser, "links" : resultsrelo}

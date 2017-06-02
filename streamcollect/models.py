@@ -62,9 +62,10 @@ class Relo(models.Model):
     observed_at = models.DateTimeField(default=timezone.now)
     end_observed_at = models.DateTimeField(null=True)
 
-    def endrelo(self):
-        self.end_observed_at = timezone.now()
-        self.save
+    #def end_relo(self):
+    #    self.end_observed_at = timezone.now()
+    #    self.save
+    #    return None
 
     def as_json(self):
         return dict(

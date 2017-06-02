@@ -4,6 +4,7 @@ from twdata import userdata
 from .models import User, Relo
 from dateutil.parser import *
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 @shared_task
 def add_user_task(info):
@@ -126,21 +127,58 @@ def add_user_task(info):
     return
 
 
+#TODO: add user_followed_by functionality
 @shared_task
-def update_user_relos():
+def update_user_relos_task():
     users = User.objects.filter(screen_name__isnull=False)
 
     for user in users:
         #Get users followed by account
         user_following = userdata.userfollowing(user.screen_name)
+
         #Get recorded list of users followed by account
         #TODO: Filter out dead relos, but how to handle when recreated?
-        user_following_old = list(Relo.objects.filter(sourceuser=user).values_list('targetuser', flat=True))
+        user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser', flat=True))
 
-        new_links = [a for a in user_following if (a not in user_following_old)]
-        dead_links = [a for a in user_following_old if (a not in user_following)]
+        new_links = [a for a in user_following if (a not in user_following_recorded)]
+        dead_links = [a for a in user_following_recorded if (a not in user_following)]
 
         print("New links for user: {}: {}".format(user.screen_name, new_links))
         print("Dead links for user: {}: {}".format(user.screen_name, dead_links))
 
         #TODO: add/kill relos as appropriate
+
+        for target_user_id in dead_links:
+            print('dead target user: {}'.format(target_user_id))
+            #Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id).end_relo()
+
+            for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id):
+                #ob.end_relo()
+                ob.end_observed_at = timezone.now()
+                ob.save()
+
+            print('Relo ended')
+            print(Relo.objects.filter(targetuser__user_id=target_user_id).values('end_observed_at'))
+
+        for targetuser in new_links:
+            #TODO Refactor this:
+
+            print('new target user: {}'.format(targetuser))
+            r = Relo()
+            r.sourceuser = user
+
+            #Create new users for targets if not already in DB
+            if User.objects.filter(user_id=targetuser).exists():
+                tuser = User.objects.get(user_id=targetuser)
+                tuser.relevant_in_degree = tuser.relevant_in_degree + 1
+                tuser.save()
+                r.targetuser = tuser
+
+            else:
+                u2 = User()
+                u2.user_id = targetuser
+                u2.relevant_in_degree = 1
+                u2.save()
+                r.targetuser = u2
+
+            r.save()
