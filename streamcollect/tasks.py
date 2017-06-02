@@ -1,10 +1,20 @@
 from celery import shared_task
+from celery.task import periodic_task
 
 from twdata import userdata
 from .models import User, Relo
 from dateutil.parser import *
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from datetime import timedelta
+
+
+#TODO: Replace into target method
+#@periodic_task(run_every=timedelta(hours=1))
+def update_user_relos_periodic():
+    update_user_relos_task()
+    return
+
 
 @shared_task
 def add_user_task(info):

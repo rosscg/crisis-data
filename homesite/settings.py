@@ -19,7 +19,7 @@ CELERY_BROKER_URL = 'redis://localhost'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_RESULT_BACKEND = 'redis://localhost'
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Europe/London'
+#CELERY_TIMEZONE = 'Europe/London'
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)

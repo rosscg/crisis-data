@@ -73,4 +73,7 @@ class Relo(models.Model):
             target=str(self.targetuser.user_id))
 
     def __str__(self):
-        return "{} following: {}".format(self.sourceuser, self.targetuser)
+        if self.end_observed_at is None:
+            return "{} following: {}".format(self.sourceuser, self.targetuser)
+        else:
+            return "Dead Relo: {} following: {}".format(self.sourceuser, self.targetuser)
