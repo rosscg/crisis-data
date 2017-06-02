@@ -80,50 +80,15 @@ def add_user_task(info):
 
         u.save()
 
-        #Get users followed by account
+        #Get users followed by account & create relationship objects
         userfollowing = userdata.userfollowing(userdict.get('screen_name'))
-
-        #Create relationship objects
         for targetuser in userfollowing:
-            r = Relo()
+            create_relo(u, targetuser, True)
 
-            r.sourceuser = u
-
-            #Create new users for targets if not already in DB
-            if User.objects.filter(user_id=targetuser).exists():
-                tuser = User.objects.get(user_id=targetuser)
-                tuser.relevant_in_degree = tuser.relevant_in_degree + 1
-                tuser.save()
-
-                r.targetuser = tuser
-
-            else:
-                u2 = User()
-                u2.user_id = targetuser
-                u2.relevant_in_degree = 1
-                u2.save()
-
-                r.targetuser = u2
-            r.save()
-
-        #Get followers
+        #Get followers & create relationship objects
         userfollowers = userdata.userfollowers(userdict.get('screen_name'))
-
-        #Create relationship objects
         for sourceuser in userfollowers:
-            r = Relo()
-
-            r.targetuser = u
-
-            #Create new users for targets if not already in DB
-            if User.objects.filter(user_id=sourceuser).exists():
-                r.sourceuser = User.objects.get(user_id=sourceuser)
-            else:
-                u2 = User()
-                u2.user_id = sourceuser
-                u2.save()
-                r.sourceuser = u2
-            r.save()
+            create_relo(u, targetuser, False)
     return
 
 
@@ -146,39 +111,46 @@ def update_user_relos_task():
         print("New links for user: {}: {}".format(user.screen_name, new_links))
         print("Dead links for user: {}: {}".format(user.screen_name, dead_links))
 
-        #TODO: add/kill relos as appropriate
-
         for target_user_id in dead_links:
-            print('dead target user: {}'.format(target_user_id))
-            #Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id).end_relo()
-
             for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id):
-                #ob.end_relo()
                 ob.end_observed_at = timezone.now()
                 ob.save()
 
-            print('Relo ended')
-            print(Relo.objects.filter(targetuser__user_id=target_user_id).values('end_observed_at'))
-
         for targetuser in new_links:
-            #TODO Refactor this:
+            create_relo(user, targetuser, True)
+    return
 
-            print('new target user: {}'.format(targetuser))
-            r = Relo()
-            r.sourceuser = user
+def create_relo(existing_user, new_user_id, outgoing):
+
+    r = Relo()
+
+    if outgoing:
+        r.sourceuser = existing_user
+
+        #Create new users for targets if not already in DB
+        if User.objects.filter(user_id=new_user_id).exists():
+            tuser = User.objects.get(user_id=new_user_id)
+            tuser.relevant_in_degree = tuser.relevant_in_degree + 1
+            tuser.save()
+            r.targetuser = tuser
+
+        else:
+            u2 = User()
+            u2.user_id = new_user_id
+            u2.relevant_in_degree = 1
+            u2.save()
+            r.targetuser = u2
+    else:
+            r.targetuser = existing_user
 
             #Create new users for targets if not already in DB
-            if User.objects.filter(user_id=targetuser).exists():
-                tuser = User.objects.get(user_id=targetuser)
-                tuser.relevant_in_degree = tuser.relevant_in_degree + 1
-                tuser.save()
-                r.targetuser = tuser
-
+            if User.objects.filter(user_id=new_user_id).exists():
+                r.sourceuser = User.objects.get(user_id=new_user_id)
             else:
                 u2 = User()
-                u2.user_id = targetuser
-                u2.relevant_in_degree = 1
+                u2.user_id = new_user_id
                 u2.save()
-                r.targetuser = u2
+                r.sourceuser = u2
 
-            r.save()
+    r.save()
+    return
