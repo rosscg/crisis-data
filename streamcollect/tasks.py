@@ -93,7 +93,7 @@ def add_user_task(**kwargs):
         #Get users followed by account & create relationship objects
         userfollowing = userdata.friends_ids(screen_name = userdict.get('screen_name'))
         for targetuser in userfollowing:
-            create_relo(u, targetuser, True)
+            create_relo(u, targetuser, outgoing=True)
 
         #Get followers & create relationship objects
         userfollowers = userdata.followers_ids(screen_name = userdict.get('screen_name'))
@@ -109,19 +109,19 @@ def update_user_relos_task():
 
     for user in users:
         #Get users followed by account
-        user_following = userdata.userfollowing(user.screen_name)
+        user_following = userdata.friends_ids(screen_name = user.screen_name)
 
         #Get recorded list of users followed by account
         #TODO: Filter out dead relos, but how to handle when recreated?
         user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser', flat=True))
 
-        new_links = [a for a in user_following if (a not in user_following_recorded)]
-        dead_links = [a for a in user_following_recorded if (a not in user_following)]
+        new_friend_links = [a for a in user_following if (a not in user_following_recorded)]
+        dead_friend_links = [a for a in user_following_recorded if (a not in user_following)]
 
-        print("New links for user: {}: {}".format(user.screen_name, new_links))
-        print("Dead links for user: {}: {}".format(user.screen_name, dead_links))
+        print("New friend links for user: {}: {}".format(user.screen_name, new_friend_links))
+        print("Dead friend links for user: {}: {}".format(user.screen_name, dead_friend_links))
 
-        for target_user_id in dead_links:
+        for target_user_id in dead_friend_links:
             for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id).filter(end_observed_at=None):
                 ob.end_observed_at = timezone.now()
                 ob.save()
@@ -129,8 +129,37 @@ def update_user_relos_task():
             tuser.relevant_in_degree = tuser.relevant_in_degree - 1
             tuser.save()
 
-        for targetuser in new_links:
+        for targetuser in new_friend_links:
             create_relo(user, targetuser, outgoing=True)
+
+        #Get users following by account
+        user_followers = userdata.followers_ids(screen_name = user.screen_name)
+
+        #print('followers: {}'.format(user_followers))
+
+        #Get recorded list of users following an account
+        #TODO: Filter out dead relos, but how to handle when recreated?
+        user_followers_recorded = list(Relo.objects.filter(targetuser=user).filter(end_observed_at=None).values_list('sourceuser', flat=True))
+
+        #print('recorded followers: {}'.format(user_followers_recorded))
+
+        new_follower_links = [a for a in user_followers if (a not in user_followers_recorded)]
+        dead_follower_links = [a for a in user_followers_recorded if (a not in user_followers)]
+
+        print("New follower links for user: {}: {}".format(user.screen_name, new_follower_links))
+        print("Dead follower links for user: {}: {}".format(user.screen_name, dead_follower_links))
+
+        for source_user_id in dead_follower_links:
+            for ob in Relo.objects.filter(targetuser=user, sourceuser__user_id__contains=source_user_id).filter(end_observed_at=None):
+                ob.end_observed_at = timezone.now()
+                ob.save()
+            suser = User.objects.get(user_id=source_user_id)
+            suser.relevant_in_degree = suser.relevant_in_degree - 1
+            suser.save()
+
+        for source_user in new_follower_links:
+            create_relo(user, source_user, outgoing=False)
+
     return
 
 #TODO: move this elsewhere and import?
