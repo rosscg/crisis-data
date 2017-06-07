@@ -29,7 +29,7 @@ def user_details(request, user_id):
 def submit(request):
     info = request.POST['info']
     #add_user(info)
-    add_user_task.delay(info)
+    add_user_task.delay(screen_name = info)
     return redirect('list_users')
 
 #TODO: Remove this, and the import datetime line, and link from base template

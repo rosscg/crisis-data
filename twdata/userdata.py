@@ -1,42 +1,42 @@
 import json
-import tweepy
-#Import custom modules
-from twdata import auth
-#import auth #This line is used for package testing
+from tweepy import API, Cursor, OAuthHandler
 
+from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
 
-# Returns all json data for username
+#TODO iterate through access tokens
+def get_api():
+    auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth.set_access_token(ACCESS_TOKENS[0][0], ACCESS_TOKENS[0][1])
+
+    api = API(auth, wait_on_rate_limit= True, wait_on_rate_limit_notify=True)
+
+    return api
+
+api = get_api()
+
+# Returns all json data for screen_name/id
 #TODO: Determine whether JSON is appropriate, or return all data instead
-#TODO: Remove useless parameters here
-def usernamedata(username):
-    print("Running function: usernamedata for user: {}".format(username))
-    api = auth.getapi()
-
-    userdata = api.get_user(username)
+def get_user(**kwargs):
+    print("Running function: get_user for user: {}".format(kwargs))
+    userdata = api.get_user(**kwargs)
+    #Remove duplicate data - return only JSON
     userdatadict = userdata.__dict__["_json"]
 
     return userdatadict
 
-# Returns list of users (targets) followed by a username, as a list of IDs.
-def userfollowing(username):
-    print("Running function: userfollowing for user: {}".format(username))
-    api = auth.getapi()
+# Returns list of users (targets) followed by a screen_name/id, as a list of IDs.
+def friends_ids(**kwargs):
+    print("Running function: friends_ids for user: {}".format(kwargs))
 
-    targetlist = []
-    targets = tweepy.Cursor(api.friends_ids, screen_name=username).items()
-
-    for userid in targets:
-        targetlist.append(userid)
+    friends = Cursor(api.friends_ids, **kwargs).items()
+    targetlist = [x for x in friends]
 
     return targetlist
 
+# Returns list of user IDs following a screen_name/id
+def followers_ids(**kwargs):
+    print("Running function: followers_ids for user: {}".format(kwargs))
 
-# Returns list of user IDs following a username.
-# TODO: update to use IDs instead of names, remove followercount lines (followercount included in usernamedata)
-def userfollowers(username):
-    print("Running function: userfollowers for user: {}".format(username))
-    api = auth.getapi()
-
-    followers = tweepy.Cursor(api.followers_ids, screen_name=username).items()
+    followers = Cursor(api.followers_ids, **kwargs).items()
 
     return followers

@@ -1,1 +1,0 @@
-# Lines 1-4 should contain text in the following order: ckey, csecret, atoken, asecret. Rename this file to 'tokendata.txt'

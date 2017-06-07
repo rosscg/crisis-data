@@ -9,7 +9,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 
-#TODO: Replace into target method
+#TODO: Replace into target method. NOTE: This will have a concurrency problem where API limit waiting may lead to overlap of tasks.
 #@periodic_task(run_every=timedelta(hours=1))
 def update_user_relos_periodic():
     update_user_relos_task()
@@ -17,13 +17,13 @@ def update_user_relos_periodic():
 
 
 @shared_task
-def add_user_task(info):
+def add_user_task(**kwargs):
     #Get user information
-    userdict = userdata.usernamedata(info)
+    userdict = userdata.get_user(**kwargs)
 
     #See if user exists as a full user, or an existing target node.
     if User.objects.filter(screen_name=userdict.get('screen_name')).exists():
-        print("User {} already exists.".format(info))
+        print("User {} already exists.".format(kwargs))
 
     else:
         #If user is an existing node_id
@@ -91,14 +91,14 @@ def add_user_task(info):
         u.save()
 
         #Get users followed by account & create relationship objects
-        userfollowing = userdata.userfollowing(userdict.get('screen_name'))
+        userfollowing = userdata.friends_ids(screen_name = userdict.get('screen_name'))
         for targetuser in userfollowing:
             create_relo(u, targetuser, True)
 
         #Get followers & create relationship objects
-        userfollowers = userdata.userfollowers(userdict.get('screen_name'))
+        userfollowers = userdata.followers_ids(screen_name = userdict.get('screen_name'))
         for sourceuser in userfollowers:
-            create_relo(u, targetuser, False)
+            create_relo(u, sourceuser, outgoing=False)
     return
 
 
@@ -122,12 +122,15 @@ def update_user_relos_task():
         print("Dead links for user: {}: {}".format(user.screen_name, dead_links))
 
         for target_user_id in dead_links:
-            for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id):
+            for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id).filter(end_observed_at=None):
                 ob.end_observed_at = timezone.now()
                 ob.save()
+            tuser = User.objects.get(user_id=target_user_id)
+            tuser.relevant_in_degree = tuser.relevant_in_degree - 1
+            tuser.save()
 
         for targetuser in new_links:
-            create_relo(user, targetuser, True)
+            create_relo(user, targetuser, outgoing=True)
     return
 
 #TODO: move this elsewhere and import?

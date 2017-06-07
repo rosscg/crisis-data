@@ -8,5 +8,5 @@ db.sqlite3
 
 /twdata/test.py
 tokendata.txt
-/twdata/tokendata.txt
+/twdata/config.py
 todo.txt
