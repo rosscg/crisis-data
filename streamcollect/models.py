@@ -2,7 +2,6 @@ from django.db import models
 from django.utils import timezone
 
 class User(models.Model):
-    contributors_enabled = models.NullBooleanField(null=True)
     created_at = models.DateTimeField(null=True)
     default_profile = models.NullBooleanField(null=True)
     default_profile_image = models.NullBooleanField(null=True)
@@ -14,13 +13,11 @@ class User(models.Model):
     geo_enabled = models.NullBooleanField(null=True)
     has_extended_profile = models.NullBooleanField(null=True)
     is_translation_enabled = models.NullBooleanField(null=True)
-    is_translator = models.NullBooleanField(null=True)
     lang = models.CharField(max_length=200, null=True)
     listed_count = models.IntegerField(null=True)
     location = models.CharField(max_length=200, null=True)
     name = models.CharField(max_length=200, null=True)
     needs_phone_verification = models.NullBooleanField(null=True)
-    notifications = models.NullBooleanField(null=True)
     profile_background_color = models.CharField(max_length=200, null=True)
     profile_background_image_url = models.CharField(max_length=200, null=True)
     profile_background_image_url_https = models.CharField(max_length=200, null=True)

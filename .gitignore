@@ -7,6 +7,5 @@ db.sqlite3
 .DS_Store
 
 /twdata/test.py
-tokendata.txt
 /twdata/config.py
 todo.txt

@@ -29,14 +29,15 @@ def friends_ids(**kwargs):
     print("Running function: friends_ids for user: {}".format(kwargs))
 
     friends = Cursor(api.friends_ids, **kwargs).items()
-    targetlist = [x for x in friends]
+    friends_list = [x for x in friends]
 
-    return targetlist
+    return friends_list
 
 # Returns list of user IDs following a screen_name/id
 def followers_ids(**kwargs):
     print("Running function: followers_ids for user: {}".format(kwargs))
 
     followers = Cursor(api.followers_ids, **kwargs).items()
+    followers_list = [x for x in followers]
 
-    return followers
+    return followers_list

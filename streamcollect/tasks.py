@@ -46,7 +46,6 @@ def add_user_task(**kwargs):
             #TODO REMOVE THIS
             u.relevant_in_degree = 5
 
-        u.contributors_enabled = userdict.get('contributors_enabled')
         u.created_at = parse(userdict.get('created_at'))
         u.default_profile = userdict.get('default_profile')
         u.default_profile_image = userdict.get('default_profile_image')
@@ -58,13 +57,11 @@ def add_user_task(**kwargs):
         u.geo_enabled = userdict.get('geo_enabled')
         u.has_extended_profile = userdict.get('has_extended_profile')
         u.is_translation_enabled = userdict.get('is_translation_enabled')
-        u.is_translator = userdict.get('is_translator')
         u.lang = userdict.get('lang')
         u.listed_count = userdict.get('listed_count')
         u.location = userdict.get('location')
         u.name = userdict.get('name')
         u.needs_phone_verification = userdict.get('needs_phone_verification')
-        u.notifications = userdict.get('notifications')
         u.profile_background_color = userdict.get('profile_background_color')
         u.profile_background_image_url = userdict.get('profile_background_image_url')
         u.profile_background_image_url_https = userdict.get('profile_background_image_url_https')
@@ -135,13 +132,9 @@ def update_user_relos_task():
         #Get users following by account
         user_followers = userdata.followers_ids(screen_name = user.screen_name)
 
-        #print('followers: {}'.format(user_followers))
-
         #Get recorded list of users following an account
         #TODO: Filter out dead relos, but how to handle when recreated?
         user_followers_recorded = list(Relo.objects.filter(targetuser=user).filter(end_observed_at=None).values_list('sourceuser', flat=True))
-
-        #print('recorded followers: {}'.format(user_followers_recorded))
 
         new_follower_links = [a for a in user_followers if (a not in user_followers_recorded)]
         dead_follower_links = [a for a in user_followers_recorded if (a not in user_followers)]
