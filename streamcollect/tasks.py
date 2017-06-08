@@ -18,8 +18,18 @@ def update_user_relos_periodic():
 
 @shared_task
 def add_user_task(**kwargs):
-    #Get user information
     userdict = userdata.get_user(**kwargs)
+
+    # Reject users with high metrics - spam/celebrity/news accounts
+    if userdict.get('followers_count') > 5000:
+        print('Rejecting user with high follower count: {}'.format(userdict.get('followers_count')))
+        return
+    if userdict.get('friends_count') > 5000:
+        print('Rejecting user with high friends count: {}'.format(userdict.get('friends_count')))
+        return
+    if userdict.get('statuses_count') > 10000:
+        print('Rejecting user with high status count: {}'.format(userdict.get('statuses_count')))
+        return
 
     #See if user exists as a full user, or an existing target node.
     if User.objects.filter(screen_name=userdict.get('screen_name')).exists():
@@ -129,7 +139,7 @@ def update_user_relos_task():
         for targetuser in new_friend_links:
             create_relo(user, targetuser, outgoing=True)
 
-        #Get users following by account
+        #Get users following an account
         user_followers = userdata.followers_ids(screen_name = user.screen_name)
 
         #Get recorded list of users following an account
