@@ -55,7 +55,7 @@ d3.json("{% url "network_data_API" %}", function(error, graph) {
           .on("end", dragended));
 
   node.append("title")
-      .text(function(d) { return d.id; });
+      .text(function(d) { return d.title; });
 
   simulation
       .nodes(graph.nodes)

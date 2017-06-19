@@ -49,8 +49,14 @@ class User(models.Model):
         return str(self.user_id)
 
     def as_json(self):
+        if self.screen_name is None:
+            title = str(self.user_id)
+        else:
+            title = self.screen_name
+
         return dict(
             id=str(self.user_id),
+            title=title,
             group=str(self.in_degree))
 
 
