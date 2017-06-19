@@ -175,14 +175,13 @@ def update_user_relos_task():
 def create_relo(existing_user, new_user_id, outgoing):
 
     if outgoing:
-        if Relo.objects.filter(sourceuser=existing_user).filter(targetuser__user_id=new_user_id).exists():
-            print("Relationship already exists.")
+        if Relo.objects.filter(sourceuser=existing_user).filter(targetuser__user_id=new_user_id).filter(end_observed_at=None).exists():
+            print("Outgoing relationship from {} to {} already exists.".format(existing_user.screen_name, new_user_id))
             return
     else:
-        if Relo.objects.filter(sourceuser__user_id=new_user_id).filter(targetuser=existing_user).exists():
-            print("Relationship already exists.")
+        if Relo.objects.filter(sourceuser__user_id=new_user_id).filter(targetuser=existing_user).filter(end_observed_at=None).exists():
+            print("Incoming relationship to {} from {} already exists.".format(existing_user.screen_name, new_user_id))
             return
-
 
     r = Relo()
 
@@ -212,7 +211,6 @@ def create_relo(existing_user, new_user_id, outgoing):
             #Create new users for targets if not already in DB
             if User.objects.filter(user_id=new_user_id).exists():
                 u2 = User.objects.get(user_id=new_user_id)
-                #DUPLICATION HERE, if relo already exists:
                 u2.out_degree += 1
                 u2.save()
                 r.sourceuser = u2
