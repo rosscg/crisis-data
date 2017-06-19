@@ -52,7 +52,7 @@ def network_data_API(request):
     required_in_degree = 2
 
     #Include users with an in degree of X or greater
-    relevant_users = User.objects.filter(relevant_in_degree__gte=required_in_degree)
+    relevant_users = User.objects.filter(in_degree__gte=required_in_degree)
     resultsuser = [ob.as_json() for ob in relevant_users]
     #Get relationships which connect two 'relevant users'
     #TODO filter or handle 'dead' relationships

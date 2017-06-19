@@ -42,7 +42,8 @@ class User(models.Model):
     verified = models.NullBooleanField(null=True)
 
     added_at = models.DateTimeField(default=timezone.now)
-    relevant_in_degree = models.IntegerField(default=0)
+    in_degree = models.IntegerField(default=0)
+    out_degree = models.IntegerField(default=0)
 
     def __str__(self):
         return str(self.user_id)
@@ -50,7 +51,7 @@ class User(models.Model):
     def as_json(self):
         return dict(
             id=str(self.user_id),
-            group=str(self.relevant_in_degree))
+            group=str(self.in_degree))
 
 
 class Relo(models.Model):

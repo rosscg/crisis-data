@@ -45,7 +45,7 @@ def add_user_task(**kwargs):
             u = get_object_or_404(User, user_id=int(userdict.get('id_str')))
 
             #TODO REMOVE THIS
-            u.relevant_in_degree = u.relevant_in_degree + 5
+            u.in_degree = u.in_degree + 1000
 
         #User is a new observation
         else:
@@ -54,7 +54,7 @@ def add_user_task(**kwargs):
             u = User()
 
             #TODO REMOVE THIS
-            u.relevant_in_degree = 5
+            u.in_degree = 1000
 
         u.created_at = parse(userdict.get('created_at'))
         u.default_profile = userdict.get('default_profile')
@@ -133,8 +133,11 @@ def update_user_relos_task():
                 ob.end_observed_at = timezone.now()
                 ob.save()
             tuser = User.objects.get(user_id=target_user_id)
-            tuser.relevant_in_degree = tuser.relevant_in_degree - 1
+            tuser.in_degree = tuser.in_degree - 1
             tuser.save()
+
+            user.out_degree -= 1
+            user.save()
 
         for targetuser in new_friend_links:
             create_relo(user, targetuser, outgoing=True)
@@ -157,8 +160,11 @@ def update_user_relos_task():
                 ob.end_observed_at = timezone.now()
                 ob.save()
             suser = User.objects.get(user_id=source_user_id)
-            suser.relevant_in_degree = suser.relevant_in_degree - 1
+            suser.in_degree = suser.in_degree - 1
             suser.save()
+
+            user.in_degree -= 1
+            user.save()
 
         for source_user in new_follower_links:
             create_relo(user, source_user, outgoing=False)
@@ -168,33 +174,52 @@ def update_user_relos_task():
 #TODO: move this elsewhere and import?
 def create_relo(existing_user, new_user_id, outgoing):
 
+    if outgoing:
+        if Relo.objects.filter(sourceuser=existing_user).filter(targetuser__user_id=new_user_id).exists():
+            print("Relationship already exists.")
+            return
+    else:
+        if Relo.objects.filter(sourceuser__user_id=new_user_id).filter(targetuser=existing_user).exists():
+            print("Relationship already exists.")
+            return
+
+
     r = Relo()
 
     if outgoing:
+        existing_user.out_degree += 1
+        existing_user.save()
         r.sourceuser = existing_user
 
         #Create new users for targets if not already in DB
         if User.objects.filter(user_id=new_user_id).exists():
             tuser = User.objects.get(user_id=new_user_id)
-            tuser.relevant_in_degree = tuser.relevant_in_degree + 1
+            tuser.in_degree = tuser.in_degree + 1
             tuser.save()
             r.targetuser = tuser
 
         else:
             u2 = User()
             u2.user_id = new_user_id
-            u2.relevant_in_degree = 1
+            u2.in_degree = 1
             u2.save()
             r.targetuser = u2
     else:
+            existing_user.in_degree += 1
+            existing_user.save()
             r.targetuser = existing_user
 
             #Create new users for targets if not already in DB
             if User.objects.filter(user_id=new_user_id).exists():
-                r.sourceuser = User.objects.get(user_id=new_user_id)
+                u2 = User.objects.get(user_id=new_user_id)
+                #DUPLICATION HERE, if relo already exists:
+                u2.out_degree += 1
+                u2.save()
+                r.sourceuser = u2
             else:
                 u2 = User()
                 u2.user_id = new_user_id
+                u2.out_degree = 1
                 u2.save()
                 r.sourceuser = u2
 
