@@ -3,7 +3,7 @@ from celery.task import periodic_task
 
 from twdata import userdata
 from .models import User, Relo
-from dateutil.parser import *
+from dateutil.parser import parse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
