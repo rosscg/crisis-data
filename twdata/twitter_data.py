@@ -21,6 +21,7 @@ class stream_listener(StreamListener):
         if self.gps_bool:
             if status.coordinates is None:
                 return
+        #TODO: Unify these values with checks in add_user_task
         if status.user.followers_count > 2000:
             return
         if status.user.friends_count > 2000:
@@ -46,8 +47,8 @@ class stream_listener(StreamListener):
                 if not self.data[1] < coords[1] < self.data[3]:
                     print("ERROR Coordinates outside latitude")
 
-        #print("Adding user: {} ...".format(int(status.user.id_str)))
-        #add_user_task.delay(id = int(status.user.id_str))
+        print("Adding user: {} ...".format(int(status.user.id_str)))
+        add_user_task.delay(id = int(status.user.id_str))
         return
 
     def on_error(self, status):
@@ -97,4 +98,4 @@ def twitter_stream(gps=False):
 
 #TODO: Implement this
 def get_keywords():
-    return ["Trump"]
+    return ["Oxford"]

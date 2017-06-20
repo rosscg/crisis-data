@@ -8,10 +8,9 @@ import json
 from django.http import HttpResponse
 #from django.db.models import Count
 from django.utils import timezone
-import datetime
+#import datetime
 from django.db.models import Q
 
-import time
 from celery.task.control import revoke
 
 
@@ -35,30 +34,28 @@ def submit(request):
     info = request.POST['info']
     #add_user(info)
     add_user_task.delay(screen_name = info)
-    return redirect('list_users')
+    return redirect('monitor_user')
 
-#TODO: Remove this, and the import datetime line, and link from base template
-def delete_today(request):
-    yes = datetime.date.today() - datetime.timedelta(days=1)
-    #yes = timezone.date.today() - timezone.timedelta(days=1)
-    User.objects.filter(added_at__gt=yes).delete()
-    Relo.objects.filter(observed_at__gt=yes).delete()
-    return redirect('list_users')
-
-def update_relos(request):
+def start_stream(request):
     #update_user_relos_task.delay()
 
     task = twitter_stream_task.delay()
     print("running task: {}".format(task.task_id))
     task_object = CeleryStream(celery_task_id = task.task_id, is_gps = False)
     task_object.save()
-    time.sleep(20)
+
+    return redirect('list_users')
+
+def stop_stream(request):
+    #yes = datetime.date.today() - datetime.timedelta(days=1)
+    ##yes = timezone.date.today() - timezone.timedelta(days=1)
+    #User.objects.filter(added_at__gt=yes).delete()
+    #Relo.objects.filter(observed_at__gt=yes).delete()
     for t in CeleryStream.objects.all():
         print("killing task: {}".format(t.celery_task_id))
         revoke(t.celery_task_id, terminate=True)
         t.delete()
-
-    return redirect('list_users')
+    return redirect('view_network')
 
 
 #API returns users above a 'relevant in degree' threshold and the links between them

@@ -61,6 +61,7 @@ class User(models.Model):
 
 
 class Relo(models.Model):
+    #TODO: on_delete needs to be resolved appropriately.
     sourceuser = models.ForeignKey(User, related_name='source', on_delete=models.CASCADE)
     targetuser = models.ForeignKey(User, related_name='target', on_delete=models.CASCADE)
     observed_at = models.DateTimeField(default=timezone.now)
