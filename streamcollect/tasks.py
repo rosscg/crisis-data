@@ -9,7 +9,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 
-#TODO: Replace into target method. NOTE: This will have a concurrency problem where API limit waiting may lead to overlap of tasks.
+#TODO: Replace into target method. NOTE: This will have a concurrency problem where API limit waiting may lead to overlap of tasks. - Possibly addressed with https://github.com/PolicyStat/jobtastic
 #@periodic_task(run_every=timedelta(hours=1))
 def update_user_relos_periodic():
     update_user_relos_task()

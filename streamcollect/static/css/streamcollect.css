@@ -1,5 +1,9 @@
-h1, p {
+h1 {
     font-size: 12pt;
+}
+
+p {
+    font-size: 8pt;
 }
 
 body {

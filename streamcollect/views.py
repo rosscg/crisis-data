@@ -1,14 +1,14 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from .models import User, Relo
 from .forms import AddUserForm
 from twdata import userdata
 from dateutil.parser import *
-from django.shortcuts import redirect
 import json
 from django.http import HttpResponse
 #from django.db.models import Count
 from django.utils import timezone
 import datetime
+from django.db.models import Q
 
 from streamcollect.tasks import add_user_task, update_user_relos_task
 
@@ -50,13 +50,13 @@ def network_data_API(request):
     print("Collecting network_data...")
 
     required_in_degree = 2
+    required_out_degree = 2
 
-    #Include users with an in degree of X or greater
-    relevant_users = User.objects.filter(in_degree__gte=required_in_degree)
+    #Include users with an in or out degree of X or greater
+    relevant_users = User.objects.filter(Q(in_degree__gte=required_in_degree) | Q(out_degree__gte=required_out_degree))
     resultsuser = [ob.as_json() for ob in relevant_users]
     #Get relationships which connect two 'relevant users'
-    #TODO filter or handle 'dead' relationships
-    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users)]
+    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users).filter(end_observed_at=None)]
 
     data = {"nodes" : resultsuser, "links" : resultsrelo}
     jsondata = json.dumps(data)
