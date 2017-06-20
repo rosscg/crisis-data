@@ -66,11 +66,6 @@ class Relo(models.Model):
     observed_at = models.DateTimeField(default=timezone.now)
     end_observed_at = models.DateTimeField(null=True)
 
-    #def end_relo(self):
-    #    self.end_observed_at = timezone.now()
-    #    self.save
-    #    return None
-
     def as_json(self):
         return dict(
             source=str(self.sourceuser.user_id),
@@ -81,3 +76,8 @@ class Relo(models.Model):
             return "{} following: {}".format(self.sourceuser, self.targetuser)
         else:
             return "Dead Relo: {} following: {}".format(self.sourceuser, self.targetuser)
+
+class CeleryStream(models.Model):
+    celery_task_id = models.CharField(max_length = 40, unique=True)
+    # Differentiate between keyword and gps streams
+    is_gps = models.BooleanField()

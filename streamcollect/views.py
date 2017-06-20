@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import User, Relo
+from .models import User, Relo, CeleryStream
 from .forms import AddUserForm
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -12,6 +12,8 @@ import datetime
 from django.db.models import Q
 
 import time
+from celery.task.control import revoke
+
 
 from streamcollect.tasks import add_user_task, update_user_relos_task
 
@@ -45,13 +47,17 @@ def delete_today(request):
 
 def update_relos(request):
     #update_user_relos_task.delay()
-    print("running task")
+
     task = twitter_stream_task.delay()
-    print(len(task))
-    print(type(task))
+    print("running task: {}".format(task.task_id))
+    task_object = CeleryStream(celery_task_id = task.task_id, is_gps = False)
+    task_object.save()
     time.sleep(20)
-    print("killing task: {}".format(task))
-    task.revoke(terminate=True)
+    for t in CeleryStream.objects.all():
+        print("killing task: {}".format(t.celery_task_id))
+        revoke(t.celery_task_id, terminate=True)
+        t.delete()
+
     return redirect('list_users')
 
 
