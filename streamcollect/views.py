@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import User, Relo
 from .forms import AddUserForm
 from twdata import userdata
+from twdata.tasks import twitter_stream_task
 from dateutil.parser import *
 import json
 from django.http import HttpResponse
@@ -9,6 +10,8 @@ from django.http import HttpResponse
 from django.utils import timezone
 import datetime
 from django.db.models import Q
+
+import time
 
 from streamcollect.tasks import add_user_task, update_user_relos_task
 
@@ -41,7 +44,14 @@ def delete_today(request):
     return redirect('list_users')
 
 def update_relos(request):
-    update_user_relos_task.delay()
+    #update_user_relos_task.delay()
+    print("running task")
+    task = twitter_stream_task.delay()
+    print(len(task))
+    print(type(task))
+    time.sleep(20)
+    print("killing task: {}".format(task))
+    task.revoke(terminate=True)
     return redirect('list_users')
 
 
@@ -49,8 +59,8 @@ def update_relos(request):
 def network_data_API(request):
     print("Collecting network_data...")
 
-    required_in_degree = 2
-    required_out_degree = 2
+    required_in_degree = 3
+    required_out_degree = 3
 
     #Include users with an in or out degree of X or greater
     relevant_users = User.objects.filter(Q(in_degree__gte=required_in_degree) | Q(out_degree__gte=required_out_degree))

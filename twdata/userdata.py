@@ -8,10 +8,11 @@ def get_api():
     auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
     auth.set_access_token(ACCESS_TOKENS[0][0], ACCESS_TOKENS[0][1])
 
-    api = API(auth, wait_on_rate_limit= True, wait_on_rate_limit_notify=True)
+    api = API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
     return api
 
+#TODO: move this into per method, add limit checking
 api = get_api()
 
 # Returns all json data for screen_name/id
