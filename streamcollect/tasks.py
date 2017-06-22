@@ -1,8 +1,9 @@
 from celery import shared_task
 from celery.task import periodic_task
+from celery.task.control import revoke
 
 from twdata import userdata
-from .models import User, Relo
+from .models import User, Relo, CeleryTask
 from dateutil.parser import parse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -12,19 +13,29 @@ from django.db.models import Q
 
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
-#TODO: Replace into target method. NOTE: This will have a concurrency problem where API limit waiting may lead to overlap of tasks. - Possibly addressed with https://github.com/PolicyStat/jobtastic  - Just see how stream tasks are cancelled?
-#@periodic_task(run_every=timedelta(hours=1))
-def update_user_relos_periodic():
+#TODO: Replace into target method.
+#@periodic_task(run_every=timedelta(seconds=10), bind=True)
+def update_user_relos_periodic(self):
+    # Remove existing task
+    for t in CeleryTask.objects.filter(task_name='update_user_relos'):
+        print("killing task: {}".format(t.celery_task_id))
+        revoke(t.celery_task_id, terminate=True)
+        t.delete()
+
+    print("Running update_user_relos_task with id: {}".format(self.request.id))
+    #Save task details to DB
+    task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
+    task_object.save()
+
     update_user_relos_task()
     return
 
-#TODO: Set as periodic?
-@shared_task
-def trim_spam_accounts():
+#TODO: Set as periodic? Add revoke and db record as in update_user_relos_task
+@shared_task(bind=True)
+def trim_spam_accounts(self):
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
     users = User.objects.filter(screen_name__isnull=True).filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
     for u in users:
-
         try:
             userdict = userdata.get_user(user_id = u.user_id)
         except Exception as e:
@@ -53,7 +64,7 @@ def trim_spam_accounts():
 
 def check_spam_account(userdict):
     # Reject users with high metrics - spam/celebrity/news accounts
-    print("Checking user: {}".format(userdict.get('screen_name')))
+    print("Checking user as spam: {}".format(userdict.get('screen_name')))
     if userdict.get('followers_count') > FOLLOWERS_THRESHOLD:
         print('Rejecting user with high follower count: {}'.format(userdict.get('followers_count')))
         return True
@@ -150,7 +161,7 @@ def add_user_task(**kwargs):
 #TODO: add user_followed_by functionality
 @shared_task
 def update_user_relos_task():
-    users = User.objects.filter(screen_name__isnull=False)
+    users = User.objects.filter(user_class__gte=2)
 
     for user in users:
         #Get users followed by account

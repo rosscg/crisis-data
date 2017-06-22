@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import User, Relo, CeleryStream
+from .models import User, Relo, CeleryTask
 from .forms import AddUserForm
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -18,8 +18,11 @@ from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 from .tasks import trim_spam_accounts
 
 def test(request):
-    trim_spam_accounts.delay()
-    #update_user_relos_task.delay()
+    task = trim_spam_accounts.delay()
+    #task = update_user_relos_task.delay()
+    print("running task: {}".format(task.task_id))
+    task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
+    task_object.save()
     return redirect('list_users')
 
 def monitor_user(request):
@@ -44,12 +47,12 @@ def submit(request):
 def start_stream(request):
     task = twitter_stream_task.delay()
     print("running task: {}".format(task.task_id))
-    task_object = CeleryStream(celery_task_id = task.task_id, is_gps = False)
+    task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
     task_object.save()
     return redirect('list_users')
 
 def stop_stream(request):
-    for t in CeleryStream.objects.all():
+    for t in CeleryTask.objects.filter(task_name='stream_kw'):
         print("killing task: {}".format(t.celery_task_id))
         revoke(t.celery_task_id, terminate=True)
         t.delete()

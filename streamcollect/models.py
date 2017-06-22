@@ -79,7 +79,7 @@ class Relo(models.Model):
         else:
             return "Dead Relo: {} following: {}".format(self.sourceuser, self.targetuser)
 
-class CeleryStream(models.Model):
+class CeleryTask(models.Model):
     celery_task_id = models.CharField(max_length = 40, unique=True)
-    # Differentiate between keyword and gps streams
-    is_gps = models.BooleanField()
+    # Use: stream_kw, stream_gps, update_user_relos, trim_spam_accounts
+    task_name = models.CharField(max_length=40)
