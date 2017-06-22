@@ -1,0 +1,41 @@
+{% extends 'streamcollect/base.html' %}
+{% block content %}
+
+<div class="container">
+
+  {% if stream_status is True %}
+  <div class="row">
+    <h1 class="title"><small>The stream is currently running.</small></h1>
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-4">
+          <input type="submit" class="btn btn-primary btn-md" name="stop_stream" value="Stop Stream">
+        </div>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if stream_status is False %}
+  <div class="row">
+    <h1 class="title"><small>The stream is not currently running.</small></h1>
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-4">
+          <input type="submit" class="btn btn-primary btn-md" name="start_stream" value="Start Stream">
+        </div>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="row top_margin_20">
+    <p>Keywords are:
+        {% for keyword in keywords %}
+          {{ keyword }},
+        {% endfor %}
+    </p>
+  </div>
+</div>
+
+{% endblock %}

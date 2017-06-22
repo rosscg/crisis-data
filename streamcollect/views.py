@@ -31,29 +31,35 @@ def user_details(request, user_id):
     user = get_object_or_404(User, user_id=user_id)
     return render(request, 'streamcollect/user_details.html', {'user': user})
 
+def stream_status(request):
+    keywords = ['To', 'be', 'implemented']
+    if not CeleryTask.objects.filter(task_name='stream_kw'):
+        stream_status = False
+    else:
+        stream_status = True
+    return render(request, 'streamcollect/stream_status.html', {'stream_status': stream_status, 'keywords': keywords})
+
 def submit(request):
-    info = request.POST['info']
-    #TODO: Better validation function here
-    if len(info) > 0:
-        if "screen_name" in request.POST:
-            add_user_task.delay(screen_name = info)
-        else:
-            print("Unlabelled button pressed")
-    return redirect('monitor_user')
-
-def start_stream(request):
-    task = twitter_stream_task.delay()
-    print("running task: {}".format(task.task_id))
-    task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
-    task_object.save()
-    return redirect('list_users')
-
-def stop_stream(request):
-    for t in CeleryTask.objects.filter(task_name='stream_kw'):
-        print("killing task: {}".format(t.celery_task_id))
-        revoke(t.celery_task_id, terminate=True)
-        t.delete()
-    return redirect('view_network')
+    if "screen_name" in request.POST:
+        #TODO: Add validation function here
+        info = request.POST['info']
+        add_user_task.delay(screen_name = info)
+        return redirect('monitor_user')
+    elif "start_stream" in request.POST:
+        task = twitter_stream_task.delay()
+        #print("running stream task: {}".format(task.task_id))
+        task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
+        task_object.save()
+        return redirect('stream_status')
+    elif "stop_stream" in request.POST:
+        for t in CeleryTask.objects.filter(task_name='stream_kw'):
+            print("killing task: {}".format(t.celery_task_id))
+            revoke(t.celery_task_id, terminate=True)
+            t.delete()
+        return redirect('stream_status')
+    else:
+        print("Unlabelled button pressed")
+        return redirect('monitor_user')
 
 def test(request):
     task = trim_spam_accounts.delay()

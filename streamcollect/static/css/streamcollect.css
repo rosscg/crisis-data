@@ -1,5 +1,4 @@
 p {
-    font-size: 10pt;
 }
 
 body {
@@ -12,3 +11,6 @@ body {
     border: 2px solid grey;
     border-radius: 5px;
 }
+
+
+.top_margin_20 { margin-top:20px; }
