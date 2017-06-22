@@ -8,55 +8,89 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 
+from django.db.models import Q
 
-#TODO: Replace into target method. NOTE: This will have a concurrency problem where API limit waiting may lead to overlap of tasks. - Possibly addressed with https://github.com/PolicyStat/jobtastic
+from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
+
+#TODO: Replace into target method. NOTE: This will have a concurrency problem where API limit waiting may lead to overlap of tasks. - Possibly addressed with https://github.com/PolicyStat/jobtastic  - Just see how stream tasks are cancelled?
 #@periodic_task(run_every=timedelta(hours=1))
 def update_user_relos_periodic():
     update_user_relos_task()
     return
+
+#TODO: Set as periodic?
+@shared_task
+def trim_spam_accounts():
+    # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
+    users = User.objects.filter(screen_name__isnull=True).filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+    for u in users:
+
+        try:
+            userdict = userdata.get_user(user_id = u.user_id)
+        except Exception as e:
+            # Handling for: tweepy.error.TweepError: [{'code': 63, 'message': 'User has been suspended.'}]
+            #TODO: Implement a delete user function here? Or otherwise flag as suspended etc
+            print("Twitter error raised for user: {}, error: {}".format(u.user_id, e))
+            continue
+
+        if check_spam_account(userdict):
+            u.user_class = -1
+        else:
+            u.user_class = 1
+
+        #TODO: Need all these? Perhaps only for user_class >0?
+        u.created_at = parse(userdict.get('created_at'))
+        u.followers_count = userdict.get('followers_count')
+        u.friends_count = userdict.get('friends_count')
+        u.geo_enabled = userdict.get('geo_enabled')
+        u.location = userdict.get('location')
+        u.name = userdict.get('name')
+        u.screen_name = userdict.get('screen_name')
+        u.statuses_count = userdict.get('statuses_count')
+
+        u.save()
+    return
+
+def check_spam_account(userdict):
+    # Reject users with high metrics - spam/celebrity/news accounts
+    print("Checking user: {}".format(userdict.get('screen_name')))
+    if userdict.get('followers_count') > FOLLOWERS_THRESHOLD:
+        print('Rejecting user with high follower count: {}'.format(userdict.get('followers_count')))
+        return True
+    if userdict.get('friends_count') > FRIENDS_THRESHOLD:
+        print('Rejecting user with high friends count: {}'.format(userdict.get('friends_count')))
+        return True
+    if userdict.get('statuses_count') > STATUSES_THRESHOLD:
+        print('Rejecting user with high status count: {}'.format(userdict.get('statuses_count')))
+        return True
+    else:
+        print("User {} passed test.".format(userdict.get('screen_name')))
+        return False
 
 
 @shared_task
 def add_user_task(**kwargs):
     userdict = userdata.get_user(**kwargs)
 
-    # Reject users with high metrics - spam/celebrity/news accounts
-    if userdict.get('followers_count') > 5000:
-        print('Rejecting user with high follower count: {}'.format(userdict.get('followers_count')))
-        return
-    if userdict.get('friends_count') > 5000:
-        print('Rejecting user with high friends count: {}'.format(userdict.get('friends_count')))
-        return
-    if userdict.get('statuses_count') > 10000:
-        print('Rejecting user with high status count: {}'.format(userdict.get('statuses_count')))
+    if check_spam_account(userdict):
         return
 
     #Does user exists as a full user (ego), or an existing target node (alter).
     if User.objects.filter(screen_name=userdict.get('screen_name')).exists():
         print("User {} already exists.".format(kwargs))
-
     else:
         #If user is an existing node_id (alter)
         if User.objects.filter(user_id=int(userdict.get('id_str'))).exists():
-
-            #Updating user object
             print("Updating record...")
             #u = User.objects.filter(user_id=int(userdict.get('id_str')))
             u = get_object_or_404(User, user_id=int(userdict.get('id_str')))
             # Update added_at, as user is upgraded from alter to ego
             u.added_at = timezone.now
-
-            #TODO REMOVE THIS
-            u.in_degree = u.in_degree + 1000
-
         #User is a new observation
         else:
             #Creating user object
             print("Creating record...")
             u = User()
-
-            #TODO REMOVE THIS
-            u.in_degree = 1000
 
         u.created_at = parse(userdict.get('created_at'))
         u.default_profile = userdict.get('default_profile')
@@ -97,7 +131,7 @@ def add_user_task(**kwargs):
         u.utc_offset = userdict.get('utc_offset')
         u.verified = userdict.get('verified')
 
-        u.user_class = 1
+        u.user_class = 2
 
         u.save()
 

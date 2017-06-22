@@ -12,6 +12,7 @@ urlpatterns = [
     #TODO: Remove these after debugging
     url(r'^stop_stream$', views.stop_stream, name='stop_stream'),
     url(r'^start_stream$', views.start_stream, name='start_stream'),
+    url(r'^test$', views.test, name='test'),
 
 
     url(r'^network_data_API$', views.network_data_API, name='network_data_API')
