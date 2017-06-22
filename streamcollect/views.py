@@ -63,24 +63,30 @@ def submit(request):
         kill_celery_task('stream_kw')
         return redirect('stream_status')
     elif "trim_spam_accounts" in request.POST:
-        kill_celery_task('trim_spam_accounts')
+        #kill_celery_task('trim_spam_accounts')
         task = trim_spam_accounts.delay()
-        task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
-        task_object.save()
+        #task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
+        #task_object.save()
         return redirect('testbed')
     elif "update_user_relos" in request.POST:
-        kill_celery_task('update_user_relos')
-        task = update_user_relos_task.delay()
-        task_object = CeleryTask(celery_task_id = task.task_id, task_name='update_user_relos')
-        task_object.save()
+        #kill_celery_task('update_user_relos')
+        task = update_user_relos_periodic.delay()
+        #task_object = CeleryTask(celery_task_id = task.task_id, task_name='update_user_relos')
+        #task_object.save()
         return redirect('testbed')
     elif "delete_keywords" in request.POST:
         Keyword.objects.all().delete()
+        return redirect('testbed')
+    elif "terminate_tasks" in request.POST:
+        for t in CeleryTask.objects.all():
+            revoke(t.celery_task_id, terminate=True)
+            t.delete()
         return redirect('testbed')
     else:
         print("Unlabelled button pressed")
         return redirect('monitor_user')
 
+#TODO: Move to new method file
 def kill_celery_task(task_name):
     for t in CeleryTask.objects.filter(task_name=task_name):
         print("Killing task {}: {}".format(task_name, t.celery_task_id))

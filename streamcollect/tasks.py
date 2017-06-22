@@ -1,6 +1,5 @@
 from celery import shared_task
 from celery.task import periodic_task
-from celery.task.control import revoke
 
 from twdata import userdata
 from .models import User, Relo, CeleryTask
@@ -11,17 +10,14 @@ from datetime import timedelta
 
 from django.db.models import Q
 
-from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
+from .methods import kill_celery_task, check_spam_account
+from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #TODO: Replace into target method.
 #@periodic_task(run_every=timedelta(seconds=10), bind=True)
 def update_user_relos_periodic(self):
     # Remove existing task
-    for t in CeleryTask.objects.filter(task_name='update_user_relos'):
-        print("killing task: {}".format(t.celery_task_id))
-        revoke(t.celery_task_id, terminate=True)
-        t.delete()
-
+    kill_celery_task('update_user_relos')
     print("Running update_user_relos_task with id: {}".format(self.request.id))
     #Save task details to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
@@ -33,6 +29,13 @@ def update_user_relos_periodic(self):
 #TODO: Set as periodic? Add revoke and db record as in update_user_relos_task
 @shared_task(bind=True)
 def trim_spam_accounts(self):
+    # Remove existing task
+    kill_celery_task('trim_spam_accounts')
+    print("Running trim_spam_accounts with id: {}".format(self.request.id))
+    #Save task details to DB
+    task_object = CeleryTask(celery_task_id = self.request.id, task_name='trim_spam_accounts')
+    task_object.save()
+
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
     users = User.objects.filter(screen_name__isnull=True).filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
     for u in users:
@@ -62,23 +65,6 @@ def trim_spam_accounts(self):
 
         u.save()
     return
-
-def check_spam_account(userdict):
-    # Reject users with high metrics - spam/celebrity/news accounts
-    print("Checking user as spam: {}".format(userdict.get('screen_name')))
-    if userdict.get('followers_count') > FOLLOWERS_THRESHOLD:
-        print('Rejecting user with high follower count: {}'.format(userdict.get('followers_count')))
-        return True
-    if userdict.get('friends_count') > FRIENDS_THRESHOLD:
-        print('Rejecting user with high friends count: {}'.format(userdict.get('friends_count')))
-        return True
-    if userdict.get('statuses_count') > STATUSES_THRESHOLD:
-        print('Rejecting user with high status count: {}'.format(userdict.get('statuses_count')))
-        return True
-    else:
-        print("User {} passed test.".format(userdict.get('screen_name')))
-        return False
-
 
 @shared_task
 def add_user_task(**kwargs):

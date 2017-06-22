@@ -28,6 +28,14 @@
       </div>
     </div>
   </form>
+
+  <form action="submit" method="POST">{% csrf_token %}
+    <div class="form-group">
+      <div class="col-xs-3">
+        <input type="submit" class="btn btn-primary btn-md" name="terminate_tasks" value="Terminate Tasks">
+      </div>
+    </div>
+  </form>
 </div>
 
 </div>
