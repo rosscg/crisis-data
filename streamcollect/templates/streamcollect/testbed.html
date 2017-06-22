@@ -1,0 +1,27 @@
+{% extends 'streamcollect/base.html' %}
+{% block content %}
+
+<div class="container">
+
+  <div class="row">
+    <h1 class="title"><small>Test functions:</small></h1>
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-2">
+          <input type="submit" class="btn btn-primary btn-md" name="trim_spam_accounts" value="Trim Spam Accounts">
+        </div>
+      </div>
+    </form>
+    
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-2">
+          <input type="submit" class="btn btn-primary btn-md" name="update_user_relos" value="Update Relationship Data">
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+{% endblock %}

@@ -39,6 +39,9 @@ def stream_status(request):
         stream_status = True
     return render(request, 'streamcollect/stream_status.html', {'stream_status': stream_status, 'keywords': keywords})
 
+def testbed(request):
+    return render(request, 'streamcollect/testbed.html')
+
 def submit(request):
     if "screen_name" in request.POST:
         #TODO: Add validation function here
@@ -47,27 +50,34 @@ def submit(request):
         return redirect('monitor_user')
     elif "start_stream" in request.POST:
         task = twitter_stream_task.delay()
-        #print("running stream task: {}".format(task.task_id))
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
         task_object.save()
         return redirect('stream_status')
     elif "stop_stream" in request.POST:
-        for t in CeleryTask.objects.filter(task_name='stream_kw'):
-            print("killing task: {}".format(t.celery_task_id))
-            revoke(t.celery_task_id, terminate=True)
-            t.delete()
+        #TODO: Include stream_gps here
+        kill_celery_task('stream_kw')
         return redirect('stream_status')
+    elif "trim_spam_accounts" in request.POST:
+        kill_celery_task('trim_spam_accounts')
+        task = trim_spam_accounts.delay()
+        task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
+        task_object.save()
+        return redirect('testbed')
+    elif "update_user_relos" in request.POST:
+        kill_celery_task('update_user_relos')
+        task = update_user_relos_task.delay()
+        task_object = CeleryTask(celery_task_id = task.task_id, task_name='update_user_relos')
+        task_object.save()
+        return redirect('testbed')
     else:
         print("Unlabelled button pressed")
         return redirect('monitor_user')
 
-def test(request):
-    task = trim_spam_accounts.delay()
-    #task = update_user_relos_task.delay()
-    print("running task: {}".format(task.task_id))
-    task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
-    task_object.save()
-    return redirect('list_users')
+def kill_celery_task(task_name):
+    for t in CeleryTask.objects.filter(task_name=task_name):
+        print("Killing task {}: {}".format(task_name, t.celery_task_id))
+        revoke(t.celery_task_id, terminate=True)
+        t.delete()
 
 
 #API returns users above a 'relevant in degree' threshold and the links between them

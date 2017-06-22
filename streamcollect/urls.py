@@ -9,9 +9,7 @@ urlpatterns = [
     url(r'^list_users$', views.list_users, name='list_users'),
     url(r'^user/(?P<user_id>\d+)/$', views.user_details, name='user_details'),
     url(r'^stream_status$', views.stream_status, name='stream_status'),
-
-    #TODO: Remove these after debugging
-    url(r'^test$', views.test, name='test'),
+    url(r'^testbed$', views.testbed, name='testbed'),
 
     url(r'^network_data_API$', views.network_data_API, name='network_data_API')
 ]
