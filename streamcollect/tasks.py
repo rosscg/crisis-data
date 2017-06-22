@@ -31,18 +31,20 @@ def add_user_task(**kwargs):
         print('Rejecting user with high status count: {}'.format(userdict.get('statuses_count')))
         return
 
-    #See if user exists as a full user, or an existing target node.
+    #Does user exists as a full user (ego), or an existing target node (alter).
     if User.objects.filter(screen_name=userdict.get('screen_name')).exists():
         print("User {} already exists.".format(kwargs))
 
     else:
-        #If user is an existing node_id
+        #If user is an existing node_id (alter)
         if User.objects.filter(user_id=int(userdict.get('id_str'))).exists():
 
             #Updating user object
             print("Updating record...")
             #u = User.objects.filter(user_id=int(userdict.get('id_str')))
             u = get_object_or_404(User, user_id=int(userdict.get('id_str')))
+            # Update added_at, as user is upgraded from alter to ego
+            u.added_at = timezone.now
 
             #TODO REMOVE THIS
             u.in_degree = u.in_degree + 1000
@@ -94,6 +96,8 @@ def add_user_task(**kwargs):
         u.user_id = int(userdict.get('id_str'))
         u.utc_offset = userdict.get('utc_offset')
         u.verified = userdict.get('verified')
+
+        u.user_class = 1
 
         u.save()
 

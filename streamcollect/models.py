@@ -41,6 +41,7 @@ class User(models.Model):
     utc_offset = models.CharField(max_length=200, null=True)
     verified = models.NullBooleanField(null=True)
 
+    user_class = models.IntegerField(default=0)
     added_at = models.DateTimeField(default=timezone.now)
     in_degree = models.IntegerField(default=0)
     out_degree = models.IntegerField(default=0)
@@ -57,7 +58,7 @@ class User(models.Model):
         return dict(
             id=str(self.user_id),
             title=title,
-            group=str(self.in_degree))
+            group=str(self.user_class))
 
 
 class Relo(models.Model):

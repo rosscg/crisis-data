@@ -88,7 +88,7 @@ def twitter_stream(gps=False):
                 twitterStream.disconnect()
                 print("Deleting old stream...")
                 del twitterStream
-                #TODO: Implement this
+                #TODO: Implement this, check if empty
                 data = get_keywords()
                 twitterStream = Stream(auth, stream_listener(False, data))
             print("Running new stream...")
