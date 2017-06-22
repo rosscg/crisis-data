@@ -64,11 +64,14 @@ def network_data_API(request):
     print("Collecting network_data...")
 
     #Users with an in/out degree of X or greater, exclude designated spam.
-    relevant_users = User.objects.filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE)).filter(user_class__gte=0)
+    #TODO: Add ego users with smaller degrees?
+    relevant_users = User.objects.filter(user_class__gte=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
 
     resultsuser = [ob.as_json() for ob in relevant_users]
-    #Get relationships which connect two 'relevant users'. This is slow.
-    resultsrelo = [ob.as_json() for ob in Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users).filter(end_observed_at=None)]
+
+    #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
+    relevant_relos = Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users, end_observed_at=None)
+    resultsrelo = [ob.as_json() for ob in relevant_relos]
 
     data = {"nodes" : resultsuser, "links" : resultsrelo}
     jsondata = json.dumps(data)

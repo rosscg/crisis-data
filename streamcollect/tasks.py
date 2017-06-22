@@ -39,7 +39,8 @@ def trim_spam_accounts(self):
         try:
             userdict = userdata.get_user(user_id = u.user_id)
         except Exception as e:
-            # Handling for: tweepy.error.TweepError: [{'code': 63, 'message': 'User has been suspended.'}]
+            # Handling for: e = [{'code': 63, 'message': 'User has been suspended.'}]
+            #               e = [{'message': 'User not found.', 'code': 50}]
             #TODO: Implement a delete user function here? Or otherwise flag as suspended etc
             print("Twitter error raised for user: {}, error: {}".format(u.user_id, e))
             continue
@@ -85,7 +86,6 @@ def add_user_task(**kwargs):
 
     if check_spam_account(userdict):
         return
-
     #Does user exists as a full user (ego), or an existing target node (alter).
     if User.objects.filter(screen_name=userdict.get('screen_name')).exists():
         print("User {} already exists.".format(kwargs))

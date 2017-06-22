@@ -17,7 +17,8 @@
 }
 
 </style>
-<svg width="960" height="600"></svg>
+
+<svg width="1200" height="800"></svg>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
@@ -36,29 +37,29 @@ d3.json("{% url "network_data_API" %}", function(error, graph) {
   if (error) throw error;
 
   var link = svg.append("g")
-      .attr("class", "links")
+    .attr("class", "links")
     .selectAll("line")
     .data(graph.links)
     .enter().append("line")
-      .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+    .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
 
   var node = svg.append("g")
-      .attr("class", "nodes")
+    .attr("class", "nodes")
     .selectAll("circle")
     .data(graph.nodes)
     .enter().append("circle")
-      .attr("r", 5)
-      .attr("fill", function(d) { return color(d.group); })
-      .call(d3.drag()
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended));
+    .attr("r", 5)
+    .attr("fill", function(d) { return color(d.group); })
+    .on("contextmenu", linktest )
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
 
   node.append("title")
       .text(function(d) { return d.title; });
 
-  simulation
-      .nodes(graph.nodes)
+  simulation.nodes(graph.nodes)
       .on("tick", ticked);
 
   simulation.force("link")
@@ -92,6 +93,10 @@ function dragended(d) {
   if (!d3.event.active) simulation.alphaTarget(0);
   d.fx = null;
   d.fy = null;
+}
+
+function linktest(d) {
+  window.location.href = 'http://www.google.com';
 }
 
 </script>

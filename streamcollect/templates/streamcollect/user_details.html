@@ -1,27 +1,41 @@
 {% extends 'streamcollect/base.html' %}
 
 {% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="title"><small>User Details</small></h1>
+  </div>
 
-    <h1>Users Details</h1>
-      {% if user.screen_name %}
-        <div>
-            <h1>ID: {{ user.user_id}}</h1>
-            <p>Screen Name: <a href="http://www.twitter.com/{{ user.screen_name }}">{{ user.screen_name }}</a></p>
-            <p>Name: {{ user.name}}</p>
-            <p>User created at: {{ user.created_at }}</p>
-            <p>Added on: {{ user.added_at }}</p>
-            <p>In Degree: {{ user.in_degree }}</p>
-            <p>Out Degree: {{ user.out_degree }}</p>
-            <p>User Class: {{ user.user_class }}</p>
+  <div class="row">
+    {% if user.screen_name %}
+      <div class="col-sm-8">
+        <div class="user_details">
+          <p>ID: {{ user.user_id}}</p>
+          <p>Screen Name: <a href="http://www.twitter.com/{{ user.screen_name }}">{{ user.screen_name }}</a></p>
+          <p>Name: {{ user.name }}</p>
+          <p>User created at: {{ user.created_at }}</p>
+          <p>Added on: {{ user.added_at }}</p>
+          <p>In Degree: {{ user.in_degree }}</p>
+          <p>Out Degree: {{ user.out_degree }}</p>
+          <p>User Class: {{ user.user_class }}</p>
+          <p>Friends: {{ user.friends_count }}</p>
+          <p>Followers: {{ user.followers_count }}</p>
+          <p>Statuses: {{ user.statuses_count }}</p>
+        </div>
+      </div>
+    {% endif %}
+    {% if user.screen_name is None %}
+      <div>
+        <h1>ID: {{ user.user_id }}</h1>
+        <p>No screen name detected</p>
+      </div>
+    {% endif %}
+  </div>
 
-            <p>Friends: {{ user.friends_count }}</p>
-            <p>Followers: {{ user.followers_count }}</p>
-            <p>Statuses: {{ user.statuses_count }}</p>
-        </div>
-      {% endif %}
-      {% if user.screen_name is None %}
-        <div>
-          No screen name detected
-        </div>
-      {% endif %}
+  <div class="row">
+    <div class="col-sm-8">
+      <a href="/list_users">Back</a>
+    </div>
+  </div>
+</div>
 {% endblock %}

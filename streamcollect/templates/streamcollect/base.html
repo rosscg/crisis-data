@@ -6,22 +6,35 @@
 	      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 
         <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
-
-
     </head>
-    <body>
-      <h1><a href="/">Monitor Twitter Users</a><a href="/list_users">List Users</a><a href="/view_network">View Network</a><a href="/start_stream">Start Stream</a><a href="/stop_stream">Stop Stream</a><a href="/test">Test Method</a></h1>
-        </div>
 
-        <div class="content container">
-            <div class="row">
-                <div class="col-md-8">
-                {% block content %}
-                {% endblock %}
-                </div>
-            </div>
+    <body>
+
+      <nav class="navbar navbar-inverse">
+        <div class="container">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="/">StreamCollect</a>
+          </div>
+          <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <li><a href="/list_users">List Users</a></li>
+              <li><a href="/view_network">View Network</a></li>
+              <li><a href="/start_stream">Start Stream</a></li>
+              <li><a href="/stop_stream">Stop Stream</a></li>
+              <li><a href="/test">Test</a></li>
+            </ul>
+          </div>
         </div>
+      </nav>
+
+      <div class="container">
+        <div class="row">
+          <div class="col-md-12">
+            {% block content %}
+            {% endblock %}
+          </div>
+        </div>
+      </div>
 
     </body>
-
 </html>

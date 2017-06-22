@@ -1,11 +1,14 @@
-h1 {
-    font-size: 12pt;
-}
-
 p {
-    font-size: 8pt;
+    font-size: 10pt;
 }
 
 body {
-    padding-left: 25px;
+    padding-left: 0px;
+}
+
+.user_details {
+    padding: 5px;
+    margin: 10px;
+    border: 2px solid grey;
+    border-radius: 5px;
 }

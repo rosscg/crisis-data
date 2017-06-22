@@ -2,12 +2,17 @@
 
 {% block content %}
 
-    <h1>Add User</h1>
+<div class="jumbotron">
+  <h1>StreamCollect</h1>
+  <p>Log live Twitter Data</p>
+  <p><a class="btn btn-primary btn-lg" href="/view_network" role="button">View the Network</a></p>
+</div>
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <input type="text" name="info"><br>
-      <input type="submit" value="Submit">
-    </form>
+<h1 class="title"><small>Add User</small></h1>
+<form action="submit" method="POST">{% csrf_token %}
+  <input type="text" name="info"><br>
+  <input type="submit" class="btn btn-info" value="Submit">
+</form>
 
 
 {% endblock %}
