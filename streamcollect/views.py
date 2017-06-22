@@ -17,14 +17,6 @@ from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 #TODO: Move to above line after testing
 from .tasks import trim_spam_accounts
 
-def test(request):
-    task = trim_spam_accounts.delay()
-    #task = update_user_relos_task.delay()
-    print("running task: {}".format(task.task_id))
-    task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
-    task_object.save()
-    return redirect('list_users')
-
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
 
@@ -41,7 +33,12 @@ def user_details(request, user_id):
 
 def submit(request):
     info = request.POST['info']
-    add_user_task.delay(screen_name = info)
+    #TODO: Better validation function here
+    if len(info) > 0:
+        if "screen_name" in request.POST:
+            add_user_task.delay(screen_name = info)
+        else:
+            print("Unlabelled button pressed")
     return redirect('monitor_user')
 
 def start_stream(request):
@@ -57,6 +54,14 @@ def stop_stream(request):
         revoke(t.celery_task_id, terminate=True)
         t.delete()
     return redirect('view_network')
+
+def test(request):
+    task = trim_spam_accounts.delay()
+    #task = update_user_relos_task.delay()
+    print("running task: {}".format(task.task_id))
+    task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
+    task_object.save()
+    return redirect('list_users')
 
 
 #API returns users above a 'relevant in degree' threshold and the links between them
