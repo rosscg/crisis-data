@@ -6,6 +6,7 @@ from tweepy.streaming import StreamListener
 #from streamcollect.models import User, Relo
 #from .userdata import get_api
 
+from streamcollect.models import Keyword
 from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
 
 from streamcollect.tasks import add_user_task
@@ -75,8 +76,10 @@ def twitter_stream(gps=False):
         print("Using bounding box: {}".format(bounding_box))
         data = gps
     else:
-        #TODO: Implement this
         data = get_keywords()
+        if len(data) == 0:
+            print("Error: no keywords found.")
+            return
 
     twitterStream = Stream(auth, stream_listener(gps, data))
 
@@ -88,14 +91,17 @@ def twitter_stream(gps=False):
                 twitterStream.disconnect()
                 print("Deleting old stream...")
                 del twitterStream
-                #TODO: Implement this, check if empty
                 data = get_keywords()
+                if len(data) == 0:
+                    print("Error: no keywords found.")
+                    return
                 twitterStream = Stream(auth, stream_listener(False, data))
             print("Running new stream...")
             twitterStream.filter(track=data, async=True)
+            #TODO: Move this value to a config file
             time.sleep(600)
-    #TODO: How to kill the stream without shutting down all workers?
 
-#TODO: Implement this
+#TODO: Fold this back into methods?
 def get_keywords():
-    return ["Oxford"]
+    keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
+    return keywords

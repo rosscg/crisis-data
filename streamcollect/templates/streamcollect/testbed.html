@@ -7,20 +7,28 @@
     <h1 class="title"><small>Test functions:</small></h1>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
-        <div class="col-xs-2">
+        <div class="col-xs-3">
           <input type="submit" class="btn btn-primary btn-md" name="trim_spam_accounts" value="Trim Spam Accounts">
         </div>
       </div>
     </form>
-    
+
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
-        <div class="col-xs-2">
+        <div class="col-xs-3">
           <input type="submit" class="btn btn-primary btn-md" name="update_user_relos" value="Update Relationship Data">
         </div>
       </div>
     </form>
-  </div>
+
+  <form action="submit" method="POST">{% csrf_token %}
+    <div class="form-group">
+      <div class="col-xs-3">
+        <input type="submit" class="btn btn-primary btn-md" name="delete_keywords" value="Delete Keywords">
+      </div>
+    </div>
+  </form>
+</div>
 
 </div>
 

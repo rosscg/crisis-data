@@ -1,21 +1,18 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import User, Relo, CeleryTask
-from .forms import AddUserForm
-from twdata import userdata
-from twdata.tasks import twitter_stream_task
 from dateutil.parser import *
 import json
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
+from .models import User, Relo, CeleryTask, Keyword
+from .forms import AddUserForm
+from twdata import userdata
+from twdata.tasks import twitter_stream_task
 
 from celery.task.control import revoke
 
-from streamcollect.tasks import add_user_task, update_user_relos_task
+from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam_accounts
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
-
-#TODO: Move to above line after testing
-from .tasks import trim_spam_accounts
 
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
@@ -32,7 +29,8 @@ def user_details(request, user_id):
     return render(request, 'streamcollect/user_details.html', {'user': user})
 
 def stream_status(request):
-    keywords = ['To', 'be', 'implemented']
+    keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
+    #keywords = ['To', 'be', 'implemented']
     if not CeleryTask.objects.filter(task_name='stream_kw'):
         stream_status = False
     else:
@@ -47,6 +45,13 @@ def submit(request):
         #TODO: Add validation function here
         info = request.POST['info']
         add_user_task.delay(screen_name = info)
+        return redirect('monitor_user')
+    elif "add_keyword" in request.POST:
+        info = request.POST['info']
+        if len(info) > 0:
+            k = Keyword()
+            k.keyword = info
+            k.save()
         return redirect('monitor_user')
     elif "start_stream" in request.POST:
         task = twitter_stream_task.delay()
@@ -68,6 +73,9 @@ def submit(request):
         task = update_user_relos_task.delay()
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='update_user_relos')
         task_object.save()
+        return redirect('testbed')
+    elif "delete_keywords" in request.POST:
+        Keyword.objects.all().delete()
         return redirect('testbed')
     else:
         print("Unlabelled button pressed")

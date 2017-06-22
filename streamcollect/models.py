@@ -83,3 +83,10 @@ class CeleryTask(models.Model):
     celery_task_id = models.CharField(max_length = 40, unique=True)
     # Use: stream_kw, stream_gps, update_user_relos, trim_spam_accounts
     task_name = models.CharField(max_length=40)
+
+class Keyword(models.Model):
+    keyword = models.CharField(max_length = 100, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return str(self.keyword)
