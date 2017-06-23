@@ -12,6 +12,7 @@ from twdata.tasks import twitter_stream_task
 from celery.task.control import revoke
 
 from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam_accounts
+from .methods import kill_celery_task
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 def monitor_user(request):
@@ -30,7 +31,6 @@ def user_details(request, user_id):
 
 def stream_status(request):
     keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
-    #keywords = ['To', 'be', 'implemented']
     if not CeleryTask.objects.filter(task_name='stream_kw'):
         stream_status = False
     else:
@@ -44,7 +44,8 @@ def submit(request):
     if "screen_name" in request.POST:
         #TODO: Add validation function here
         info = request.POST['info']
-        add_user_task.delay(screen_name = info)
+        if len(info) > 0:
+            add_user_task.delay(screen_name = info)
         return redirect('monitor_user')
     elif "add_keyword" in request.POST:
         info = request.POST['info']
@@ -63,16 +64,10 @@ def submit(request):
         kill_celery_task('stream_kw')
         return redirect('stream_status')
     elif "trim_spam_accounts" in request.POST:
-        #kill_celery_task('trim_spam_accounts')
         task = trim_spam_accounts.delay()
-        #task_object = CeleryTask(celery_task_id = task.task_id, task_name='trim_spam_accounts')
-        #task_object.save()
         return redirect('testbed')
     elif "update_user_relos" in request.POST:
-        #kill_celery_task('update_user_relos')
         task = update_user_relos_periodic.delay()
-        #task_object = CeleryTask(celery_task_id = task.task_id, task_name='update_user_relos')
-        #task_object.save()
         return redirect('testbed')
     elif "delete_keywords" in request.POST:
         Keyword.objects.all().delete()
@@ -85,14 +80,6 @@ def submit(request):
     else:
         print("Unlabelled button pressed")
         return redirect('monitor_user')
-
-#TODO: Move to new method file
-def kill_celery_task(task_name):
-    for t in CeleryTask.objects.filter(task_name=task_name):
-        print("Killing task {}: {}".format(task_name, t.celery_task_id))
-        revoke(t.celery_task_id, terminate=True)
-        t.delete()
-
 
 #API returns users above a 'relevant in degree' threshold and the links between them
 def network_data_API(request):

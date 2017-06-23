@@ -14,16 +14,13 @@ from .methods import kill_celery_task, check_spam_account
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #TODO: Replace into target method.
-#@periodic_task(run_every=timedelta(seconds=10), bind=True)
+#@periodic_task(run_every=timedelta(minutes=10), bind=True)
 def update_user_relos_periodic(self):
-    # Remove existing task
-    kill_celery_task('update_user_relos')
-    print("Running update_user_relos_task with id: {}".format(self.request.id))
-    #Save task details to DB
-    task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
-    task_object.save()
-
     update_user_relos_task()
+    return
+#@periodic_task(run_every=timedelta(minutes=10), bind=True)
+def trim_spam_accounts_periodic(self):
+    trim_spam_accounts()
     return
 
 #TODO: Set as periodic? Add revoke and db record as in update_user_relos_task
@@ -147,6 +144,13 @@ def add_user_task(**kwargs):
 #TODO: add user_followed_by functionality
 @shared_task
 def update_user_relos_task():
+    # Remove existing task
+    kill_celery_task('update_user_relos')
+    print("Running update_user_relos_task with id: {}".format(self.request.id))
+    #Save task details to DB
+    task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
+    task_object.save()
+
     users = User.objects.filter(user_class__gte=2)
 
     for user in users:

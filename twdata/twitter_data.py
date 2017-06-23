@@ -8,6 +8,7 @@ from tweepy.streaming import StreamListener
 
 from streamcollect.models import Keyword
 from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
+from streamcollect.config import STREAM_REFRESH_RATE
 
 from streamcollect.tasks import add_user_task
 
@@ -98,8 +99,7 @@ def twitter_stream(gps=False):
                 twitterStream = Stream(auth, stream_listener(False, data))
             print("Running new stream...")
             twitterStream.filter(track=data, async=True)
-            #TODO: Move this value to a config file
-            time.sleep(600)
+            time.sleep(STREAM_REFRESH_RATE)
 
 #TODO: Fold this back into methods?
 def get_keywords():

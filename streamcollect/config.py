@@ -6,3 +6,6 @@ REQUIRED_OUT_DEGREE = 2
 FOLLOWERS_THRESHOLD = 5000
 FRIENDS_THRESHOLD = 5000
 STATUSES_THRESHOLD = 10000
+
+# Seconds between each keyword stream reset to get fresh keyword list
+STREAM_REFRESH_RATE = 600

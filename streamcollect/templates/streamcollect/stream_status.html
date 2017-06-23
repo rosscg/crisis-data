@@ -31,9 +31,13 @@
 
   <div class="row top_margin_20">
     <p>Keywords:
-        {% for keyword in keywords %}
-          <b>{{ keyword }}, </b>
-        {% endfor %}
+        {% if keywords|length == 0 %}
+          <b>No Keywords Detected.</b>
+        {% else %}
+          {% for keyword in keywords %}
+            <b>{{ keyword }}, </b>
+          {% endfor %}
+      {% endif %}
     </p>
   </div>
 </div>
