@@ -3,7 +3,11 @@ from celery.task import periodic_task
 
 from twdata import userdata
 from .models import User, Relo, CeleryTask
+
+#Not used:
 from dateutil.parser import parse
+#from pytz import timezone
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
@@ -34,10 +38,10 @@ def trim_spam_accounts(self):
     task_object.save()
 
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
-    users = User.objects.filter(screen_name__isnull=True).filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+    users = User.objects.filter(user_class=0).filter(screen_name__isnull=True).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
     for u in users:
         try:
-            userdict = userdata.get_user(user_id = u.user_id)
+            user_data = userdata.get_user(user_id = u.user_id)
         except Exception as e:
             # Handling for: e = [{'code': 63, 'message': 'User has been suspended.'}]
             #               e = [{'message': 'User not found.', 'code': 50}]
@@ -45,105 +49,130 @@ def trim_spam_accounts(self):
             print("Twitter error raised for user: {}, error: {}".format(u.user_id, e))
             continue
 
-        if check_spam_account(userdict):
+        if check_spam_account(user_data):
             u.user_class = -1
         else:
             u.user_class = 1
 
-        #TODO: Need all these? Perhaps only for user_class >0?
-        u.created_at = parse(userdict.get('created_at'))
-        u.followers_count = userdict.get('followers_count')
-        u.friends_count = userdict.get('friends_count')
-        u.geo_enabled = userdict.get('geo_enabled')
-        u.location = userdict.get('location')
-        u.name = userdict.get('name')
-        u.screen_name = userdict.get('screen_name')
-        u.statuses_count = userdict.get('statuses_count')
+        #TODO: Need all these? Perhaps only for user_class >0? Merge with add_user section
+        #If timezone is an issue:
+        tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+        u.created_at = tz_aware
+        u.followers_count = user_data.followers_count
+        u.friends_count = user_data.friends_count
+        u.geo_enabled = user_data.geo_enabled
+        u.location = user_data.location
+        u.name = user_data.name
+        u.screen_name = user_data.screen_name
+        u.statuses_count = user_data.statuses_count
 
         u.save()
     return
 
 @shared_task
-def add_user_task(**kwargs):
-    userdict = userdata.get_user(**kwargs)
+def add_user_task(user_class=0, **kwargs):
+    user_data = userdata.get_user(**kwargs)
+    add_user(user_class=user_class, user_data=user_data)
 
-    if check_spam_account(userdict):
+
+def add_user(user_class=0, user_data=None, **kwargs):
+
+    #TODO: Needs to check something other than username
+    #User exists as a full user (ego)
+    if 'screen_name' in kwargs:
+        if User.objects.filter(screen_name=screen_name).exists():
+            if User.objects.get(screen_name=screen_name).user_class >= 2:
+                print("User {} already exists.".format(screen_name))
+                return
+    #Get user_data if not supplied
+    if not user_data:
+        user_data=userdata.get_user(**kwargs)
+    if 'screen_name' not in kwargs:
+        if User.objects.filter(screen_name=user_data.screen_name).exists():
+            if User.objects.get(screen_name=user_data.screen_name).user_class >= 2:
+                print("User {} already exists.".format(user_data.screen_name))
+                return
+
+    if check_spam_account(user_data):
         return
-    #Does user exists as a full user (ego), or an existing target node (alter).
-    if User.objects.filter(screen_name=userdict.get('screen_name')).exists():
-        print("User {} already exists.".format(kwargs))
+
+    #If user is an existing node_id (alter)
+    if User.objects.filter(user_id=int(user_data.id_str)).exists():
+        print("Updating record...")
+        #u = User.objects.filter(user_id=int(userdict.get('id_str')))
+        u = get_object_or_404(User, user_id=int(user_data.id_str))
+        # Update added_at, as user is upgraded from alter to ego
+        u.added_at = timezone.now()
+
+    #User is a new observation
     else:
-        #If user is an existing node_id (alter)
-        if User.objects.filter(user_id=int(userdict.get('id_str'))).exists():
-            print("Updating record...")
-            #u = User.objects.filter(user_id=int(userdict.get('id_str')))
-            u = get_object_or_404(User, user_id=int(userdict.get('id_str')))
-            # Update added_at, as user is upgraded from alter to ego
-            u.added_at = timezone.now
-        #User is a new observation
-        else:
-            #Creating user object
-            print("Creating record...")
-            u = User()
+        #Creating user object
+        print("Creating record...")
+        u = User()
 
-        u.created_at = parse(userdict.get('created_at'))
-        u.default_profile = userdict.get('default_profile')
-        u.default_profile_image = userdict.get('default_profile_image')
-        u.description = userdict.get('description')
-        #TODO entities = NOT YET IMPLEMENTED
-        u.favourites_count = userdict.get('favourites_count')
-        u.followers_count = userdict.get('followers_count')
-        u.friends_count = userdict.get('friends_count')
-        u.geo_enabled = userdict.get('geo_enabled')
-        u.has_extended_profile = userdict.get('has_extended_profile')
-        u.is_translation_enabled = userdict.get('is_translation_enabled')
-        u.lang = userdict.get('lang')
-        u.listed_count = userdict.get('listed_count')
-        u.location = userdict.get('location')
-        u.name = userdict.get('name')
-        u.needs_phone_verification = userdict.get('needs_phone_verification')
-        u.profile_background_color = userdict.get('profile_background_color')
-        u.profile_background_image_url = userdict.get('profile_background_image_url')
-        u.profile_background_image_url_https = userdict.get('profile_background_image_url_https')
-        u.profile_background_tile = userdict.get('profile_background_tile')
-        u.profile_image_url = userdict.get('profile_image_url')
-        u.profile_image_url_https = userdict.get('profile_image_url_https')
-        u.profile_link_color = userdict.get('profile_link_color')
-        u.profile_location = userdict.get('profile_location')
-        u.profile_sidebar_border_color = userdict.get('profile_sidebar_border_color')
-        u.profile_sidebar_fill_color = userdict.get('profile_sidebar_fill_color')
-        u.profile_text_color = userdict.get('profile_text_color')
-        u.profile_use_background_image = userdict.get('profile_use_background_image')
-        u.protected = userdict.get('protected')
-        u.screen_name = userdict.get('screen_name')
-        u.statuses_count = userdict.get('statuses_count')
-        u.suspended = userdict.get('suspended')
-        u.time_zone = userdict.get('time_zone')
-        u.translator_type = userdict.get('translator_type')
-        u.url = userdict.get('url')
-        u.user_id = int(userdict.get('id_str'))
-        u.utc_offset = userdict.get('utc_offset')
-        u.verified = userdict.get('verified')
+    #If timezone is an issue:
+    tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+    u.created_at = tz_aware
 
-        u.user_class = 2
+    u.default_profile = user_data.default_profile
+    u.default_profile_image = user_data.default_profile_image
+    u.description = user_data.description
+    # u.entities = NOT IMPLEMENTED
+    u.favourites_count = user_data.favourites_count
+    u.followers_count = user_data.followers_count
+    u.friends_count = user_data.friends_count
+    u.geo_enabled = user_data.geo_enabled
+    u.has_extended_profile = user_data.has_extended_profile
+    u.is_translation_enabled = user_data.is_translation_enabled
+    u.lang = user_data.lang
+    u.listed_count = user_data.listed_count
+    u.location = user_data.location
+    u.name = user_data.name
+    #u.needs_phone_verification = user_data.needs_phone_verification
+    u.profile_background_color = user_data.profile_background_color
+    u.profile_background_image_url = user_data.profile_background_image_url
+    u.profile_background_image_url_https = user_data.profile_background_image_url_https
+    u.profile_background_tile = user_data.profile_background_tile
+    u.profile_image_url = user_data.profile_image_url
+    u.profile_image_url_https = user_data.profile_image_url_https
+    u.profile_link_color = user_data.profile_link_color
+    #u.profile_location = user_data.profile_location
+    u.profile_sidebar_border_color = user_data.profile_sidebar_border_color
+    u.profile_sidebar_fill_color = user_data.profile_sidebar_fill_color
+    u.profile_text_color = user_data.profile_text_color
+    u.profile_use_background_image = user_data.profile_use_background_image
+    u.protected = user_data.protected
+    u.screen_name = user_data.screen_name
+    u.statuses_count = user_data.statuses_count
+    #u.suspended = user_data.suspended
+    u.time_zone = user_data.time_zone
+    u.translator_type = user_data.translator_type
+    u.url = user_data.url
+    u.user_id = int(user_data.id_str)
+    u.utc_offset = user_data.utc_offset
+    u.verified = user_data.verified
 
-        u.save()
+    u.user_class = user_class
 
+    u.save()
+
+    if user_class >= 2:
         #Get users followed by account & create relationship objects
-        userfollowing = userdata.friends_ids(screen_name = userdict.get('screen_name'))
+        userfollowing = userdata.friends_ids(screen_name=user_data.screen_name)
         for targetuser in userfollowing:
             create_relo(u, targetuser, outgoing=True)
 
         #Get followers & create relationship objects
-        userfollowers = userdata.followers_ids(screen_name = userdict.get('screen_name'))
+        userfollowers = userdata.followers_ids(screen_name=user_data.screen_name)
+        print('Length of follower list: {}'.format(len(userfollowers)))
         for sourceuser in userfollowers:
             create_relo(u, sourceuser, outgoing=False)
-    return
+    return u
 
 
 #TODO: add user_followed_by functionality
-@shared_task
-def update_user_relos_task():
+@shared_task(bind=True)
+def update_user_relos_task(self):
     # Remove existing task
     kill_celery_task('update_user_relos')
     print("Running update_user_relos_task with id: {}".format(self.request.id))
@@ -155,7 +184,7 @@ def update_user_relos_task():
 
     for user in users:
         #Get users followed by account
-        user_following = userdata.friends_ids(screen_name = user.screen_name)
+        user_following = userdata.friends_ids(screen_name=user.screen_name)
 
         #Get recorded list of users followed by account
         #TODO: Filter out dead relos, but how to handle when recreated?
@@ -235,8 +264,11 @@ def create_relo(existing_user, new_user_id, outgoing):
             tuser.in_degree = tuser.in_degree + 1
             tuser.save()
             r.targetuser = tuser
-
         else:
+            #Creating new user object
+            #u2 = add_user(user_class=0, user_data=new_user)
+            #if not u2:
+            #    return
             u2 = User()
             u2.user_id = new_user_id
             u2.in_degree = 1
@@ -254,6 +286,10 @@ def create_relo(existing_user, new_user_id, outgoing):
                 u2.save()
                 r.sourceuser = u2
             else:
+                #Creating new user object
+                #u2 = add_user(user_class=0, user_data=new_user)
+                #if not u2:
+                #    return
                 u2 = User()
                 u2.user_id = new_user_id
                 u2.out_degree = 1

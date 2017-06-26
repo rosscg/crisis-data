@@ -11,6 +11,7 @@ from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
 from streamcollect.config import STREAM_REFRESH_RATE
 
 from streamcollect.tasks import add_user_task
+from streamcollect.methods import kill_celery_task
 
 class stream_listener(StreamListener):
 
@@ -50,7 +51,7 @@ class stream_listener(StreamListener):
                     print("ERROR Coordinates outside latitude")
 
         print("Adding user: {} ...".format(int(status.user.id_str)))
-        add_user_task.delay(id = int(status.user.id_str))
+        add_user_task.delay(user_class=2, id = int(status.user.id_str))
         return
 
     def on_error(self, status):
@@ -73,6 +74,7 @@ def twitter_stream(gps=False):
             bounding_box = [gps[0]-.4, gps[1]-0.25, gps[0]+.4, gps[1]+0.25,]
         else:
             print("Error: no gps coordinates passed to gps_stream: {}".format(gps))
+            kill_celery_task('stream_gps')
             return
         print("Using bounding box: {}".format(bounding_box))
         data = gps
@@ -80,6 +82,7 @@ def twitter_stream(gps=False):
         data = get_keywords()
         if len(data) == 0:
             print("Error: no keywords found.")
+            kill_celery_task('stream_kw')
             return
 
     twitterStream = Stream(auth, stream_listener(gps, data))

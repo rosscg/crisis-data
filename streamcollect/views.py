@@ -15,6 +15,8 @@ from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam
 from .methods import kill_celery_task
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
+from twdata.userdata import friends_list
+
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
 
@@ -45,7 +47,7 @@ def submit(request):
         #TODO: Add validation function here
         info = request.POST['info']
         if len(info) > 0:
-            add_user_task.delay(screen_name = info)
+            add_user_task.delay(user_class=2, screen_name=info)
         return redirect('monitor_user')
     elif "add_keyword" in request.POST:
         info = request.POST['info']
@@ -67,10 +69,11 @@ def submit(request):
         task = trim_spam_accounts.delay()
         return redirect('testbed')
     elif "update_user_relos" in request.POST:
-        task = update_user_relos_periodic.delay()
+        task = update_user_relos_task.delay()
         return redirect('testbed')
     elif "delete_keywords" in request.POST:
         Keyword.objects.all().delete()
+        #x = add_user_task(screen_name='Raeynn')
         return redirect('testbed')
     elif "terminate_tasks" in request.POST:
         for t in CeleryTask.objects.all():
