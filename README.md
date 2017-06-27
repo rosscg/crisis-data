@@ -2,6 +2,7 @@ App currently takes screen name as input and saves data to DB.
 
 Streaming functionality tracks keywords and adds associated users to DB (does not save tweet)
 
+If multiple Twitter tokens are intended to be used, the fork of Tweepy must be installed instead.
 
 Local installation:
 Install Redis from https://redis.io/ or brew, and follow instructions.

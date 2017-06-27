@@ -13,9 +13,13 @@ from celery.task.control import revoke
 
 from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam_accounts
 from .methods import kill_celery_task
-from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
+from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, CONSUMER_SECRET, CONSUMER_KEY
 
 from twdata.userdata import friends_list
+from django.http import HttpResponseRedirect
+
+
+import tweepy
 
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
@@ -41,6 +45,30 @@ def stream_status(request):
 
 def testbed(request):
     return render(request, 'streamcollect/testbed.html')
+
+
+def twitter_auth(request):
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, 'http://127.0.0.1:8000/callback')
+    try:
+        redirect_url = auth.get_authorization_url()
+        request.session['request_token'] = auth.request_token
+    except tweepy.TweepError:
+        print('Error! Failed to get request token.')
+        return render(request, 'streamcollect/monitor_user.html')
+    response = HttpResponseRedirect(redirect_url)
+    return response
+
+def callback(request):
+    verifier = request.GET.get('oauth_verifier')
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    token = request.session.get('request_token', None)
+    request.session.delete('request_token')
+    auth.request_token = token
+    try:
+        auth.get_access_token(verifier)
+    except tweepy.TweepError:
+        print('Error! Failed to get access token.')
+    return render(request, 'streamcollect/callback.html', {'access_key_tw': auth.access_token, 'access_secret_tw': auth.access_token_secret})
 
 def submit(request):
     if "screen_name" in request.POST:

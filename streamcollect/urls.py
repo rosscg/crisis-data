@@ -11,5 +11,8 @@ urlpatterns = [
     url(r'^stream_status$', views.stream_status, name='stream_status'),
     url(r'^testbed$', views.testbed, name='testbed'),
 
+    url(r'^callback$', views.callback, name='callback'),
+    url(r'^twitter_auth$', views.twitter_auth, name='twitter_auth'),
+
     url(r'^network_data_API$', views.network_data_API, name='network_data_API')
 ]

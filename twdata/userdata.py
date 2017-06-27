@@ -14,6 +14,32 @@ def get_api():
 #TODO: move this into per method, add limit checking
 api = get_api()
 
+
+def get_oauth():
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, 'http://127.0.0.1:8000')
+    try:
+        redirect_url = auth.get_authorization_url()
+    except tweepy.TweepError:
+        print('Error! Failed to get request token.')
+    session.set('request_token', auth.request_token)
+
+    verifier = request.GET.get('oauth_verifier')
+
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    token = session.get('request_token')
+    session.delete('request_token')
+    auth.request_token = token
+
+    try:
+        auth.get_access_token(verifier)
+    except tweepy.TweepError:
+        print('Error! Failed to get access token.')
+
+    #auth.access_token
+    #auth.access_token_secret
+
+    return
+
 # Returns all json data for screen_name/id
 def get_user(**kwargs):
     print("Running function: get_user for user: {}".format(kwargs))

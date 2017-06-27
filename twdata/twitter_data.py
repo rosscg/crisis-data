@@ -8,7 +8,7 @@ from tweepy.streaming import StreamListener
 
 from streamcollect.models import Keyword
 from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
-from streamcollect.config import STREAM_REFRESH_RATE
+from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD
 
 from streamcollect.tasks import add_user_task
 from streamcollect.methods import kill_celery_task
@@ -24,12 +24,11 @@ class stream_listener(StreamListener):
         if self.gps_bool:
             if status.coordinates is None:
                 return
-        #TODO: Unify these values with checks in add_user_task
-        if status.user.followers_count > 2000:
+        if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
-        if status.user.friends_count > 2000:
+        if status.user.friends_count > FRIENDS_THRESHOLD:
             return
-        if status.user.statuses_count > 10000:
+        if status.user.statuses_count > STATUSES_THRESHOLD:
             return
         # Return if retweet.
         try:
