@@ -4,7 +4,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
-from .models import User, Relo, CeleryTask, Keyword
+from .models import User, Relo, CeleryTask, Keyword, AccessToken
 from .forms import AddUserForm
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -13,7 +13,11 @@ from celery.task.control import revoke
 
 from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam_accounts
 from .methods import kill_celery_task
-from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, CONSUMER_SECRET, CONSUMER_KEY
+from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
+from twdata.config import CONSUMER_SECRET, CONSUMER_KEY
+
+#Remove once in production (used by twitter_auth.html)
+from twdata.config import ACCESS_TOKENS
 
 from twdata.userdata import friends_list
 from django.http import HttpResponseRedirect
@@ -46,17 +50,9 @@ def stream_status(request):
 def testbed(request):
     return render(request, 'streamcollect/testbed.html')
 
-
 def twitter_auth(request):
-    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, 'http://127.0.0.1:8000/callback')
-    try:
-        redirect_url = auth.get_authorization_url()
-        request.session['request_token'] = auth.request_token
-    except tweepy.TweepError:
-        print('Error! Failed to get request token.')
-        return render(request, 'streamcollect/monitor_user.html')
-    response = HttpResponseRedirect(redirect_url)
-    return response
+    tokens = AccessToken.objects.all()
+    return render(request, 'streamcollect/twitter_auth.html', {'tokens': tokens})
 
 def callback(request):
     verifier = request.GET.get('oauth_verifier')
@@ -64,11 +60,20 @@ def callback(request):
     token = request.session.get('request_token', None)
     request.session.delete('request_token')
     auth.request_token = token
+
+    tokens = AccessToken.objects.all()
+
     try:
         auth.get_access_token(verifier)
     except tweepy.TweepError:
         print('Error! Failed to get access token.')
-    return render(request, 'streamcollect/callback.html', {'access_key_tw': auth.access_token, 'access_secret_tw': auth.access_token_secret})
+        return render(request, 'streamcollect/twitter_auth.html', {'error': 'Failed to get access token','tokens': tokens})
+
+    if not AccessToken.objects.filter(access_key=auth.access_token).exists():
+        token = AccessToken(access_key=auth.access_token, access_secret=auth.access_token_secret)
+        token.save()
+
+    return render(request, 'streamcollect/twitter_auth.html', {'success': 'True', 'token': auth.access_token, 'tokens': tokens})
 
 def submit(request):
     if "screen_name" in request.POST:
@@ -108,6 +113,23 @@ def submit(request):
             revoke(t.celery_task_id, terminate=True)
             t.delete()
         return redirect('testbed')
+    elif "twitter_auth" in request.POST:
+        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, 'http://127.0.0.1:8000/callback')
+        try:
+            redirect_url = auth.get_authorization_url()
+            request.session['request_token'] = auth.request_token
+        except tweepy.TweepError:
+            print('Error! Failed to get request token.')
+            return render(request, 'streamcollect/monitor_user.html')
+        #response = HttpResponseRedirect(redirect_url)
+        return redirect(redirect_url)
+    #TODO: Remove after testing?
+    elif "load_tokens" in request.POST:
+        for k, s in ACCESS_TOKENS:
+            if not AccessToken.objects.filter(access_key=k).exists():
+                token = AccessToken(access_key=k, access_secret=s)
+                token.save()
+        return redirect('twitter_auth')
     else:
         print("Unlabelled button pressed")
         return redirect('monitor_user')

@@ -90,3 +90,10 @@ class Keyword(models.Model):
 
     def __str__(self):
         return str(self.keyword)
+
+class AccessToken(models.Model):
+    access_key = models.CharField(max_length=100, unique=True)
+    access_secret = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return "({}, {})".format(access_key, access_secret)

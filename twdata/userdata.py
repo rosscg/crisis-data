@@ -2,12 +2,14 @@ import json
 from tweepy import API, Cursor, OAuthHandler
 
 from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
+from streamcollect.models import AccessToken
 
 #TODO iterate through access tokens
 def get_api():
+    #TODO: Only using first token. Needs a try/exception block.
+    access_token=AccessToken.objects.all()[:1].get()
     auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-    auth.set_access_token(ACCESS_TOKENS[0][0], ACCESS_TOKENS[0][1])
-
+    auth.set_access_token(access_token.access_key, access_token.access_secret)
     api = API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     return api
 

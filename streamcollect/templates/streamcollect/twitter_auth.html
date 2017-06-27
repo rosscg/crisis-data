@@ -1,0 +1,48 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+<div class="container">
+
+
+  <div class="row">
+  {% if error %}
+    <h1 class="title"><small>Error: {{error}}</small></h1>
+  {% endif %}
+  {% if success %}
+    <h1 class="title"><small>Token Successfully Added: {{token}}</small></h1>
+  {% endif %}
+  </div>
+
+  <div class="row">
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-3">
+          <input type="submit" class="btn btn-primary btn-md" name="twitter_auth" value="Add Token">
+        </div>
+      </div>
+    </form>
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-3">
+          <input type="submit" class="btn btn-primary btn-md" name="load_tokens" value="Load From Config">
+        </div>
+      </div>
+    </form>
+  </div>
+
+  {% if tokens %}
+  <div class="row">
+  <h1 class="title"><small>Existing Keys:</small></h1>
+  {% for token in tokens %}
+
+    <p><b>Key:</b> {{token.access_key}}</p>
+    <p><b>Secret:</b> {{token.access_secret}}</p>
+    <br/>
+
+  {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

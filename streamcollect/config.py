@@ -9,7 +9,3 @@ STATUSES_THRESHOLD = 10000
 
 # Seconds between each keyword stream reset to get fresh keyword list
 STREAM_REFRESH_RATE = 600
-
-#TODO: Remove
-CONSUMER_KEY = 'GNIbBSslfSD80s3zTy8LF6XJw'
-CONSUMER_SECRET = 'pMJ4EELZcnxLUxDHfw5l9a4fo72c4ZidnTguD8mCOwDGSoNjCV'

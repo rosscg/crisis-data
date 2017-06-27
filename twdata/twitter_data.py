@@ -6,8 +6,8 @@ from tweepy.streaming import StreamListener
 #from streamcollect.models import User, Relo
 #from .userdata import get_api
 
-from streamcollect.models import Keyword
-from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
+from streamcollect.models import Keyword, AccessToken
+from .config import CONSUMER_KEY, CONSUMER_SECRET
 from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD
 
 from streamcollect.tasks import add_user_task
@@ -61,9 +61,13 @@ class stream_listener(StreamListener):
         print("Connection timed out, ")
 
 def twitter_stream(gps=False):
+
+    #TODO: Only using first token. Needs a try/exception block.
+    access_token=AccessToken.objects.all()[:1].get()
+
     #TODO: Merge this with other auth in userdata.py
     auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-    auth.set_access_token(ACCESS_TOKENS[0][0], ACCESS_TOKENS[0][1])
+    auth.set_access_token(access_token.access_key, access_token.access_secret)
 
     if gps:
         print("Coords detected.")
