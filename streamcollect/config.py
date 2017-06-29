@@ -13,3 +13,6 @@ STREAM_REFRESH_RATE = 600
 # Parameters of bounding box if single point coordinates are provided
 BOUNDING_BOX_WIDTH = 0.8
 BOUNDING_BOX_HEIGHT = 0.5
+
+# Excludes isolated nodes from network_data_API
+EXCLUDE_ISOLATED_NODES = True

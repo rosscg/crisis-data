@@ -13,7 +13,7 @@ from celery.task.control import revoke
 
 from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam_accounts
 from .methods import kill_celery_task
-from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
+from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
 
 #Remove once in production (used by twitter_auth.html)
 from twdata.config import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
@@ -112,7 +112,6 @@ def submit(request):
         return redirect('testbed')
     elif "delete_keywords" in request.POST:
         Keyword.objects.all().delete()
-        #x = add_user_task(screen_name='Raeynn')
         return redirect('testbed')
     elif "terminate_tasks" in request.POST:
         for t in CeleryTask.objects.all():
@@ -156,11 +155,20 @@ def network_data_API(request):
     #TODO: Add ego users with smaller degrees?
     relevant_users = User.objects.filter(user_class__gte=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
 
-    resultsuser = [ob.as_json() for ob in relevant_users]
-
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     relevant_relos = Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users, end_observed_at=None)
     resultsrelo = [ob.as_json() for ob in relevant_relos]
+
+    #Remove isolated nodes: TODO: May be too slow
+    if EXCLUDE_ISOLATED_NODES:
+        targets = list(relevant_relos.values_list('targetuser', flat=True))
+        sources = list(relevant_relos.values_list('sourceuser', flat=True))
+
+        relo_node_list = targets + list(set(sources) - set(targets))
+
+        resultsuser = [ob.as_json() for ob in relevant_users if ob.user_id in relo_node_list]
+    else:
+        resultsuser = [ob.as_json() for ob in relevant_users]
 
     data = {"nodes" : resultsuser, "links" : resultsrelo}
     jsondata = json.dumps(data)
