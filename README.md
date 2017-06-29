@@ -4,6 +4,8 @@ Streaming functionality tracks keywords and adds associated users to DB (does no
 
 If multiple Twitter tokens are intended to be used, the fork of Tweepy must be installed instead.
 
+Note: Must be running the forked version of Tweepy. (See requirements.txt)
+
 Local installation:
 Install Redis from https://redis.io/ or brew, and follow instructions.
 Build project, create virtual environment, and install dependencies.
@@ -13,3 +15,5 @@ Run Server: $ python manage.py runserver
 Run Redis (from Redis directory): $ /redis-3.2.9/src/redis-server
 Run Celery worker: $ celery -A homesite worker -l info
 Run Celery beat: $ celery -A homesite beat -l info -S django
+
+Fill out tokensSKELETON.py with Twitter credentials and rename tokens.py (tokens must then be loaded to database via web interface)

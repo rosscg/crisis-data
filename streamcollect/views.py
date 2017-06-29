@@ -1,29 +1,23 @@
 from dateutil.parser import *
 import json
 from django.shortcuts import render, get_object_or_404, redirect
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
+from celery.task.control import revoke
+import tweepy
+
 from .models import User, Relo, CeleryTask, Keyword, AccessToken, ConsumerKey
 from .forms import AddUserForm
-from twdata import userdata
-from twdata.tasks import twitter_stream_task
-
-from celery.task.control import revoke
-
-from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam_accounts
+from .tasks import add_user_task, update_user_relos_task, trim_spam_accounts
 from .methods import kill_celery_task
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
-
-#Remove once in production (used by twitter_auth.html)
-from twdata.config import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
-
-#from twdata.userdata import friends_list
-from django.http import HttpResponseRedirect
-from django.core.exceptions import ObjectDoesNotExist
-
-
-import tweepy
+from twdata import userdata
+from twdata.tasks import twitter_stream_task
+# Remove once in production (used by twitter_auth.html). Alternatively, this
+# should load from a file in the parent, in the load_tokens method
+from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
 
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
@@ -131,7 +125,6 @@ def submit(request):
         except tweepy.TweepError:
             print('Error! Failed to get request token.')
             return render(request, 'streamcollect/monitor_user.html')
-        #response = HttpResponseRedirect(redirect_url)
         return redirect(redirect_url)
     #TODO: Remove after testing?
     elif "load_tokens" in request.POST:
@@ -142,6 +135,22 @@ def submit(request):
             if not AccessToken.objects.filter(access_key=k).exists():
                 token = AccessToken(access_key=k, access_secret=s)
                 token.save()
+        return redirect('twitter_auth')
+    elif "export_tokens" in request.POST:
+        try:
+            ckey=ConsumerKey.objects.all()[:1].get()
+        except ObjectDoesNotExist:
+            print('Error! Failed to get Consumer Key from database.')
+            return render(request, 'streamcollect/monitor_user.html')
+        tokens = AccessToken.objects.all()
+        f = open('tokens_export.py', 'w')
+        f.write('CONSUMER_KEY = \'' + ckey.consumer_key + '\'\n')
+        f.write('CONSUMER_SECRET = \'' + ckey.consumer_secret + '\'\n')
+        f.write('ACCESS_TOKENS = (\n')
+        for t in tokens:
+            f.write('\t' + t.__str__() + ',\n')
+        f.write(')')
+        f.close
         return redirect('twitter_auth')
     else:
         print("Unlabelled button pressed")

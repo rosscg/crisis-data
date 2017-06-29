@@ -6,6 +6,7 @@ db.sqlite3
 /static
 .DS_Store
 
-/twdata/config.py
+/streamcollect/tokens.py
+tokens_export.py
 todo.txt
 celerybeat.pid

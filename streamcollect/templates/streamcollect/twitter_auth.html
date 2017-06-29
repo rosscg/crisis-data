@@ -29,6 +29,13 @@
         </div>
       </div>
     </form>
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-3">
+          <input type="submit" class="btn btn-primary btn-md" name="export_tokens" value="Export Tokens">
+        </div>
+      </div>
+    </form>
   </div>
 
   {% if tokens %}
