@@ -35,44 +35,61 @@ def trim_spam_accounts(self):
     print("Running trim_spam_accounts with id: {}".format(self.request.id))
     #Save task details to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='trim_spam_accounts')
+    CeleryTask.objects.filter(celery_task_id=self.request.id).delete()
     task_object.save()
 
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
     users = User.objects.filter(user_class=0).filter(screen_name__isnull=True).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
-    for u in users:
-        try:
-            user_data = userdata.get_user(user_id = u.user_id)
-        except Exception as e:
-            # Handling for: e = [{'code': 63, 'message': 'User has been suspended.'}]
-            #               e = [{'message': 'User not found.', 'code': 50}]
-            #TODO: Implement a delete user function here? Or otherwise flag as suspended etc
-            print("Twitter error raised for user: {}, error: {}".format(u.user_id, e))
-            continue
 
-        if check_spam_account(user_data):
-            u.user_class = -1
+    length = users.count()
+    print("length of class 0 users to sort: {}".format(length))
+
+    while length > 0:
+        if length > 99:
+            end = 100
         else:
-            u.user_class = 1
+            end = length
+        chunk = users[0:end]
+        #process chunk
+        user_ids = chunk.values_list('user_id', flat=True)
+        user_list = userdata.lookup_users(user_ids=user_ids)
 
-        #TODO: Need all these? Perhaps only for user_class >0? Merge with add_user section
-        #If timezone is an issue:
-        tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
-        u.created_at = tz_aware
-        u.followers_count = user_data.followers_count
-        u.friends_count = user_data.friends_count
-        u.geo_enabled = user_data.geo_enabled
-        u.location = user_data.location
-        u.name = user_data.name
-        u.screen_name = user_data.screen_name
-        u.statuses_count = user_data.statuses_count
+        for user_data in user_list:
+            u = users.get(user_id=int(user_data.id_str))
+            if check_spam_account(user_data):
+                u.user_class = -1
+            else:
+                u.user_class = 1
+            #TODO: Need all these? Perhaps only for user_class >0? Merge with add_user section
+            #If timezone is an issue:
+            tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+            u.created_at = tz_aware
+            u.followers_count = user_data.followers_count
+            u.friends_count = user_data.friends_count
+            u.geo_enabled = user_data.geo_enabled
+            u.location = user_data.location
+            u.name = user_data.name
+            u.screen_name = user_data.screen_name
+            u.statuses_count = user_data.statuses_count
 
-        u.save()
+            u.save()
+
+        length -= 100
+
+    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
-@shared_task
-def add_user_task(user_class=0, **kwargs):
+@shared_task(bind=True)
+def add_user_task(self, user_class=0, **kwargs):
+
+    task_object = CeleryTask(celery_task_id = self.request.id, task_name='add_user')
+    task_object.save()
+
     user_data = userdata.get_user(**kwargs)
     add_user(user_class=user_class, user_data=user_data)
+
+    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    return
 
 
 def add_user(user_class=0, user_data=None, **kwargs):
@@ -237,6 +254,7 @@ def update_user_relos_task(self):
         for source_user in new_follower_links:
             create_relo(user, source_user, outgoing=False)
 
+    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 #TODO: move this elsewhere and import?

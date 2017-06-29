@@ -48,7 +48,8 @@ def stream_status(request):
     return render(request, 'streamcollect/stream_status.html', {'stream_status': stream_status, 'keywords': keywords})
 
 def testbed(request):
-    return render(request, 'streamcollect/testbed.html')
+    tasks = CeleryTask.objects.all().values_list('task_name', flat=True)
+    return render(request, 'streamcollect/testbed.html', {'tasks': tasks})
 
 def twitter_auth(request):
     tokens = AccessToken.objects.all()

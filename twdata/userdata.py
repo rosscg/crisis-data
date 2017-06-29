@@ -60,6 +60,12 @@ def get_user(**kwargs):
     userdata = api.get_user(**kwargs, include_entities=False)
     return userdata
 
+# Returns user objects for list of screen_names/user_ids
+def lookup_users(**kwargs):
+    print("Running function: lookup_users.")
+    userdata = api.lookup_users(**kwargs, include_entities=False)
+    return userdata
+
 # Returns list of users (targets) followed by a screen_name/id, as a list of IDs.
 def friends_ids(**kwargs):
     print("Running function: friends_ids for user: {}".format(kwargs))

@@ -81,7 +81,7 @@ class Relo(models.Model):
 
 class CeleryTask(models.Model):
     celery_task_id = models.CharField(max_length = 40, unique=True)
-    # Use: stream_kw, stream_gps, update_user_relos, trim_spam_accounts
+    # Use: stream_kw, stream_gps, update_user_relos, trim_spam_accounts, add_user
     task_name = models.CharField(max_length=40)
 
 class Keyword(models.Model):

@@ -4,7 +4,7 @@
 <div class="container">
 
   <div class="row">
-    <h1 class="title"><small>Test functions:</small></h1>
+    <h1 class="title"><small>Test Functions:</small></h1>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-3">
@@ -21,22 +21,31 @@
       </div>
     </form>
 
-  <form action="submit" method="POST">{% csrf_token %}
-    <div class="form-group">
-      <div class="col-xs-3">
-        <input type="submit" class="btn btn-primary btn-md" name="delete_keywords" value="Delete Keywords">
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-3">
+          <input type="submit" class="btn btn-primary btn-md" name="delete_keywords" value="Delete Keywords">
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
 
-  <form action="submit" method="POST">{% csrf_token %}
-    <div class="form-group">
-      <div class="col-xs-3">
-        <input type="submit" class="btn btn-primary btn-md" name="terminate_tasks" value="Terminate Tasks">
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-3">
+          <input type="submit" class="btn btn-primary btn-md" name="terminate_tasks" value="Terminate Tasks">
+        </div>
       </div>
-    </div>
-  </form>
-</div>
+    </form>
+  </div>
+
+  <div class="row">
+    {% if tasks %}
+      <h1 class="title"><small>Tasks Running:</small></h1>
+      {% for task in tasks %}
+      <p>{{ task }}</p>
+      {% endfor %}
+    {% endif %}
+  </div>
 
 </div>
 
