@@ -8,12 +8,13 @@ django-celery-beat==1.0.1
 idna==2.5
 kombu==4.0.2
 oauthlib==2.0.2
+PySocks==1.6.7
 python-dateutil==2.6.0
 pytz==2017.2
 redis==2.10.5
 requests==2.17.3
 requests-oauthlib==0.8.0
 six==1.10.0
-tweepy==3.5.0
+-e git+https://github.com/rosscg/tweepy.git@9fcc4e4b2b392612c4e6c9af6c05dc02c20db966#egg=tweepy
 urllib3==1.21.1
 vine==1.1.3

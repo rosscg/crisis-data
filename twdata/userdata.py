@@ -1,7 +1,7 @@
 import json
 from django.core.exceptions import ObjectDoesNotExist
 
-from tweepy import API, Cursor, OAuthHandler
+from tweepy import API, Cursor, OAuthHandler, RateLimitHandler
 
 from streamcollect.models import AccessToken, ConsumerKey
 
@@ -10,13 +10,22 @@ def get_api():
     #TODO: Only using first token. Need to implement multiple tokens
     try:
         ckey=ConsumerKey.objects.all()[:1].get()
-        access_token=AccessToken.objects.all()[:1].get()
+        access_tokens=AccessToken.objects.all()
     except ObjectDoesNotExist:
         print('Error! Failed to get Consumer or Access Key from database.')
         return
 
-    auth = OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
-    auth.set_access_token(access_token.access_key, access_token.access_secret)
+    auth = RateLimitHandler(ckey.consumer_key, ckey.consumer_secret)
+
+    for t in access_tokens:
+        try:
+            auth.add_access_token(t.access_key, t.access_secret)
+        except Exception as e:
+            print(key, e)
+
+    print('Token pool size: {}'.format(len(auth.tokens)))
+
+    #auth.set_access_token(access_token.access_key, access_token.access_secret)
     api = API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     return api
 
