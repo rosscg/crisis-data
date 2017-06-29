@@ -60,19 +60,15 @@ def callback(request):
     token = request.session.get('request_token', None)
     request.session.delete('request_token')
     auth.request_token = token
-
     tokens = AccessToken.objects.all()
-
     try:
         auth.get_access_token(verifier)
     except tweepy.TweepError:
         print('Error! Failed to get access token.')
         return render(request, 'streamcollect/twitter_auth.html', {'error': 'Failed to get access token','tokens': tokens})
-
     if not AccessToken.objects.filter(access_key=auth.access_token).exists():
         token = AccessToken(access_key=auth.access_token, access_secret=auth.access_token_secret)
         token.save()
-
     return render(request, 'streamcollect/twitter_auth.html', {'success': 'True', 'token': auth.access_token, 'tokens': tokens})
 
 def submit(request):

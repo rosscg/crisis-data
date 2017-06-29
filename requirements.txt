@@ -2,7 +2,7 @@ amqp==2.1.4
 billiard==3.5.0.2
 celery==4.0.2
 certifi==2017.4.17
-chardet==3.0.3
+chardet==3.0.4
 Django==1.11.1
 django-celery-beat==1.0.1
 idna==2.5
@@ -12,9 +12,9 @@ PySocks==1.6.7
 python-dateutil==2.6.0
 pytz==2017.2
 redis==2.10.5
-requests==2.17.3
+requests==2.18.1
 requests-oauthlib==0.8.0
 six==1.10.0
--e git+https://github.com/rosscg/tweepy.git@9fcc4e4b2b392612c4e6c9af6c05dc02c20db966#egg=tweepy
+-e git+https://github.com/rosscg/tweepy.git@c4a28099a57b3f11376361ec9d143042de74abe7#egg=tweepy
 urllib3==1.21.1
 vine==1.1.3
