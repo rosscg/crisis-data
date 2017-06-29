@@ -5,7 +5,7 @@ from twdata import userdata
 from .models import User, Relo, CeleryTask
 
 #Not used:
-from dateutil.parser import parse
+#from dateutil.parser import parse
 #from pytz import timezone
 
 from django.shortcuts import get_object_or_404

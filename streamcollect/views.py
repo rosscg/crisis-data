@@ -18,7 +18,7 @@ from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NO
 #Remove once in production (used by twitter_auth.html)
 from twdata.config import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
 
-from twdata.userdata import friends_list
+#from twdata.userdata import friends_list
 from django.http import HttpResponseRedirect
 from django.core.exceptions import ObjectDoesNotExist
 
