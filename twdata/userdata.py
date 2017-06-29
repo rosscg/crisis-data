@@ -1,24 +1,33 @@
 import json
+from django.core.exceptions import ObjectDoesNotExist
+
 from tweepy import API, Cursor, OAuthHandler
 
-from .config import CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKENS
-from streamcollect.models import AccessToken
+from streamcollect.models import AccessToken, ConsumerKey
 
 #TODO iterate through access tokens
 def get_api():
-    #TODO: Only using first token. Needs a try/exception block.
-    access_token=AccessToken.objects.all()[:1].get()
-    auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    #TODO: Only using first token. Need to implement multiple tokens
+    try:
+        ckey=ConsumerKey.objects.all()[:1].get()
+        access_token=AccessToken.objects.all()[:1].get()
+    except ObjectDoesNotExist:
+        print('Error! Failed to get Consumer or Access Key from database.')
+        return
+
+    auth = OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
     auth.set_access_token(access_token.access_key, access_token.access_secret)
     api = API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     return api
 
-#TODO: move this into per method, add limit checking
-api = get_api()
-
-
 def get_oauth():
-    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, 'http://127.0.0.1:8000')
+    try:
+        ckey=ConsumerKey.objects.all()[:1].get()
+    except ObjectDoesNotExist:
+        print('Error! Failed to get Consumer Key from database.')
+        return
+
+    auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'http://127.0.0.1:8000')
     try:
         redirect_url = auth.get_authorization_url()
     except tweepy.TweepError:
@@ -39,8 +48,11 @@ def get_oauth():
 
     #auth.access_token
     #auth.access_token_secret
-
     return
+
+
+#TODO: move this into per method, add limit checking
+api = get_api()
 
 # Returns all json data for screen_name/id
 def get_user(**kwargs):

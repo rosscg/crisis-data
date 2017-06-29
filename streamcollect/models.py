@@ -97,3 +97,10 @@ class AccessToken(models.Model):
 
     def __str__(self):
         return "({}, {})".format(access_key, access_secret)
+
+class ConsumerKey(models.Model):
+    consumer_key = models.CharField(max_length=100, unique=True)
+    consumer_secret = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return "({}, {})".format(access_key, access_secret)

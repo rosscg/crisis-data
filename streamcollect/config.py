@@ -9,3 +9,7 @@ STATUSES_THRESHOLD = 10000
 
 # Seconds between each keyword stream reset to get fresh keyword list
 STREAM_REFRESH_RATE = 600
+
+# Parameters of bounding box if single point coordinates are provided
+BOUNDING_BOX_WIDTH = 0.8
+BOUNDING_BOX_HEIGHT = 0.5

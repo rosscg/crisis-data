@@ -33,7 +33,7 @@
 
   {% if tokens %}
   <div class="row">
-  <h1 class="title"><small>Existing Keys:</small></h1>
+  <h1 class="title"><small>{{ tokens|length }} Existing Keysets:</small></h1>
   {% for token in tokens %}
 
     <p><b>Key:</b> {{token.access_key}}</p>

@@ -4,7 +4,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
-from .models import User, Relo, CeleryTask, Keyword, AccessToken
+from .models import User, Relo, CeleryTask, Keyword, AccessToken, ConsumerKey
 from .forms import AddUserForm
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -14,13 +14,13 @@ from celery.task.control import revoke
 from streamcollect.tasks import add_user_task, update_user_relos_task, trim_spam_accounts
 from .methods import kill_celery_task
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
-from twdata.config import CONSUMER_SECRET, CONSUMER_KEY
 
 #Remove once in production (used by twitter_auth.html)
-from twdata.config import ACCESS_TOKENS
+from twdata.config import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
 
 from twdata.userdata import friends_list
 from django.http import HttpResponseRedirect
+from django.core.exceptions import ObjectDoesNotExist
 
 
 import tweepy
@@ -55,8 +55,13 @@ def twitter_auth(request):
     return render(request, 'streamcollect/twitter_auth.html', {'tokens': tokens})
 
 def callback(request):
+    try:
+        ckey=ConsumerKey.objects.all()[:1].get()
+    except ObjectDoesNotExist:
+        print('Error! Failed to get Consumer Key from database.')
+        return render(request, 'streamcollect/monitor_user.html')
     verifier = request.GET.get('oauth_verifier')
-    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
     token = request.session.get('request_token', None)
     request.session.delete('request_token')
     auth.request_token = token
@@ -114,7 +119,12 @@ def submit(request):
             t.delete()
         return redirect('testbed')
     elif "twitter_auth" in request.POST:
-        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, 'http://127.0.0.1:8000/callback')
+        try:
+            ckey=ConsumerKey.objects.all()[:1].get()
+        except ObjectDoesNotExist:
+            print('Error! Failed to get Consumer Key from database.')
+            return render(request, 'streamcollect/monitor_user.html')
+        auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'http://127.0.0.1:8000/callback')
         try:
             redirect_url = auth.get_authorization_url()
             request.session['request_token'] = auth.request_token
@@ -125,6 +135,9 @@ def submit(request):
         return redirect(redirect_url)
     #TODO: Remove after testing?
     elif "load_tokens" in request.POST:
+        if not ConsumerKey.objects.filter(consumer_key=CONSUMER_KEY).exists():
+            ckey = ConsumerKey(consumer_key=CONSUMER_KEY, consumer_secret=CONSUMER_SECRET)
+            ckey.save()
         for k, s in ACCESS_TOKENS:
             if not AccessToken.objects.filter(access_key=k).exists():
                 token = AccessToken(access_key=k, access_secret=s)

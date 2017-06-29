@@ -1,4 +1,5 @@
 import time
+from django.core.exceptions import ObjectDoesNotExist
 
 from tweepy import Stream, OAuthHandler
 from tweepy.streaming import StreamListener
@@ -6,9 +7,9 @@ from tweepy.streaming import StreamListener
 #from streamcollect.models import User, Relo
 #from .userdata import get_api
 
-from streamcollect.models import Keyword, AccessToken
-from .config import CONSUMER_KEY, CONSUMER_SECRET
-from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD
+from streamcollect.models import Keyword, AccessToken, ConsumerKey
+#from .config import CONSUMER_KEY, CONSUMER_SECRET
+from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT
 
 from streamcollect.tasks import add_user_task
 from streamcollect.methods import kill_celery_task
@@ -54,19 +55,24 @@ class stream_listener(StreamListener):
         return
 
     def on_error(self, status):
-        print("Error detected>>>>>>>>>>>>>>>>>>>>>>>>>>>> ")
-        print(status)
+        print("Error detected>>>>>>>>>>>>>>>>>>>>>>>>>>>> {}".format(status))
 
     def on_timeout(self):
         print("Connection timed out, ")
 
 def twitter_stream(gps=False):
 
+    try:
+        ckey=ConsumerKey.objects.all()[:1].get()
+    except ObjectDoesNotExist:
+        print('Error! Failed to get Consumer Key from database.')
+        return
+
     #TODO: Only using first token. Needs a try/exception block.
     access_token=AccessToken.objects.all()[:1].get()
 
     #TODO: Merge this with other auth in userdata.py
-    auth = OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth = OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
     auth.set_access_token(access_token.access_key, access_token.access_secret)
 
     if gps:
@@ -74,7 +80,7 @@ def twitter_stream(gps=False):
         if len(gps) is 4:
             bounding_box = gps
         elif len(gps) is 2:
-            bounding_box = [gps[0]-.4, gps[1]-0.25, gps[0]+.4, gps[1]+0.25,]
+            bounding_box = [gps[0]-(BOUNDING_BOX_WIDTH/2), gps[1]-(BOUNDING_BOX_HEIGHT/2), gps[0]+(BOUNDING_BOX_WIDTH/2), gps[1]+(BOUNDING_BOX_HEIGHT/2)]
         else:
             print("Error: no gps coordinates passed to gps_stream: {}".format(gps))
             kill_celery_task('stream_gps')
