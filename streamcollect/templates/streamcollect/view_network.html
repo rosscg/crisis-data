@@ -50,7 +50,7 @@ d3.json("{% url "network_data_API" %}", function(error, graph) {
     .enter().append("circle")
     .attr("r", 5)
     .attr("fill", function(d) { return color(d.group); })
-    .on("contextmenu", linktest )
+    .on("dblclick", userDetails )
     .call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
@@ -95,11 +95,11 @@ function dragended(d) {
   d.fy = null;
 }
 
-function linktest(d) {
-  window.location.href = 'http://www.google.com';
+function userDetails(d) {
+  window.open('user/' + d.id, '_blank');
+  //window.location.href = 'user/' + d.id;
 }
 
 </script>
-
 
 {% endblock %}
