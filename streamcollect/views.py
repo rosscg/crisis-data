@@ -17,6 +17,7 @@ from twdata import userdata
 from twdata.tasks import twitter_stream_task
 # Remove once in production (used by twitter_auth.html). Alternatively, this
 # should load from a file in the parent, in the load_tokens method
+#TODO: Currently causes an error on fresh builds
 from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
 
 def monitor_user(request):

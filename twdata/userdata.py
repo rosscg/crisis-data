@@ -28,7 +28,7 @@ def get_api():
     return api
 
 
-#TODO: move this into per method, add limit checking
+#TODO: move this into per method, add limit checking. Causes errors when building as new project
 api = get_api()
 
 # Returns all json data for screen_name/id

@@ -17,3 +17,9 @@ Run Celery worker: $ celery -A homesite worker -l info
 Run Celery beat: $ celery -A homesite beat -l info -S django
 
 Fill out tokensSKELETON.py with Twitter credentials and rename tokens.py (tokens must then be loaded to database via web interface)
+
+
+Note:
+If Redis is running from previous launch (i.e. returns 'bind: Address already in use'):
+$ ps aux | grep redis
+$ kill -9 [PORT NUMBER]
