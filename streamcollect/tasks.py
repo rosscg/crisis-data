@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from django.db.models import Q
 
-from .methods import kill_celery_task, check_spam_account, add_user, create_relo
+from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #TODO: Replace into target method.
@@ -27,7 +27,7 @@ def trim_spam_accounts_periodic(self):
 def trim_spam_accounts(self):
     # Remove existing task
     kill_celery_task('trim_spam_accounts')
-    print("Running trim_spam_accounts with id: {}".format(self.request.id))
+    #print("Running trim_spam_accounts with id: {}".format(self.request.id))
     #Save task details to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='trim_spam_accounts')
     CeleryTask.objects.filter(celery_task_id=self.request.id).delete()
@@ -72,7 +72,7 @@ def trim_spam_accounts(self):
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
-
+# TODO: deprecated, remove.
 @shared_task(bind=True)
 def add_user_task(self, user_class=0, **kwargs):
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='add_user')
@@ -85,13 +85,28 @@ def add_user_task(self, user_class=0, **kwargs):
     return
 
 
+@shared_task(bind=True)
+def save_twitter_object_task(self, tweet=None, user_class=0, **kwargs):
+    task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_obect')
+    task_object.save()
+
+    user_data = userdata.get_user(**kwargs)
+    add_user(user_class=user_class, user_data=user_data)
+
+    if tweet:
+        save_tweet(tweet)
+
+    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    return
+
+
 #TODO: add user_followed_by functionality
 #TODO: Move to methods and import?
 @shared_task(bind=True)
 def update_user_relos_task(self):
     # Remove existing task
     kill_celery_task('update_user_relos')
-    print("Running update_user_relos_task with id: {}".format(self.request.id))
+    #print("Running update_user_relos_task with id: {}".format(self.request.id))
     #Save task details to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
     task_object.save()

@@ -15,6 +15,6 @@ redis==2.10.5
 requests==2.18.1
 requests-oauthlib==0.8.0
 six==1.10.0
--e git+https://github.com/rosscg/tweepy.git@c4a28099a57b3f11376361ec9d143042de74abe7#egg=tweepy
+-e git+https://github.com/rosscg/tweepy.git@b8614395347fb30fa8be7867c3c845da9fc213fc#egg=tweepy
 urllib3==1.21.1
 vine==1.1.3

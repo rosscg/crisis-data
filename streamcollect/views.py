@@ -10,8 +10,9 @@ import tweepy
 
 from .models import User, Relo, CeleryTask, Keyword, AccessToken, ConsumerKey
 from .forms import AddUserForm
-from .tasks import add_user_task, update_user_relos_task, trim_spam_accounts
-from .methods import kill_celery_task
+from .tasks import save_twitter_object_task, update_user_relos_task, trim_spam_accounts
+# Remove save_user_timeline:
+from .methods import kill_celery_task, save_user_timeline
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -77,7 +78,7 @@ def submit(request):
         #TODO: Add validation function here
         info = request.POST['info']
         if len(info) > 0:
-            add_user_task.delay(user_class=2, screen_name=info)
+            save_twitter_object_task.delay(user_class=2, screen_name=info)
         return redirect('monitor_user')
     elif "add_keyword" in request.POST:
         info = request.POST['info']
@@ -149,6 +150,10 @@ def submit(request):
         f.write(')')
         f.close
         return redirect('twitter_auth')
+    #TODO: Remove:
+    elif "user_timeline" in request.POST:
+        data = save_user_timeline(screen_name='QueensCollege')
+        return redirect('testbed')
     else:
         print("Unlabelled button pressed")
         return redirect('monitor_user')

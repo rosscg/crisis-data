@@ -11,8 +11,8 @@ from streamcollect.models import Keyword, AccessToken, ConsumerKey
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
 from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT
 
-from streamcollect.tasks import add_user_task
-from streamcollect.methods import kill_celery_task
+from streamcollect.tasks import save_twitter_object_task
+from streamcollect.methods import kill_celery_task, save_tweet
 
 class stream_listener(StreamListener):
 
@@ -31,6 +31,7 @@ class stream_listener(StreamListener):
             return
         if status.user.statuses_count > STATUSES_THRESHOLD:
             return
+
         # Return if retweet.
         try:
             status.retweeted_status
@@ -50,8 +51,7 @@ class stream_listener(StreamListener):
                 if not self.data[1] < coords[1] < self.data[3]:
                     print("ERROR Coordinates outside latitude")
 
-        print("Adding user: {} ...".format(int(status.user.id_str)))
-        add_user_task.delay(user_class=2, id = int(status.user.id_str))
+        save_twitter_object_task.delay(tweet=status, user_class=2, id=int(status.user.id_str))
         return
 
     def on_error(self, status):
