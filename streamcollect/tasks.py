@@ -87,7 +87,7 @@ def add_user_task(self, user_class=0, **kwargs):
 
 @shared_task(bind=True)
 def save_twitter_object_task(self, tweet=None, user_class=0, **kwargs):
-    task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_obect')
+    task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
     task_object.save()
 
     user_data = userdata.get_user(**kwargs)

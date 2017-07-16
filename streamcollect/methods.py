@@ -8,6 +8,8 @@ from twdata import userdata
 from .models import CeleryTask, User, Relo, Tweet, Hashtag, Url
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD
 
+from django.db import transaction
+
 def kill_celery_task(task_name):
     for t in CeleryTask.objects.filter(task_name=task_name):
         print("Killing task {}: {}".format(task_name, t.celery_task_id))
@@ -30,6 +32,7 @@ def check_spam_account(user_data):
         #print("User {} passed spam test.".format(user_data.screen_name))
         return False
 
+@transaction.atomic
 def add_user(user_class=0, user_data=None, **kwargs):
     # TODO: Needs to check something other than username
     # User exists as a full user (ego)
@@ -239,10 +242,10 @@ def save_tweet(tweet_data):
         url = re.sub('(http://|https://|#.*|&.*)', '', url)
         # Exclude twitter URLs, which are added if media is attached - therefore
         # not relevant to the analysis, but look at capturing in tweet data?
-        if url[0:11] == 'twitter.com':
-            print("Twitter URL detected")
-        else:
+        if url[0:11] != 'twitter.com':
             save_url(url, tweet)
+        #else:
+            #print("Twitter URL detected")
     # TODO: save other entities?: media, user_mentions, symbols, extended_entities
     # https://dev.twitter.com/overview/api/entities-in-twitter-objects
 
