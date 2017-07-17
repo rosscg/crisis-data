@@ -153,7 +153,7 @@ class AccessToken(models.Model):
     screen_name = models.CharField(max_length=40, unique=True, null=True)
 
     def __str__(self):
-        return "(\'{}\', \'{}\')".format(self.screen_name, self.access_key, self.access_secret)
+        return "(\'{}\', \'{}\', \'{}\')".format(self.screen_name, self.access_key, self.access_secret)
 
 
 class ConsumerKey(models.Model):

@@ -129,9 +129,9 @@ def submit(request):
         if not ConsumerKey.objects.filter(consumer_key=CONSUMER_KEY).exists():
             ckey = ConsumerKey(consumer_key=CONSUMER_KEY, consumer_secret=CONSUMER_SECRET)
             ckey.save()
-        for k, s in ACCESS_TOKENS:
+        for n, k, s in ACCESS_TOKENS:
             if not AccessToken.objects.filter(access_key=k).exists():
-                token = AccessToken(access_key=k, access_secret=s)
+                token = AccessToken(screen_name=n, access_key=k, access_secret=s)
                 token.save()
         return redirect('twitter_auth')
     elif "export_tokens" in request.POST:
