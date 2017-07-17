@@ -150,9 +150,10 @@ class Keyword(models.Model):
 class AccessToken(models.Model):
     access_key = models.CharField(max_length=100, unique=True)
     access_secret = models.CharField(max_length=100, unique=True)
+    screen_name = models.CharField(max_length=40, unique=True, null=True)
 
     def __str__(self):
-        return "(\'{}\', \'{}\')".format(self.access_key, self.access_secret)
+        return "(\'{}\', \'{}\')".format(self.screen_name, self.access_key, self.access_secret)
 
 
 class ConsumerKey(models.Model):

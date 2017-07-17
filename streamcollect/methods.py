@@ -19,18 +19,13 @@ def kill_celery_task(task_name):
 
 def check_spam_account(user_data):
     # Reject users with high metrics - spam/celebrity/news accounts
-    # print("Checking user as spam: {}".format(user_data.screen_name))
     if user_data.followers_count > FOLLOWERS_THRESHOLD:
-        #print('Rejecting user {} with high follower count: {}'.format(user_data.screen_name, user_data.followers_count))
         return True
     if user_data.friends_count > FRIENDS_THRESHOLD:
-        #print('Rejecting user {} with high friends count: {}'.format(user_data.screen_name, user_data.friends_count))
         return True
     if user_data.statuses_count > STATUSES_THRESHOLD:
-        #print('Rejecting user {} with high status count: {}'.format(user_data.screen_name, user_data.statuses_count))
         return True
     else:
-        #print("User {} passed spam test.".format(user_data.screen_name))
         return False
 
 @transaction.atomic
@@ -61,11 +56,8 @@ def add_user(user_class=0, user_data=None, **kwargs):
         u = get_object_or_404(User, user_id=int(user_data.id_str))
         # Update added_at, as user is upgraded from alter to ego
         u.added_at = timezone.now()
-
     # User is a new observation
     else:
-        # Creating user object
-        #print("Creating record...")
         u = User()
 
     # If timezone is an issue:
@@ -128,21 +120,20 @@ def add_user(user_class=0, user_data=None, **kwargs):
 
         # Get followers & create relationship objects
         userfollowers = userdata.followers_ids(screen_name=user_data.screen_name)
-        #print('Length of follower list: {}'.format(len(userfollowers)))
         for sourceuser in userfollowers:
             create_relo(u, sourceuser, outgoing=False)
-    return u
+    return
 
 
 def create_relo(existing_user, new_user_id, outgoing):
 
     if outgoing:
         if Relo.objects.filter(sourceuser=existing_user).filter(targetuser__user_id=new_user_id).filter(end_observed_at=None).exists():
-            print("Outgoing relationship from {} to {} already exists.".format(existing_user.screen_name, new_user_id))
+            #print("Outgoing relationship from {} to {} already exists.".format(existing_user.screen_name, new_user_id))
             return
     else:
         if Relo.objects.filter(sourceuser__user_id=new_user_id).filter(targetuser=existing_user).filter(end_observed_at=None).exists():
-            print("Incoming relationship to {} from {} already exists.".format(existing_user.screen_name, new_user_id))
+            #print("Incoming relationship to {} from {} already exists.".format(existing_user.screen_name, new_user_id))
             return
 
     r = Relo()

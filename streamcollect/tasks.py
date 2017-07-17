@@ -22,6 +22,10 @@ def update_user_relos_periodic(self):
 def trim_spam_accounts_periodic(self):
     trim_spam_accounts()
     return
+#@periodic_task(run_every=timedelta(minutes=60), bind=True)
+def update_tracked_tags(self):
+    #TODO: Analyse Hashtag and add most prevalent to Keyword table
+    return
 
 #TODO: Add revoke and db record as in update_user_relos_task
 @shared_task(bind=True)

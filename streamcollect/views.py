@@ -69,7 +69,7 @@ def callback(request):
         print('Error! Failed to get access token.')
         return render(request, 'streamcollect/twitter_auth.html', {'error': 'Failed to get access token','tokens': tokens})
     if not AccessToken.objects.filter(access_key=auth.access_token).exists():
-        token = AccessToken(access_key=auth.access_token, access_secret=auth.access_token_secret)
+        token = AccessToken(access_key=auth.access_token, access_secret=auth.access_token_secret, screen_name=auth.get_username())
         token.save()
     return render(request, 'streamcollect/twitter_auth.html', {'success': 'True', 'token': auth.access_token, 'tokens': tokens})
 
