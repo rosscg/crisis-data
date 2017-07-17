@@ -1,6 +1,7 @@
 from celery import shared_task
 from celery.task import periodic_task
 from datetime import timedelta
+import pytz
 
 from twdata import userdata
 from .models import User, Relo, CeleryTask
@@ -57,7 +58,14 @@ def trim_spam_accounts(self):
                 u.user_class = 1
             #TODO: Need all these? Perhaps only for user_class >0? Merge with add_user section?
             #If timezone is an issue:
-            tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+
+            try:
+                tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+            except pytz.exceptions.AmbiguousTimeError:
+                # Adding an hour to avoid DST ambiguity errors.
+                time_adjusted = user_data.created_at + timedelta(minutes=60)
+                tz_aware = timezone.make_aware(time_adjusted, timezone.get_current_timezone())
+
             u.created_at = tz_aware
             u.followers_count = user_data.followers_count
             u.friends_count = user_data.friends_count

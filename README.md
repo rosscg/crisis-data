@@ -19,6 +19,9 @@ Run Celery beat: $ celery -A homesite beat -l info -S django
 Fill out tokensSKELETON.py with Twitter credentials and rename tokens.py (tokens must then be loaded to database via web interface)
 
 
+This build currently uses Postgres (over sqlite) as a database due to high write demands. See guide for installing Postgres here:
+https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/optional_postgresql_installation/
+
 Note:
 If Redis is running from previous launch (i.e. returns 'bind: Address already in use'):
 $ ps aux | grep redis

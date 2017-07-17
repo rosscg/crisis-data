@@ -3,6 +3,7 @@ from django.utils import timezone
 
 
 class User(models.Model):
+    id = models.AutoField(primary_key=True)
     created_at = models.DateTimeField(null=True)
     default_profile = models.NullBooleanField(null=True)
     default_profile_image = models.NullBooleanField(null=True)
@@ -38,7 +39,8 @@ class User(models.Model):
     time_zone = models.CharField(max_length=200, null=True)
     translator_type = models.CharField(max_length=200, null=True)
     url = models.CharField(max_length=200, null=True)
-    user_id = models.IntegerField(primary_key=True)
+    #This cannot be the primary_key due to errors with Postgres and BigInt
+    user_id = models.BigIntegerField(unique=True)
     utc_offset = models.CharField(max_length=200, null=True)
     verified = models.NullBooleanField(null=True)
 
@@ -66,20 +68,21 @@ class User(models.Model):
 
 
 class Tweet(models.Model):
-
+    id = models.AutoField(primary_key=True)
     coordinates_lat = models.FloatField(null=True)
     coordinates_long = models.FloatField(null=True)
     coordinates_type = models.CharField(null=True, max_length=10)
     created_at = models.DateTimeField()
     favorite_count = models.IntegerField()
     #filter_level = models.CharField(max_length=10)
-    tweet_id = models.IntegerField(primary_key=True)
-    in_reply_to_status_id = models.IntegerField(null=True)
-    in_reply_to_user_id = models.IntegerField(null=True)
+    #This cannot be the primary_key due to errors with Postgres and BigInt
+    tweet_id = models.BigIntegerField(null=True)
+    in_reply_to_status_id = models.BigIntegerField(null=True)
+    in_reply_to_user_id = models.BigIntegerField(null=True)
     lang = models.CharField(max_length=10, null=True)
     #place                   // see object type, TO BE IMPLEMENTED
     #possibly_sensitive = models.NullBooleanField(null=True)
-    quoted_status_id = models.IntegerField(null=True)
+    quoted_status_id = models.BigIntegerField(null=True)
     #quoted_status = models.ForeignKey('self')           // tweet object
     retweet_count = models.IntegerField()
     #retweeted_status        // tweet object
@@ -107,6 +110,14 @@ class Url(models.Model):
 
     def __str__(self):
         return str(self.url)
+
+
+class Mention(models.Model):
+    mention = models.CharField(max_length=200, unique=True)
+    tweets = models.ManyToManyField(Tweet)
+
+    def __str__(self):
+        return str(self.mention)
 
 
 class Relo(models.Model):
@@ -149,7 +160,7 @@ class ConsumerKey(models.Model):
     consumer_secret = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
-        return "({}, {})".format(access_key, access_secret)
+        return "(\'{}\', \'{}\')".format(self.consumer_key, self.consumer_secret)
 
 
 class CeleryTask(models.Model):

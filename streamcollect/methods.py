@@ -3,9 +3,10 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 import re
+import pytz
 
 from twdata import userdata
-from .models import CeleryTask, User, Relo, Tweet, Hashtag, Url
+from .models import CeleryTask, User, Relo, Tweet, Hashtag, Url, Mention
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD
 
 from django.db import transaction
@@ -68,7 +69,12 @@ def add_user(user_class=0, user_data=None, **kwargs):
         u = User()
 
     # If timezone is an issue:
-    tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+    try:
+        tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+    except pytz.exceptions.AmbiguousTimeError:
+        # Adding an hour to avoid DST ambiguity errors.
+        time_adjusted = user_data.created_at + timedelta(minutes=60)
+        tz_aware = timezone.make_aware(time_adjusted, timezone.get_current_timezone())
     u.created_at = tz_aware
 
     u.default_profile = user_data.default_profile
@@ -157,7 +163,7 @@ def create_relo(existing_user, new_user_id, outgoing):
             # u2 = add_user(user_class=0, user_data=new_user)
             # if not u2:
             #    return
-            u2 = User()
+            u2 = User() #TODO: django.db.utils.IntegrityError: duplicate key value violates unique constraint "streamcollect_user_user_id_key" - May be related to deadlocking
             u2.user_id = new_user_id
             u2.in_degree = 1
             u2.save()
@@ -244,43 +250,40 @@ def save_tweet(tweet_data):
         # not relevant to the analysis, but look at capturing in tweet data?
         if url[0:11] != 'twitter.com':
             save_url(url, tweet)
-        #else:
-            #print("Twitter URL detected")
-    # TODO: save other entities?: media, user_mentions, symbols, extended_entities
-    # https://dev.twitter.com/overview/api/entities-in-twitter-objects
 
     user_mentions = tweet_data.entities.get('user_mentions')
     for user in user_mentions:
-        #user = user.get(screen_name)
-        #print('User mention detected: {}'.format(user))
+        print("Saving user mention: {}".format(user.get('screen_name')))
+        save_mention(user.get('screen_name'), tweet)
         # TODO: Implement something here to add these users based on authors class?
         pass
+
+    # TODO: save other entities?: media, user_mentions, symbols, extended_entities
+    # https://dev.twitter.com/overview/api/entities-in-twitter-objects
     return
 
 
 def save_hashtag(hashtag_text, tweet_object):
-    #print('Saving hashtag: {}'.format(hashtag_text))
+    hashtag_text = hashtag_text.lower()
     hashtag, created = Hashtag.objects.get_or_create(hashtag=hashtag_text)
     if created:
-        #print("New hashtag created")
         hashtag.save()
-    else:
-        pass
-        #print('Hashtag exists')
-    #print('Adding to hashtag: {}, tweet: {}'.format(hashtag_text, tweet_object.text[0:30]))
     hashtag.tweets.add(tweet_object)
     return
 
 
 def save_url(url_text, tweet_object):
-    #print('Saving url: {}'.format(url_text))
     url, created = Url.objects.get_or_create(url=url_text)
     if created:
-        #print("New Url created")
         url.save()
-    else:
-        pass
-        #print('Url exists')
-    #print('Adding to url: {}, tweet: {}'.format(url_text, tweet_object.text[0:30]))
     url.tweets.add(tweet_object)
+    return
+
+
+def save_mention(mention_text, tweet_object):
+    mention_text = mention_text.lower()
+    mention, created = Mention.objects.get_or_create(mention=mention_text)
+    if created:
+        mention.save()
+    mention.tweets.add(tweet_object)
     return
