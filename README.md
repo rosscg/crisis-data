@@ -17,10 +17,16 @@ https://djangogirls.gitbooks.io/django-girls-tutorial-extensions/optional_postgr
 Build project, create virtual environment, and install dependencies.
 
 Run Server: $ python manage.py runserver
+
   Log in to the admin interface and add a period task to 'update_user_relos_task' daily (alternatively, remove comment from update_user_relos_periodic in tasks.py)
-Run Redis (from Redis directory): $ /redis-3.2.9/src/redis-server
-Run Celery worker: $ celery -A homesite worker -l info
-Run Celery beat: $ celery -A homesite beat -l info -S django
+
+Run Redis (from Redis Directory), Celery Worker and Celery Beat in seperate terminal windows:
+
+> ```
+> $ /redis-3.2.9/src/redis-server
+> $ celery -A homesite worker -l info
+> $ celery -A homesite beat -l info -S django
+> ```
 
 Fill out tokensSKELETON.py with Twitter credentials and rename tokens.py (tokens
 must then be loaded to database via web interface). At the very least, the
@@ -32,5 +38,7 @@ and authorise. 'Export Tokens' can save these tokens to a file for future use.
 
 Note:
 If Redis is running from previous launch (i.e. returns 'bind: Address already in use'):
-$ ps aux | grep redis
-$ kill -9 [PORT NUMBER]
+> ```
+> $ ps aux | grep redis
+> $ kill -9 [PORT NUMBER]
+> ```
