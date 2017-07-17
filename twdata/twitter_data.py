@@ -107,6 +107,7 @@ def twitter_stream(gps=False):
                 data = get_keywords()
                 if len(data) == 0:
                     print("Error: no keywords found.")
+                    kill_celery_task('stream_kw')
                     return
                 twitterStream = Stream(auth, stream_listener(False, data))
             print("Running new stream...")

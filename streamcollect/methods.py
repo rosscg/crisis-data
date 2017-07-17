@@ -28,7 +28,7 @@ def check_spam_account(user_data):
     else:
         return False
 
-@transaction.atomic
+#@transaction.atomic
 def add_user(user_class=0, user_data=None, **kwargs):
     # TODO: Needs to check something other than username
     # User exists as a full user (ego)
@@ -244,7 +244,6 @@ def save_tweet(tweet_data):
 
     user_mentions = tweet_data.entities.get('user_mentions')
     for user in user_mentions:
-        print("Saving user mention: {}".format(user.get('screen_name')))
         save_mention(user.get('screen_name'), tweet)
         # TODO: Implement something here to add these users based on authors class?
         pass

@@ -177,7 +177,7 @@ def network_data_API(request):
 
         relo_node_list = targets + list(set(sources) - set(targets))
 
-        resultsuser = [ob.as_json() for ob in relevant_users if ob.user_id in relo_node_list]
+        resultsuser = [ob.as_json() for ob in relevant_users if ob.id in relo_node_list]
     else:
         resultsuser = [ob.as_json() for ob in relevant_users]
 
