@@ -166,5 +166,5 @@ class ConsumerKey(models.Model):
 
 class CeleryTask(models.Model):
     celery_task_id = models.CharField(max_length = 40, unique=True)
-    # Use: stream_kw, stream_gps, update_user_relos, trim_spam_accounts, save_twitter_obect
+    # Use: stream_kw, stream_gps, stream_gps, update_user_relos, trim_spam_accounts, save_twitter_obect
     task_name = models.CharField(max_length=40)

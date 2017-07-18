@@ -51,7 +51,7 @@ class stream_listener(StreamListener):
                 if not self.data[1] < coords[1] < self.data[3]:
                     print("ERROR Coordinates outside latitude")
 
-        save_twitter_object_task.delay(tweet=status, user_class=2, id=int(status.user.id_str))
+        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, id=int(status.user.id_str))
         return
 
     def on_error(self, status):
@@ -67,9 +67,11 @@ def twitter_stream(gps=False):
     except ObjectDoesNotExist:
         print('Error! Failed to get Consumer Key from database.')
         return
-
-    #TODO: Only using first token. Needs a try/exception block.
-    access_token=AccessToken.objects.all()[:1].get()
+    try:
+        access_token=AccessToken.objects.all()[:1].get()
+    except ObjectDoesNotExist:
+        print('Error! Failed to get Access Key from database.')
+        return
 
     #TODO: Merge this with other auth in userdata.py
     auth = OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
@@ -86,7 +88,7 @@ def twitter_stream(gps=False):
             kill_celery_task('stream_gps')
             return
         print("Using bounding box: {}".format(bounding_box))
-        data = gps
+        data = bounding_box
     else:
         data = get_keywords()
         if len(data) == 0:

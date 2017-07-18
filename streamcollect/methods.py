@@ -207,6 +207,7 @@ def create_relo(existing_user, new_user_id, outgoing):
     return
 
 
+#TODO: Add since_id functionality
 def save_user_timeline(**kwargs):
     statuses = userdata.user_timeline(**kwargs)
     #Save to DB here
@@ -216,7 +217,7 @@ def save_user_timeline(**kwargs):
     #map(save_tweet, statuses)
     return
 
-def save_tweet(tweet_data):
+def save_tweet(tweet_data, save_entities=False):
     tweet = Tweet()
     # If timezone is an issue:
     tz_aware = timezone.make_aware(tweet_data.created_at, timezone.get_current_timezone())
@@ -249,29 +250,29 @@ def save_tweet(tweet_data):
         tweet.author = User.objects.get(user_id=author_id)
     tweet.save()
 
-    tags = tweet_data.entities.get('hashtags')
-    for tag in tags:
-        save_hashtag(tag.get('text'), tweet)
+    if save_entities:
+        tags = tweet_data.entities.get('hashtags')
+        for tag in tags:
+            save_hashtag(tag.get('text'), tweet)
 
-    urls = tweet_data.entities.get('urls')
-    for u in urls:
-        # TODO: Test url cleanup, decide whether to exlude twitter urls (save elsewhere?)
-        url = u.get('expanded_url')
-        # Cleanup URL
-        url = re.sub('(http://|https://|#.*|&.*)', '', url)
-        # Exclude twitter URLs, which are added if media is attached - therefore
-        # not relevant to the analysis, but look at capturing in tweet data?
-        if url[0:11] != 'twitter.com':
-            save_url(url, tweet)
+        urls = tweet_data.entities.get('urls')
+        for u in urls:
+            # TODO: Test url cleanup, decide whether to exlude twitter urls (save elsewhere?)
+            url = u.get('expanded_url')
+            # Cleanup URL
+            url = re.sub('(http://|https://|#.*|&.*)', '', url)
+            # Exclude twitter URLs, which are added if media is attached - therefore
+            # not relevant to the analysis, but look at capturing in tweet data?
+            if url[0:11] != 'twitter.com':
+                save_url(url, tweet)
 
-    user_mentions = tweet_data.entities.get('user_mentions')
-    for user in user_mentions:
-        save_mention(user.get('screen_name'), tweet)
-        # TODO: Implement something here to add these users based on authors class?
-        pass
-
-    # TODO: save other entities?: media, user_mentions, symbols, extended_entities
-    # https://dev.twitter.com/overview/api/entities-in-twitter-objects
+        user_mentions = tweet_data.entities.get('user_mentions')
+        for user in user_mentions:
+            save_mention(user.get('screen_name'), tweet)
+            # TODO: Implement something here to add these users based on authors class?
+            pass
+        # TODO: save other entities?: media, user_mentions, symbols, extended_entities
+        # https://dev.twitter.com/overview/api/entities-in-twitter-objects
     return
 
 

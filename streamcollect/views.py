@@ -38,10 +38,14 @@ def user_details(request, user_id):
 def stream_status(request):
     keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
     if not CeleryTask.objects.filter(task_name='stream_kw'):
-        stream_status = False
+        kw_stream_status = False
     else:
-        stream_status = True
-    return render(request, 'streamcollect/stream_status.html', {'stream_status': stream_status, 'keywords': keywords})
+        kw_stream_status = True
+    if not CeleryTask.objects.filter(task_name='stream_gps'):
+        gps_stream_status = False
+    else:
+        gps_stream_status = True
+    return render(request, 'streamcollect/stream_status.html', {'kw_stream_status': kw_stream_status, 'gps_stream_status': gps_stream_status, 'keywords': keywords})
 
 def testbed(request):
     tasks = CeleryTask.objects.all().values_list('task_name', flat=True)
@@ -87,14 +91,23 @@ def submit(request):
             k.keyword = info.lower()
             k.save()
         return redirect('monitor_user')
-    elif "start_stream" in request.POST:
+    elif "start_kw_stream" in request.POST:
         task = twitter_stream_task.delay()
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
         task_object.save()
         return redirect('stream_status')
-    elif "stop_stream" in request.POST:
-        #TODO: Include stream_gps here
+    elif "start_gps_stream" in request.POST:
+        #TODO: Store and upate gps coords
+        gps = [-1.257677, 51.752022]
+        task = twitter_stream_task.delay(gps)
+        task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_gps')
+        task_object.save()
+        return redirect('stream_status')
+    elif "stop_kw_stream" in request.POST:
         kill_celery_task('stream_kw')
+        return redirect('stream_status')
+    elif "stop_gps_stream" in request.POST:
+        kill_celery_task('stream_gps')
         return redirect('stream_status')
     elif "trim_spam_accounts" in request.POST:
         task = trim_spam_accounts.delay()

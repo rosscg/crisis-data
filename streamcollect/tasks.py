@@ -85,29 +85,21 @@ def trim_spam_accounts(self):
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
-# TODO: deprecated, remove.
-@shared_task(bind=True)
-def add_user_task(self, user_class=0, **kwargs):
-    task_object = CeleryTask(celery_task_id = self.request.id, task_name='add_user')
-    task_object.save()
-
-    user_data = userdata.get_user(**kwargs)
-    add_user(user_class=user_class, user_data=user_data)
-
-    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
-    return
-
 
 @shared_task(bind=True)
-def save_twitter_object_task(self, tweet=None, user_class=0, **kwargs):
+def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, **kwargs):
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
     task_object.save()
 
-    user_data = userdata.get_user(**kwargs)
-    add_user(user_class=user_class, user_data=user_data)
+    try:
+        user_data = userdata.get_user(**kwargs)
+        add_user(user_class=user_class, user_data=user_data)
+    except:
+        print('Error adding user.')
+        pass
 
     if tweet:
-        save_tweet(tweet)
+        save_tweet(tweet, save_entities)
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
