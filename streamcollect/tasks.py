@@ -14,7 +14,7 @@ from .methods import kill_celery_task, check_spam_account, add_user, create_relo
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #TODO: Replace into target method.
-#@periodic_task(run_every=timedelta(hours=12), bind=True)
+#@periodic_task(run_every=timedelta(hours=24), bind=True)
 def update_user_relos_periodic(self):
     update_user_relos_task()
     return
@@ -40,6 +40,8 @@ def trim_spam_accounts(self):
 
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
     users = User.objects.filter(user_class=0).filter(screen_name__isnull=True).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+
+    print(users)
 
     length = users.count()
     print("length of class 0 users to sort: {}".format(length))
@@ -131,7 +133,7 @@ def update_user_relos_task(self):
 
         #Get recorded list of users followed by account
         #TODO: Filter out dead relos, but how to handle when recreated?
-        user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser', flat=True))
+        user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser__user_id', flat=True))
 
         new_friend_links = [a for a in user_following if (a not in user_following_recorded)]
         dead_friend_links = [a for a in user_following_recorded if (a not in user_following)]
@@ -158,7 +160,7 @@ def update_user_relos_task(self):
 
         #Get recorded list of users following an account
         #TODO: Filter out dead relos, but how to handle when recreated?
-        user_followers_recorded = list(Relo.objects.filter(targetuser=user).filter(end_observed_at=None).values_list('sourceuser', flat=True))
+        user_followers_recorded = list(Relo.objects.filter(targetuser=user).filter(end_observed_at=None).values_list('sourceuser__user_id', flat=True))
 
         new_follower_links = [a for a in user_followers if (a not in user_followers_recorded)]
         dead_follower_links = [a for a in user_followers_recorded if (a not in user_followers)]

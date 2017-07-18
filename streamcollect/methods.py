@@ -124,7 +124,7 @@ def add_user(user_class=0, user_data=None, **kwargs):
             create_relo(u, sourceuser, outgoing=False)
     return
 
-
+#TODO: Have commented out the updates to the in/out degree rows (to reduce db calls). Decide whether to remove.
 def create_relo(existing_user, new_user_id, outgoing):
 
     if outgoing:
@@ -139,48 +139,39 @@ def create_relo(existing_user, new_user_id, outgoing):
     r = Relo()
 
     if outgoing:
-        existing_user.out_degree += 1
-        existing_user.save()
+        #existing_user.out_degree += 1
+        #existing_user.save()
         r.sourceuser = existing_user
 
         # Create new users for targets if not already in DB
         if User.objects.filter(user_id=new_user_id).exists():
             tuser = User.objects.get(user_id=new_user_id)
-            tuser.in_degree = tuser.in_degree + 1
-            tuser.save()
+            #tuser.in_degree = tuser.in_degree + 1
+            #tuser.save()
             r.targetuser = tuser
         else:
-            # Creating new user object
-            # u2 = add_user(user_class=0, user_data=new_user)
-            # if not u2:
-            #    return
             u2 = User() #TODO: django.db.utils.IntegrityError: duplicate key value violates unique constraint "streamcollect_user_user_id_key" - May be related to deadlocking
             u2.user_id = new_user_id
-            u2.in_degree = 1
+            #u2.in_degree = 1
             u2.save()
             r.targetuser = u2
     else:
-            existing_user.in_degree += 1
-            existing_user.save()
+            #existing_user.in_degree += 1
+            #existing_user.save()
             r.targetuser = existing_user
 
             # Create new users for targets if not already in DB
             if User.objects.filter(user_id=new_user_id).exists():
                 u2 = User.objects.get(user_id=new_user_id)
-                u2.out_degree += 1
-                u2.save()
+                #u2.out_degree += 1
+                #u2.save()
                 r.sourceuser = u2
             else:
-                # Creating new user object
-                # u2 = add_user(user_class=0, user_data=new_user)
-                # if not u2:
-                #    return
                 u2 = User()
                 u2.user_id = new_user_id
-                u2.out_degree = 1
+                #u2.out_degree = 1
                 u2.save()
                 r.sourceuser = u2
-
     r.save()
     return
 

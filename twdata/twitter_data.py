@@ -100,6 +100,7 @@ def twitter_stream(gps=False):
         twitterStream.filter(locations=data, async=True)
     else:
         while True:
+            #Periodically re-run stream to get updated set of keywords.
             if twitterStream.running:
                 twitterStream.disconnect()
                 print("Deleting old stream...")
