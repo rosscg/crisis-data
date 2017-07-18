@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from django.db.models import Q
 
-from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet
+from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #TODO: Replace into target method.
@@ -23,8 +23,9 @@ def trim_spam_accounts_periodic(self):
     trim_spam_accounts()
     return
 #@periodic_task(run_every=timedelta(minutes=60), bind=True)
-def update_tracked_tags(self):
-    #TODO: Analyse Hashtag and add most prevalent to Keyword table. Remember to re-add #symbol
+def update_data_periodic(self):
+    update_tracked_tags()
+    add_users_from_mentions
     return
 
 #TODO: Add revoke and db record as in update_user_relos_task
@@ -40,8 +41,6 @@ def trim_spam_accounts(self):
 
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
     users = User.objects.filter(user_class=0).filter(screen_name__isnull=True).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
-
-    print(users)
 
     length = users.count()
     print("length of class 0 users to sort: {}".format(length))

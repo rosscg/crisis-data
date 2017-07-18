@@ -6,10 +6,12 @@ import re
 import pytz
 
 from twdata import userdata
-from .models import CeleryTask, User, Relo, Tweet, Hashtag, Url, Mention
-from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD
+from .models import CeleryTask, User, Relo, Tweet, Hashtag, Url, Mention, Keyword
+from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD
 
 from django.db import transaction
+from django.db.models import Count
+
 
 def kill_celery_task(task_name):
     for t in CeleryTask.objects.filter(task_name=task_name):
@@ -27,6 +29,35 @@ def check_spam_account(user_data):
         return True
     else:
         return False
+
+def update_tracked_tags():
+    #If a hashtag appears in x% of tweets, add as a keyword to track.
+    hashtags_with_counts = Hashtag.objects.all().annotate(tweet_count=Count('tweets__id'))
+    tweet_count = len(Tweet.objects.all())
+    threshold = (tweet_count*TAG_OCCURENCE_THRESHOLD)
+
+    for tag in hashtags_with_counts:
+        if tag.tweet_count > threshold:
+            hashtag = '#' + tag.hashtag
+            try:
+                k = Keyword()
+                k.keyword = hashtag
+                k.save()
+                print('Adding new hashtag to keyword list: {}'.format(hashtag))
+            except:
+                return
+
+def add_users_from_mentions():
+    #If a mention appears in x% of tweets, add as a user_class=2.
+    mentions_with_counts = Mention.objects.all().annotate(tweet_count=Count('tweets__id'))
+    tweet_count = len(Tweet.objects.all())
+    threshold = (tweet_count*MENTION_OCCURENCE_THRESHOLD)
+
+    for user in mentions_with_counts:
+        if user.tweet_count > threshold:
+            add_user(user_class=2, screen_name=user.mention)
+            print('Adding new user from mentions: {}'.format(user.mention))
+    return
 
 #@transaction.atomic
 def add_user(user_class=0, user_data=None, **kwargs):

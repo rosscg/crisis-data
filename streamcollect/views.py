@@ -12,7 +12,7 @@ from .models import User, Relo, CeleryTask, Keyword, AccessToken, ConsumerKey
 from .forms import AddUserForm
 from .tasks import save_twitter_object_task, update_user_relos_task, trim_spam_accounts
 # Remove save_user_timeline:
-from .methods import kill_celery_task, save_user_timeline
+from .methods import kill_celery_task, save_user_timeline, update_tracked_tags, add_users_from_mentions
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -84,7 +84,7 @@ def submit(request):
         info = request.POST['info']
         if len(info) > 0:
             k = Keyword()
-            k.keyword = info
+            k.keyword = info.lower()
             k.save()
         return redirect('monitor_user')
     elif "start_stream" in request.POST:
@@ -153,6 +153,10 @@ def submit(request):
     #TODO: Remove:
     elif "user_timeline" in request.POST:
         data = save_user_timeline(screen_name='QueensCollege')
+        return redirect('testbed')
+    elif "update_data" in request.POST:
+        update_tracked_tags()
+        add_users_from_mentions()
         return redirect('testbed')
     else:
         print("Unlabelled button pressed")
