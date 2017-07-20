@@ -19,6 +19,7 @@ def kill_celery_task(task_name):
         revoke(t.celery_task_id, terminate=True)
         t.delete()
 
+
 def check_spam_account(user_data):
     # Reject users with high metrics - spam/celebrity/news accounts
     if user_data.followers_count > FOLLOWERS_THRESHOLD:
@@ -30,13 +31,20 @@ def check_spam_account(user_data):
     else:
         return False
 
+
 def update_tracked_tags():
+    print('updating tracked tags')
     #If a hashtag appears in x% of tweets, add as a keyword to track.
     hashtags_with_counts = Hashtag.objects.all().annotate(tweet_count=Count('tweets__id'))
     tweet_count = len(Tweet.objects.all())
     threshold = (tweet_count*TAG_OCCURENCE_THRESHOLD)
 
+    temp_dic = {}
+    keywords = Keyword.objects.all().values_list('keyword', flat=True)
+
     for tag in hashtags_with_counts:
+        if tag.hashtag not in keywords:
+            temp_dic[tag.hashtag]=tag.tweet_count
         if tag.tweet_count > threshold:
             hashtag = '#' + tag.hashtag
             try:
@@ -45,7 +53,14 @@ def update_tracked_tags():
                 k.save()
                 print('Adding new hashtag to keyword list: {}'.format(hashtag))
             except:
-                return
+                #print('Error keyword list: {} Likely already exists.'.format(hashtag))
+                pass
+
+    # Print most common tags
+    top = sorted(temp_dic.items(), key=lambda x:x[1], reverse=True)[0:5]
+    print(top)
+    print('Total tweets: {}'.format(tweet_count))
+
 
 def add_users_from_mentions():
     #If a mention appears in x% of tweets, add as a user_class=2.
@@ -55,15 +70,17 @@ def add_users_from_mentions():
 
     for user in mentions_with_counts:
         if user.tweet_count > threshold:
-            add_user(user_class=2, screen_name=user.mention)
             print('Adding new user from mentions: {}'.format(user.mention))
+            add_user(user_class=2, screen_name=user.mention)
     return
+
 
 #@transaction.atomic
 def add_user(user_class=0, user_data=None, **kwargs):
     # TODO: Needs to check something other than username
     # User exists as a full user (ego)
     if 'screen_name' in kwargs:
+        screen_name=kwargs.get('screen_name')
         if User.objects.filter(screen_name=screen_name).exists():
             if User.objects.get(screen_name=screen_name).user_class >= 2:
                 print("User {} already exists.".format(screen_name))
@@ -237,7 +254,7 @@ def save_tweet(tweet_data, save_entities=False):
             tweet.text=tweet_data.text
         except:
             tweet.text=tweet_data.full_text
-            
+
     try:
         tweet.coordinates_lat = tweet_data.coordinates.coordinates[1] # nullable
         tweet.coordinates_long = tweet_data.coordinates.coordinates[0]# nullable
