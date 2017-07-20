@@ -111,10 +111,17 @@ def update_user_relos_task(self):
     task_object.save()
 
     users = User.objects.filter(user_class__gte=2)
+    print('Updating relo information for {} users.'.format(len(users)))
 
     for user in users:
+        #TODO: Possible add check: is new/dead links are over threshold, mark account as spam.
+        # Particularly dead links, as new links may signify virality
+
         #Get true list of users followed by account
-        user_following = userdata.friends_ids(screen_name=user.screen_name)
+        user_following=userdata.friends_ids(user_id=user.user_id)
+        if not user_following:
+            #TODO: Handle suspended/deleted user here
+            continue
         #Get recorded list of users followed by account
         user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser__user_id', flat=True))
 
@@ -122,9 +129,11 @@ def update_user_relos_task(self):
         dead_friend_links = [a for a in user_following_recorded if (a not in user_following)]
 
         if len(new_friend_links):
-            print("New friend links for user: {}: {}".format(user.screen_name, new_friend_links))
+            #print("New friend links for user: {}: {}".format(user.screen_name, new_friend_links))
+            print("{} new friend links for user: {}".format(len(new_friend_links), user.screen_name))
         if len(dead_friend_links):
-            print("Dead friend links for user: {}: {}".format(user.screen_name, dead_friend_links))
+            #print("Dead friend links for user: {}: {}".format(user.screen_name, dead_friend_links))
+            print("{} dead friend links for user: {}".format(len(dead_friend_links), user.screen_name))
 
         for target_user_id in dead_friend_links:
             for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id).filter(end_observed_at=None):
@@ -141,7 +150,10 @@ def update_user_relos_task(self):
             create_relo(user, targetuser, outgoing=True)
 
         #Get true list of users following an account
-        user_followers = userdata.followers_ids(screen_name = user.screen_name)
+        user_followers = userdata.followers_ids(user_id=user.user_id)
+        if not user_followers:
+            #TODO: Handle suspended/deleted user here
+            continue
         #Get recorded list of users following an account
         user_followers_recorded = list(Relo.objects.filter(targetuser=user).filter(end_observed_at=None).values_list('sourceuser__user_id', flat=True))
 
@@ -149,9 +161,11 @@ def update_user_relos_task(self):
         dead_follower_links = [a for a in user_followers_recorded if (a not in user_followers)]
 
         if len(new_follower_links):
-            print("New follower links for user: {}: {}".format(user.screen_name, new_follower_links))
+            #print("New follower links for user: {}: {}".format(user.screen_name, new_follower_links))
+            print("{} new follower links for user: {}".format(len(new_follower_links), user.screen_name))
         if len(dead_follower_links):
-            print("Dead follower links for user: {}: {}".format(user.screen_name, dead_follower_links))
+            #print("Dead follower links for user: {}: {}".format(user.screen_name, dead_follower_links))
+            print("{} dead follower links for user: {}".format(len(dead_follower_links), user.screen_name))
 
         for source_user_id in dead_follower_links:
             for ob in Relo.objects.filter(targetuser=user, sourceuser__user_id__contains=source_user_id).filter(end_observed_at=None):
@@ -166,6 +180,8 @@ def update_user_relos_task(self):
             #user.save()
         for source_user in new_follower_links:
             create_relo(user, source_user, outgoing=False)
+
+    print('Updating relo information complere')
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
