@@ -35,10 +35,10 @@ def trim_spam_accounts(self):
     task_object.save()
 
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
-    users = User.objects.filter(user_class=0).filter(screen_name__isnull=True).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+    users = User.objects.filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
 
     length = users.count()
-    print("length of class 0 users to sort: {}".format(length))
+    print("Length of class-0 users to sort: {}".format(length))
 
     #Requesting User objects in batches to minimise API limits
     while length > 0:
@@ -51,6 +51,10 @@ def trim_spam_accounts(self):
         user_ids = chunk.values_list('user_id', flat=True)
         user_list = userdata.lookup_users(user_ids=user_ids)
 
+        if not user_list:
+            # False returned if only dead users in list
+            print('Error with users: {}'.format(user_ids))
+            return
         for user_data in user_list:
             u = users.get(user_id=int(user_data.id_str))
             #Class the user as spam or 'alter'
@@ -61,7 +65,7 @@ def trim_spam_accounts(self):
             #If timezone is an issue:
             try:
                 tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
-            except pytz.exceptions.AmbiguousTimeError:
+            except (pytz.exceptions.AmbiguousTimeError, pytz.exceptions.NonExistentTimeError):
                 # Adding an hour to avoid DST ambiguity errors.
                 time_adjusted = user_data.created_at + timedelta(minutes=60)
                 tz_aware = timezone.make_aware(time_adjusted, timezone.get_current_timezone())
