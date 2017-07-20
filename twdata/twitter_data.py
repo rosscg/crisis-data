@@ -11,6 +11,8 @@ from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWE
 from streamcollect.tasks import save_twitter_object_task
 from streamcollect.methods import kill_celery_task, save_tweet
 
+keywords_global = None
+
 class stream_listener(StreamListener):
 
     def __init__(self, gps_bool, data):
@@ -37,11 +39,25 @@ class stream_listener(StreamListener):
         else:
             return
 
+        # Check that keywords exist (Twitter doesn't handle phrases with spaces)
+        #TODO: This currently exxcludes replies/links if the tag is in the external
+        # entity. Decide whether to handle.
+        # Status.truncated doesn't appear to be True when user reposts from Instagram or Facebook
+        if status.truncated:
+            text=status.extended_tweet.get('full_text')
+        else:
+            text=status.text
+        if not self.gps_bool:
+            global keywords_global
+            if not any(x in text.lower() for x in keywords_global):
+                return
+
         print(status.text)
+
         # May have to dump from JSON? coords = json.dumps(coords)
         if status.coordinates is not None:
             coords = status.coordinates.get('coordinates')
-            print(coords)
+            print('Coordinates: {}'.format(coords))
             if self.gps_bool:
                 if not self.data[0] < coords[0] < self.data[2]:
                     print("ERROR Coordinates outside longitude")
@@ -118,5 +134,7 @@ def twitter_stream(gps=False):
 
 #TODO: Fold this back into methods?
 def get_keywords():
-    keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
-    return keywords
+    global keywords_global
+    keywords_global = list(Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at'))
+    #keywords_global = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
+    return keywords_global

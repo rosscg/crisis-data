@@ -41,7 +41,7 @@ def update_tracked_tags():
             hashtag = '#' + tag.hashtag
             try:
                 k = Keyword()
-                k.keyword = hashtag
+                k.keyword = hashtag.lower()
                 k.save()
                 print('Adding new hashtag to keyword list: {}'.format(hashtag))
             except:
@@ -212,9 +212,7 @@ def save_user_timeline(**kwargs):
     statuses = userdata.user_timeline(**kwargs)
     #Save to DB here
     for status in statuses:
-        #print('Saving Tweet: {}'.format(status.text))
         save_tweet(status)
-    #map(save_tweet, statuses)
     return
 
 def save_tweet(tweet_data, save_entities=False):
@@ -230,7 +228,16 @@ def save_tweet(tweet_data, save_entities=False):
     tweet.lang = tweet_data.lang # nullable
     #tweet.possibly_sensitive = tweet_data.possibly_sensitive # nullable
     tweet.retweet_count = tweet_data.retweet_count
-    tweet.text = tweet_data.text
+
+    if tweet_data.truncated:
+        tweet.text=tweet_data.extended_tweet.get('full_text')
+    else:
+        # Try block to handle current issue with REST calls and extended_tweet
+        try:
+            tweet.text=tweet_data.text
+        except:
+            tweet.text=tweet_data.full_text
+            
     try:
         tweet.coordinates_lat = tweet_data.coordinates.coordinates[1] # nullable
         tweet.coordinates_long = tweet_data.coordinates.coordinates[0]# nullable

@@ -76,5 +76,8 @@ def user_timeline(**kwargs):
     api = get_api()
     # Pass the since_id into kwargs if needed
     # TODO: Consider keywords here - include_rts, etc. Decide on count value
-    statuses = api.user_timeline(**kwargs, count=50, trim_user=True)
+    # TODO: This appears to return the same as non-extended text, truncated always
+    # 'False'. Likely a tweepy bug. If fixed, adjust handling in save_tweet
+    statuses = api.user_timeline(**kwargs, count=50, trim_user=True, tweet_mode='extended')
+    #statuses = api.user_timeline(**kwargs, count=50, trim_user=True)
     return statuses

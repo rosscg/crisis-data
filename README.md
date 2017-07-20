@@ -42,3 +42,5 @@ If Redis is running from previous launch (i.e. returns 'bind: Address already in
 > $ ps aux | grep redis
 > $ kill -9 [PORT NUMBER]
 > ```
+
+Any change to the code requires Celery terminal commands to be relaunched.

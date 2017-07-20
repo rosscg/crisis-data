@@ -8,6 +8,7 @@ django-celery-beat==1.0.1
 idna==2.5
 kombu==4.0.2
 oauthlib==2.0.2
+psycopg2==2.7.1
 PySocks==1.6.7
 python-dateutil==2.6.0
 pytz==2017.2
