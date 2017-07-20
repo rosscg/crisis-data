@@ -27,6 +27,8 @@
     {% if user.screen_name is None %}
       <div>
         <h1>ID: {{ user.user_id }}</h1>
+        <p>In Degree: {{ user.in_degree }}</p>
+        <p>Out Degree: {{ user.out_degree }}</p>
         <p>No screen name detected</p>
       </div>
     {% endif %}

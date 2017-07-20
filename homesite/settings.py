@@ -16,6 +16,8 @@ import os
 CELERY_BROKER_URL = 'redis://localhost'
 #: Only add pickle to this list if your broker is secured
 #: from unwanted access (see userguide/security.html)
+# Using pickle as tweet objects are not JSON serialisable, e.g. calling
+# save_twitter_object_task.delay(tweet) from stream_listener 
 CELERY_ACCEPT_CONTENT = ['json', 'pickle']
 CELERY_RESULT_BACKEND = 'redis://localhost'
 CELERY_TASK_SERIALIZER = 'pickle'
@@ -35,7 +37,7 @@ SECRET_KEY = '^jhmoug5pmt^(x(4)c*5cjwi&(v913&@b*$yqs4-_!1!)41-%)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['e7034020.ngrok.io', '127.0.0.1']
+ALLOWED_HOSTS = ['8f1c5ac0.ngrok.io', '127.0.0.1']
 
 
 # Application definition

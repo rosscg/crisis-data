@@ -46,6 +46,9 @@ class User(models.Model):
 
     user_class = models.IntegerField(default=0)
     added_at = models.DateTimeField(default=timezone.now)
+
+    # These currently represent the degrees to ego accounts and therefore only
+    # relevant to alter objects, or egos with relationships with other egos.
     in_degree = models.IntegerField(default=0)
     out_degree = models.IntegerField(default=0)
 

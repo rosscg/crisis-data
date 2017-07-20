@@ -177,13 +177,13 @@ def create_relo(existing_user, new_user_id, outgoing):
         # Create new users for targets if not already in DB
         if User.objects.filter(user_id=new_user_id).exists():
             tuser = User.objects.get(user_id=new_user_id)
-            #tuser.in_degree = tuser.in_degree + 1
-            #tuser.save()
+            tuser.in_degree = tuser.in_degree + 1
+            tuser.save()
             r.targetuser = tuser
         else:
             u2 = User() #TODO: django.db.utils.IntegrityError: duplicate key value violates unique constraint "streamcollect_user_user_id_key" - May be related to deadlocking
             u2.user_id = new_user_id
-            #u2.in_degree = 1
+            u2.in_degree = 1
             u2.save()
             r.targetuser = u2
     else:
@@ -194,13 +194,13 @@ def create_relo(existing_user, new_user_id, outgoing):
             # Create new users for targets if not already in DB
             if User.objects.filter(user_id=new_user_id).exists():
                 u2 = User.objects.get(user_id=new_user_id)
-                #u2.out_degree += 1
-                #u2.save()
+                u2.out_degree += 1
+                u2.save()
                 r.sourceuser = u2
             else:
                 u2 = User()
                 u2.user_id = new_user_id
-                #u2.out_degree = 1
+                u2.out_degree = 1
                 u2.save()
                 r.sourceuser = u2
     r.save()

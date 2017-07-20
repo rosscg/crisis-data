@@ -4,9 +4,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from tweepy import Stream, OAuthHandler
 from tweepy.streaming import StreamListener
 
-#from streamcollect.models import User, Relo
-#from .userdata import get_api
-
 from streamcollect.models import Keyword, AccessToken, ConsumerKey
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
 from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT
@@ -101,6 +98,8 @@ def twitter_stream(gps=False):
     if gps:
         twitterStream.filter(locations=data, async=True)
     else:
+        #TODO: Currently returns replies where the original message included the phrase. Decide whether to keep. Also quoted tweets.
+        #EG: https://twitter.com/HalfStrungHarp/status/887335974539317249
         while True:
             #Periodically re-run stream to get updated set of keywords.
             if twitterStream.running:

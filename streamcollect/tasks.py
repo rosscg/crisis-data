@@ -2,41 +2,36 @@ from celery import shared_task
 from celery.task import periodic_task
 from datetime import timedelta
 import pytz
+from django.utils import timezone
+from django.db.models import Q
 
 from twdata import userdata
 from .models import User, Relo, CeleryTask
 
-from django.utils import timezone
-
-from django.db.models import Q
-
 from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
-#TODO: Replace into target method.
+#Uncomment the decorators here to allow tasks to run periodically. Requires a running Celery Beat (see Readme)
 #@periodic_task(run_every=timedelta(hours=24), bind=True)
 def update_user_relos_periodic(self):
     update_user_relos_task()
     return
-#@periodic_task(run_every=timedelta(minutes=60), bind=True)
+#@periodic_task(run_every=timedelta(hours=6), bind=True)
 def trim_spam_accounts_periodic(self):
     trim_spam_accounts()
     return
-#@periodic_task(run_every=timedelta(minutes=60), bind=True)
+#@periodic_task(run_every=timedelta(minutes=30), bind=True)
 def update_data_periodic(self):
     update_tracked_tags()
-    add_users_from_mentions
+    add_users_from_mentions()
     return
 
-#TODO: Add revoke and db record as in update_user_relos_task
+
 @shared_task(bind=True)
 def trim_spam_accounts(self):
-    # Remove existing task
+    # Remove existing task and save new task to DB
     kill_celery_task('trim_spam_accounts')
-    #print("Running trim_spam_accounts with id: {}".format(self.request.id))
-    #Save task details to DB
-    task_object = CeleryTask(celery_task_id = self.request.id, task_name='trim_spam_accounts')
-    CeleryTask.objects.filter(celery_task_id=self.request.id).delete()
+    task_object = CeleryTask(celery_task_id=self.request.id, task_name='trim_spam_accounts')
     task_object.save()
 
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
@@ -45,6 +40,7 @@ def trim_spam_accounts(self):
     length = users.count()
     print("length of class 0 users to sort: {}".format(length))
 
+    #Requesting User objects in batches to minimise API limits
     while length > 0:
         if length > 99:
             end = 100
@@ -57,20 +53,19 @@ def trim_spam_accounts(self):
 
         for user_data in user_list:
             u = users.get(user_id=int(user_data.id_str))
+            #Class the user as spam or 'alter'
             if check_spam_account(user_data):
                 u.user_class = -1
             else:
                 u.user_class = 1
-            #TODO: Need all these? Perhaps only for user_class >0? Merge with add_user section?
             #If timezone is an issue:
-
             try:
                 tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
             except pytz.exceptions.AmbiguousTimeError:
                 # Adding an hour to avoid DST ambiguity errors.
                 time_adjusted = user_data.created_at + timedelta(minutes=60)
                 tz_aware = timezone.make_aware(time_adjusted, timezone.get_current_timezone())
-
+            #TODO: Need all these? Perhaps only for user_class >0? Merge with add_user section?
             u.created_at = tz_aware
             u.followers_count = user_data.followers_count
             u.friends_count = user_data.friends_count
@@ -88,6 +83,7 @@ def trim_spam_accounts(self):
 
 @shared_task(bind=True)
 def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, **kwargs):
+    #Save task to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
     task_object.save()
 
@@ -105,32 +101,30 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
     return
 
 
-#TODO: add user_followed_by functionality
 #TODO: Move to methods and import?
+#TODO: Currently appears buggy. Lists too long shortly after adding user, should be near-0
 @shared_task(bind=True)
 def update_user_relos_task(self):
-    # Remove existing task
+    # Remove existing task and save new task to DB
     kill_celery_task('update_user_relos')
-    #print("Running update_user_relos_task with id: {}".format(self.request.id))
-    #Save task details to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
     task_object.save()
 
     users = User.objects.filter(user_class__gte=2)
 
     for user in users:
-        #Get users followed by account
+        #Get true list of users followed by account
         user_following = userdata.friends_ids(screen_name=user.screen_name)
-
         #Get recorded list of users followed by account
-        #TODO: Filter out dead relos, but how to handle when recreated?
         user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser__user_id', flat=True))
 
         new_friend_links = [a for a in user_following if (a not in user_following_recorded)]
         dead_friend_links = [a for a in user_following_recorded if (a not in user_following)]
 
-        print("New friend links for user: {}: {}".format(user.screen_name, new_friend_links))
-        print("Dead friend links for user: {}: {}".format(user.screen_name, dead_friend_links))
+        if len(new_friend_links):
+            print("New friend links for user: {}: {}".format(user.screen_name, new_friend_links))
+        if len(dead_friend_links):
+            print("Dead friend links for user: {}: {}".format(user.screen_name, dead_friend_links))
 
         for target_user_id in dead_friend_links:
             for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id).filter(end_observed_at=None):
@@ -140,24 +134,24 @@ def update_user_relos_task(self):
             tuser.in_degree = tuser.in_degree - 1
             tuser.save()
 
-            user.out_degree -= 1
-            user.save()
-
+            #Commented out to reduce DB calls:
+            #user.out_degree -= 1
+            #user.save()
         for targetuser in new_friend_links:
             create_relo(user, targetuser, outgoing=True)
 
-        #Get users following an account
+        #Get true list of users following an account
         user_followers = userdata.followers_ids(screen_name = user.screen_name)
-
         #Get recorded list of users following an account
-        #TODO: Filter out dead relos, but how to handle when recreated?
         user_followers_recorded = list(Relo.objects.filter(targetuser=user).filter(end_observed_at=None).values_list('sourceuser__user_id', flat=True))
 
         new_follower_links = [a for a in user_followers if (a not in user_followers_recorded)]
         dead_follower_links = [a for a in user_followers_recorded if (a not in user_followers)]
 
-        print("New follower links for user: {}: {}".format(user.screen_name, new_follower_links))
-        print("Dead follower links for user: {}: {}".format(user.screen_name, dead_follower_links))
+        if len(new_follower_links):
+            print("New follower links for user: {}: {}".format(user.screen_name, new_follower_links))
+        if len(dead_follower_links):
+            print("Dead follower links for user: {}: {}".format(user.screen_name, dead_follower_links))
 
         for source_user_id in dead_follower_links:
             for ob in Relo.objects.filter(targetuser=user, sourceuser__user_id__contains=source_user_id).filter(end_observed_at=None):
@@ -167,9 +161,9 @@ def update_user_relos_task(self):
             suser.in_degree = suser.in_degree - 1
             suser.save()
 
-            user.in_degree -= 1
-            user.save()
-
+            #Commented out to reduce DB calls:
+            #user.in_degree -= 1
+            #user.save()
         for source_user in new_follower_links:
             create_relo(user, source_user, outgoing=False)
 

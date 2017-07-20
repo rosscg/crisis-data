@@ -97,7 +97,7 @@ def submit(request):
         task_object.save()
         return redirect('stream_status')
     elif "start_gps_stream" in request.POST:
-        #TODO: Store and upate gps coords
+        #TODO: Store and upate gps coords in an event object
         gps = [-1.257677, 51.752022]
         task = twitter_stream_task.delay(gps)
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_gps')
@@ -129,7 +129,7 @@ def submit(request):
         except ObjectDoesNotExist:
             print('Error! Failed to get Consumer Key from database.')
             return render(request, 'streamcollect/monitor_user.html')
-        auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'http://e7034020.ngrok.io/callback')
+        auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'http://8f1c5ac0.ngrok.io/callback')
         try:
             redirect_url = auth.get_authorization_url()
             request.session['request_token'] = auth.request_token
@@ -181,7 +181,7 @@ def network_data_API(request):
 
     #Users with an in/out degree of X or greater, exclude designated spam.
     #TODO: Add ego users with smaller degrees?
-    relevant_users = User.objects.filter(user_class__gte=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+    relevant_users = User.objects.filter(user_class__gte=1).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
 
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     relevant_relos = Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users, end_observed_at=None)
