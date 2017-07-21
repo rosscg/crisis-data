@@ -94,8 +94,9 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
     try:
         user_data = userdata.get_user(**kwargs)
         add_user(user_class=user_class, user_data=user_data)
-    except:
+    except Exception as e:
         print('Error adding user.')
+        print(e)
         pass
 
     if tweet:
@@ -125,6 +126,7 @@ def update_user_relos_task(self):
         user_following=userdata.friends_ids(user_id=user.user_id)
         if not user_following:
             #TODO: Handle suspended/deleted user here
+            print('Suspected suspended account: {}'.format(user.user_id))
             continue
         #Get recorded list of users followed by account
         user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser__user_id', flat=True))
@@ -185,7 +187,7 @@ def update_user_relos_task(self):
         for source_user in new_follower_links:
             create_relo(user, source_user, outgoing=False)
 
-    print('Updating relo information complere')
+    print('Updating relationship data complete.')
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return

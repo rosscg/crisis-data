@@ -179,9 +179,8 @@ def submit(request):
 def network_data_API(request):
     print("Collecting network_data...")
 
-    #Users with an in/out degree of X or greater, exclude designated spam.
-    #TODO: Add ego users with smaller degrees?
-    relevant_users = User.objects.filter(user_class__gte=1).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+    #All ego nodes, and alters with an in/out degree of X or greater.
+    relevant_users = User.objects.filter(user_class__gte=1).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))
 
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     relevant_relos = Relo.objects.filter(targetuser__in=relevant_users, sourceuser__in=relevant_users, end_observed_at=None)
@@ -200,6 +199,11 @@ def network_data_API(request):
 
     data = {"nodes" : resultsuser, "links" : resultsrelo}
     jsondata = json.dumps(data)
+
+    #csv = open('data_csv.csv','w')
+    #for relo in relevant_relos:
+    #    csv.write(relo.as_csv()+'\n')
+    #csv.close()
 
     #TODO: HttpReponse vs Jsonresponse? Latter doesn't work with current d3
     return HttpResponse(jsondata)

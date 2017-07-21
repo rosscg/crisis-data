@@ -44,7 +44,7 @@ class User(models.Model):
     utc_offset = models.CharField(max_length=200, null=True)
     verified = models.NullBooleanField(null=True)
 
-    user_class = models.IntegerField(default=0)
+    user_class = models.IntegerField()
     added_at = models.DateTimeField(default=timezone.now)
 
     # These currently represent the degrees to ego accounts and therefore only
@@ -134,6 +134,9 @@ class Relo(models.Model):
         return dict(
             source=str(self.sourceuser.user_id),
             target=str(self.targetuser.user_id))
+
+    def as_csv(self):
+        return '{},{}'.format(self.sourceuser.user_id, self.targetuser.user_id)
 
     def __str__(self):
         if self.end_observed_at is None:

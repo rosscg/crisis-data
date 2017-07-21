@@ -77,38 +77,36 @@ def add_users_from_mentions():
 
 #@transaction.atomic
 def add_user(user_class=0, user_data=None, **kwargs):
-    # TODO: Needs to check something other than username
-    # User exists as a full user (ego)
+    # User exists at the user_class level
     if 'screen_name' in kwargs:
         screen_name=kwargs.get('screen_name')
-        if User.objects.filter(screen_name=screen_name).exists():
-            if User.objects.get(screen_name=screen_name).user_class >= 2:
-                print("User {} already exists.".format(screen_name))
+        try:
+            u = User.objects.get(screen_name=screen_name)
+            if u.user_class >= user_class:
+                print("User {} already exists.".format(u.screen_name))
                 return
+        except:
+            pass
     # Get user_data if not supplied
     if not user_data:
         user_data=userdata.get_user(**kwargs)
-    if 'screen_name' not in kwargs:
-        if User.objects.filter(screen_name=user_data.screen_name).exists():
-            if User.objects.get(screen_name=user_data.screen_name).user_class >= 2:
-                print("User {} already exists.".format(user_data.screen_name))
-                return
-
     if check_spam_account(user_data):
         return
-
-    # If user is an existing node_id (alter)
-    if User.objects.filter(user_id=int(user_data.id_str)).exists():
-        print("Updating record...")
-        # u = User.objects.filter(user_id=int(userdict.get('id_str')))
-        u = get_object_or_404(User, user_id=int(user_data.id_str))
-        # Update added_at, as user is upgraded from alter to ego
-        u.added_at = timezone.now()
-    # User is a new observation
-    else:
-        u = User()
+    try:
+        u # exists? i.e. made with screen_name call above.
+    except:
+        try:
+            u = User.objects.get(user_id=int(user_data.id_str))
+        except:
+            u = User()
+    # Check if user already exists class level. None is true if the user hasn't
+    # been saved yet (i.e. created in this function)
+    if not u.user_class == None and u.user_class >= user_class:
+        print("User {} already exists.".format(u.screen_name))
+        return
 
     # If timezone is an issue:
+    u.added_at = timezone.now()
     try:
         tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
     except pytz.exceptions.AmbiguousTimeError:
@@ -156,7 +154,6 @@ def add_user(user_class=0, user_data=None, **kwargs):
     u.verified = user_data.verified
 
     u.user_class = user_class
-
     u.save()
 
     # Add relationship data if the user_class is 2 or higher
@@ -172,16 +169,15 @@ def add_user(user_class=0, user_data=None, **kwargs):
             create_relo(u, sourceuser, outgoing=False)
     return
 
+
 #TODO: Have commented out the updates to the in/out degree rows (to reduce db calls). Decide whether to remove.
 def create_relo(existing_user, new_user_id, outgoing):
 
     if outgoing:
         if Relo.objects.filter(sourceuser=existing_user).filter(targetuser__user_id=new_user_id).filter(end_observed_at=None).exists():
-            #print("Outgoing relationship from {} to {} already exists.".format(existing_user.screen_name, new_user_id))
             return
-    else:
+    else: # Incoming relationship
         if Relo.objects.filter(sourceuser__user_id=new_user_id).filter(targetuser=existing_user).filter(end_observed_at=None).exists():
-            #print("Incoming relationship to {} from {} already exists.".format(existing_user.screen_name, new_user_id))
             return
 
     r = Relo()
@@ -192,34 +188,32 @@ def create_relo(existing_user, new_user_id, outgoing):
         r.sourceuser = existing_user
 
         # Create new users for targets if not already in DB
-        if User.objects.filter(user_id=new_user_id).exists():
+        try:
             tuser = User.objects.get(user_id=new_user_id)
-            tuser.in_degree = tuser.in_degree + 1
-            tuser.save()
-            r.targetuser = tuser
-        else:
-            u2 = User() #TODO: django.db.utils.IntegrityError: duplicate key value violates unique constraint "streamcollect_user_user_id_key" - May be related to deadlocking
-            u2.user_id = new_user_id
-            u2.in_degree = 1
-            u2.save()
-            r.targetuser = u2
-    else:
+        except:
+            tuser = User()
+            tuser.user_id = new_user_id
+            tuser.user_class=0
+        tuser.in_degree += 1
+        tuser.save()
+        r.targetuser = tuser
+
+    else: # Incoming relationship
             #existing_user.in_degree += 1
             #existing_user.save()
             r.targetuser = existing_user
 
             # Create new users for targets if not already in DB
-            if User.objects.filter(user_id=new_user_id).exists():
-                u2 = User.objects.get(user_id=new_user_id)
-                u2.out_degree += 1
-                u2.save()
-                r.sourceuser = u2
-            else:
-                u2 = User()
-                u2.user_id = new_user_id
-                u2.out_degree = 1
-                u2.save()
-                r.sourceuser = u2
+            try:
+                suser = User.objects.get(user_id=new_user_id)
+            except:
+                suser = User()
+                suser.user_id = new_user_id
+                suser.user_class=0
+            suser.out_degree += 1
+            suser.save()
+            r.sourceuser = suser
+
     r.save()
     return
 
@@ -231,6 +225,7 @@ def save_user_timeline(**kwargs):
     for status in statuses:
         save_tweet(status)
     return
+
 
 def save_tweet(tweet_data, save_entities=False):
     tweet = Tweet()
