@@ -22,7 +22,7 @@ def trim_spam_accounts_periodic(self):
     return
 #@periodic_task(run_every=timedelta(minutes=30), bind=True)
 def update_data_periodic(self):
-    update_tracked_tags()
+    update_tracked_tags()   #Requires config.py: REFRESH_STREAM=True
     add_users_from_mentions()
     return
 
@@ -35,28 +35,34 @@ def trim_spam_accounts(self):
     task_object.save()
 
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
-    users = User.objects.filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+    users = list(User.objects.filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE)).values_list('user_id', flat=True))
 
-    length = users.count()
+    length = len(users)
     print("Length of class-0 users to sort: {}".format(length))
 
-    #Requesting User objects in batches to minimise API limits
-    while length > 0:
-        if length > 99:
-            end = 100
-        else:
+    chunk_size = 100 # Max of 100
+    index = 0
+
+    # Requesting User objects in batches to minimise API limits
+    while index < length:
+        if length - index <= chunk_size:
             end = length
-        chunk = users[0:end]
+        else:
+            end = index + chunk_size
+        chunk = users[index:end]
+        print("Length: {}, Chunk: {}:{}".format(length, index, end))
         #process chunk
-        user_ids = chunk.values_list('user_id', flat=True)
+        user_ids = chunk
         user_list = userdata.lookup_users(user_ids=user_ids)
 
         if not user_list:
             # False returned if only dead users in list
             print('Error with users: {}'.format(user_ids))
-            return
+            index += chunk_size
+            continue
         for user_data in user_list:
-            u = users.get(user_id=int(user_data.id_str))
+            u = User.objects.get(user_id=int(user_data.id_str))
+
             #Class the user as spam or 'alter'
             if check_spam_account(user_data):
                 u.user_class = -1
@@ -78,8 +84,11 @@ def trim_spam_accounts(self):
             u.name = user_data.name
             u.screen_name = user_data.screen_name
             u.statuses_count = user_data.statuses_count
-            u.save()
-        length -= 100
+            try:
+                u.save()
+            except:
+                print("Error saving user: {}".format(user_data.screen_name))
+        index += chunk_size
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
@@ -129,7 +138,7 @@ def update_user_relos_task(self):
             print('Suspected suspended account: {}'.format(user.user_id))
             continue
         #Get recorded list of users followed by account
-        user_following_recorded = list(Relo.objects.filter(sourceuser=user).filter(end_observed_at=None).values_list('targetuser__user_id', flat=True))
+        user_following_recorded = list(Relo.objects.filter(source_user=user).filter(end_observed_at=None).values_list('target_user__user_id', flat=True))
 
         new_friend_links = [a for a in user_following if (a not in user_following_recorded)]
         dead_friend_links = [a for a in user_following_recorded if (a not in user_following)]
@@ -142,7 +151,7 @@ def update_user_relos_task(self):
             print("{} dead friend links for user: {}".format(len(dead_friend_links), user.screen_name))
 
         for target_user_id in dead_friend_links:
-            for ob in Relo.objects.filter(sourceuser=user, targetuser__user_id__contains=target_user_id).filter(end_observed_at=None):
+            for ob in Relo.objects.filter(source_user=user, target_user__user_id__contains=target_user_id).filter(end_observed_at=None):
                 ob.end_observed_at = timezone.now()
                 ob.save()
             tuser = User.objects.get(user_id=target_user_id)
@@ -152,8 +161,8 @@ def update_user_relos_task(self):
             #Commented out to reduce DB calls:
             #user.out_degree -= 1
             #user.save()
-        for targetuser in new_friend_links:
-            create_relo(user, targetuser, outgoing=True)
+        for target_user in new_friend_links:
+            create_relo(user, target_user, outgoing=True)
 
         #Get true list of users following an account
         user_followers = userdata.followers_ids(user_id=user.user_id)
@@ -161,7 +170,7 @@ def update_user_relos_task(self):
             #TODO: Handle suspended/deleted user here
             continue
         #Get recorded list of users following an account
-        user_followers_recorded = list(Relo.objects.filter(targetuser=user).filter(end_observed_at=None).values_list('sourceuser__user_id', flat=True))
+        user_followers_recorded = list(Relo.objects.filter(target_user=user).filter(end_observed_at=None).values_list('source_user__user_id', flat=True))
 
         new_follower_links = [a for a in user_followers if (a not in user_followers_recorded)]
         dead_follower_links = [a for a in user_followers_recorded if (a not in user_followers)]
@@ -174,7 +183,7 @@ def update_user_relos_task(self):
             print("{} dead follower links for user: {}".format(len(dead_follower_links), user.screen_name))
 
         for source_user_id in dead_follower_links:
-            for ob in Relo.objects.filter(targetuser=user, sourceuser__user_id__contains=source_user_id).filter(end_observed_at=None):
+            for ob in Relo.objects.filter(target_user=user, source_user__user_id__contains=source_user_id).filter(end_observed_at=None):
                 ob.end_observed_at = timezone.now()
                 ob.save()
             suser = User.objects.get(user_id=source_user_id)

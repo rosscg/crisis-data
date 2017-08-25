@@ -5,7 +5,7 @@
 
   {% if kw_stream_status is True %}
   <div class="row">
-    <h1 class="title"><small>The keyword stream is currently running.</small></h1>
+    <h1 class="title"><small>The keyword stream is running.</small></h1>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">
@@ -18,7 +18,7 @@
 
   {% if kw_stream_status is False %}
   <div class="row">
-    <h1 class="title"><small>The keyword stream is not currently running.</small></h1>
+    <h1 class="title"><small>The keyword stream is off.</small></h1>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">
@@ -45,7 +45,7 @@
 
   {% if gps_stream_status is True %}
   <div class="row">
-    <h1 class="title"><small>The GPS stream is currently running.</small></h1>
+    <h1 class="title"><small>The GPS stream is running.</small></h1>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">
@@ -58,7 +58,7 @@
 
   {% if gps_stream_status is False %}
   <div class="row">
-    <h1 class="title"><small>The GPS stream is not currently running.</small></h1>
+    <h1 class="title"><small>The GPS stream is off.</small></h1>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">

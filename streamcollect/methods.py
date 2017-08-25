@@ -160,13 +160,13 @@ def add_user(user_class=0, user_data=None, **kwargs):
     if user_class >= 2:
         # Get users followed by account & create relationship objects
         userfollowing = userdata.friends_ids(screen_name=user_data.screen_name)
-        for targetuser in userfollowing:
-            create_relo(u, targetuser, outgoing=True)
+        for target_user in userfollowing:
+            create_relo(u, target_user, outgoing=True)
 
         # Get followers & create relationship objects
         userfollowers = userdata.followers_ids(screen_name=user_data.screen_name)
-        for sourceuser in userfollowers:
-            create_relo(u, sourceuser, outgoing=False)
+        for source_user in userfollowers:
+            create_relo(u, source_user, outgoing=False)
     return
 
 
@@ -174,10 +174,10 @@ def add_user(user_class=0, user_data=None, **kwargs):
 def create_relo(existing_user, new_user_id, outgoing):
 
     if outgoing:
-        if Relo.objects.filter(sourceuser=existing_user).filter(targetuser__user_id=new_user_id).filter(end_observed_at=None).exists():
+        if Relo.objects.filter(source_user=existing_user).filter(target_user__user_id=new_user_id).filter(end_observed_at=None).exists():
             return
     else: # Incoming relationship
-        if Relo.objects.filter(sourceuser__user_id=new_user_id).filter(targetuser=existing_user).filter(end_observed_at=None).exists():
+        if Relo.objects.filter(source_user__user_id=new_user_id).filter(target_user=existing_user).filter(end_observed_at=None).exists():
             return
 
     r = Relo()
@@ -185,7 +185,7 @@ def create_relo(existing_user, new_user_id, outgoing):
     if outgoing:
         #existing_user.out_degree += 1
         #existing_user.save()
-        r.sourceuser = existing_user
+        r.source_user = existing_user
 
         # Create new users for targets if not already in DB
         try:
@@ -196,12 +196,12 @@ def create_relo(existing_user, new_user_id, outgoing):
             tuser.user_class=0
         tuser.in_degree += 1
         tuser.save()
-        r.targetuser = tuser
+        r.target_user = tuser
 
     else: # Incoming relationship
             #existing_user.in_degree += 1
             #existing_user.save()
-            r.targetuser = existing_user
+            r.target_user = existing_user
 
             # Create new users for targets if not already in DB
             try:
@@ -212,7 +212,7 @@ def create_relo(existing_user, new_user_id, outgoing):
                 suser.user_class=0
             suser.out_degree += 1
             suser.save()
-            r.sourceuser = suser
+            r.source_user = suser
 
     r.save()
     return
@@ -235,11 +235,10 @@ def save_tweet(tweet_data, save_entities=False):
     tweet.favorite_count = tweet_data.favorite_count
     #tweet.filter_level = tweet_data.filter_level
     tweet.tweet_id = int(tweet_data.id_str)
-    tweet.in_reply_to_status_id = tweet_data.in_reply_to_status_id # nullable
-    tweet.in_reply_to_user_id = tweet_data.in_reply_to_user_id # nullable
     tweet.lang = tweet_data.lang # nullable
     #tweet.possibly_sensitive = tweet_data.possibly_sensitive # nullable
     tweet.retweet_count = tweet_data.retweet_count
+    tweet.source = tweet_data.source
 
     if tweet_data.truncated:
         tweet.text=tweet_data.extended_tweet.get('full_text')
@@ -251,13 +250,17 @@ def save_tweet(tweet_data, save_entities=False):
             tweet.text=tweet_data.full_text
 
     try:
-        tweet.coordinates_lat = tweet_data.coordinates.coordinates[1] # nullable
-        tweet.coordinates_long = tweet_data.coordinates.coordinates[0]# nullable
-        tweet.coordinates_type = tweet_data.coordinates.type # nullable
+        tweet.coordinates_lat = tweet_data.coordinates.get('coordinates')[1] # nullable
+        tweet.coordinates_long = tweet_data.coordinates.get('coordinates')[0] # nullable
+        tweet.coordinates_type = tweet_data.coordinates.get('type') # nullable
     except:
         pass
+    if tweet_data.in_reply_to_status_id_str:
+        tweet.in_reply_to_status_id = int(tweet_data.in_reply_to_status_id_str) # nullable
+    if tweet_data.in_reply_to_user_id_str:
+        tweet.in_reply_to_user_id = int(tweet_data.in_reply_to_user_id_str) # nullable
     try:
-        tweet.quoted_status_id = tweet_data.quoted_status_id # only appears if relevant
+        tweet.quoted_status_id = int(tweet_data.quoted_status_id_str) # Only appears when relevant
     except:
         pass
     author_id = int(tweet_data.user.id_str)

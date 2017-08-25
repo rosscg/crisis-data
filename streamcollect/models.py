@@ -89,11 +89,11 @@ class Tweet(models.Model):
     #quoted_status = models.ForeignKey('self')           // tweet object
     retweet_count = models.IntegerField()
     #retweeted_status        // tweet object
+    source = models.CharField(max_length=300)
     text = models.CharField(max_length=300)
     #user_data               // user object
 
     author = models.ForeignKey(User, related_name='author', on_delete=models.CASCADE)
-
 
     def __str__(self):
         return str(self.text)
@@ -108,7 +108,7 @@ class Hashtag(models.Model):
 
 
 class Url(models.Model):
-    url = models.CharField(max_length=200, unique=True)
+    url = models.CharField(max_length=400, unique=True)
     tweets = models.ManyToManyField(Tweet)
 
     def __str__(self):
@@ -125,24 +125,24 @@ class Mention(models.Model):
 
 class Relo(models.Model):
     #TODO: on_delete needs to be resolved appropriately.
-    sourceuser = models.ForeignKey(User, related_name='source', on_delete=models.CASCADE)
-    targetuser = models.ForeignKey(User, related_name='target', on_delete=models.CASCADE)
+    source_user = models.ForeignKey(User, related_name='source', on_delete=models.CASCADE)
+    target_user = models.ForeignKey(User, related_name='target', on_delete=models.CASCADE)
     observed_at = models.DateTimeField(default=timezone.now)
     end_observed_at = models.DateTimeField(null=True)
 
     def as_json(self):
         return dict(
-            source=str(self.sourceuser.user_id),
-            target=str(self.targetuser.user_id))
+            source=str(self.source_user.user_id),
+            target=str(self.target_user.user_id))
 
     def as_csv(self):
-        return '{},{}'.format(self.sourceuser.user_id, self.targetuser.user_id)
+        return '{},{}'.format(self.source_user.user_id, self.target_user.user_id)
 
     def __str__(self):
         if self.end_observed_at is None:
-            return "{} following: {}".format(self.sourceuser, self.targetuser)
+            return "{} following: {}".format(self.source_user, self.target_user)
         else:
-            return "Dead Relo: {} following: {}".format(self.sourceuser, self.targetuser)
+            return "Dead Relo: {} following: {}".format(self.source_user, self.target_user)
 
 
 class Keyword(models.Model):

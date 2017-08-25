@@ -6,7 +6,7 @@ from tweepy.streaming import StreamListener
 
 from streamcollect.models import Keyword, AccessToken, ConsumerKey
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
-from streamcollect.config import STREAM_REFRESH_RATE, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT
+from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT
 
 from streamcollect.tasks import save_twitter_object_task
 from streamcollect.methods import kill_celery_task, save_tweet
@@ -52,17 +52,22 @@ class stream_listener(StreamListener):
             if not any(x in text.lower() for x in keywords_global):
                 return
 
-        print(status.text)
-
         # May have to dump from JSON? coords = json.dumps(coords)
         if status.coordinates is not None:
             coords = status.coordinates.get('coordinates')
-            print('Coordinates: {}'.format(coords))
+            #print('Coordinates: {}'.format(coords))
             if self.gps_bool:
+                # TODO: Remove or comment out:
+                if status.author.screen_name[0:4] == 'tmj_': # Excluding TMJ spam (USA)
+                    return
                 if not self.data[0] < coords[0] < self.data[2]:
-                    print("ERROR Coordinates outside longitude")
+                    #print("ERROR Coordinates outside longitude")
+                    return
                 if not self.data[1] < coords[1] < self.data[3]:
-                    print("ERROR Coordinates outside latitude")
+                    #print("ERROR Coordinates outside latitude")
+                    return
+
+        print(status.text)
 
         save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, id=int(status.user.id_str))
         return
@@ -118,7 +123,7 @@ def twitter_stream(gps=False):
         #EG: https://twitter.com/HalfStrungHarp/status/887335974539317249
         while True:
             #Periodically re-run stream to get updated set of keywords.
-            if twitterStream.running:
+            if twitterStream.running and REFRESH_STREAM:
                 twitterStream.disconnect()
                 print("Deleting old stream...")
                 del twitterStream
