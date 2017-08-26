@@ -1,3 +1,4 @@
+import random
 import time
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -6,7 +7,7 @@ from tweepy.streaming import StreamListener
 
 from streamcollect.models import Keyword, AccessToken, ConsumerKey
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
-from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT
+from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, STREAM_PROPORTION
 
 from streamcollect.tasks import save_twitter_object_task
 from streamcollect.methods import kill_celery_task, save_tweet
@@ -23,6 +24,10 @@ class stream_listener(StreamListener):
     def on_status(self, status):
         if self.gps_bool:
             if status.coordinates is None:
+                return
+        else: # Process smaller proportion of Tweets
+            r = random.random()
+            if r > STREAM_PROPORTION:
                 return
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
