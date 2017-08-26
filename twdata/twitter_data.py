@@ -29,6 +29,8 @@ class stream_listener(StreamListener):
             r = random.random()
             if r > STREAM_PROPORTION:
                 return
+            if 'pray' in status.text: # Remove some 'thoughts and prayers' messages
+                return
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
         if status.user.friends_count > FRIENDS_THRESHOLD:
