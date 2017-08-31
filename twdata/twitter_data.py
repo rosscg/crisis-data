@@ -29,7 +29,7 @@ class stream_listener(StreamListener):
             r = random.random()
             if r > STREAM_PROPORTION:
                 return
-            if 'pray' in status.text: # Remove some 'thoughts and prayers' messages
+            if 'pray' in status.text.lower(): # Remove some 'thoughts and prayers' messages
                 return
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
@@ -125,12 +125,12 @@ def twitter_stream(gps=False):
 
     if gps:
         twitterStream.filter(locations=data, async=True)
-    else:
+    elif REFRESH_STREAM:
         #TODO: Currently returns replies where the original message included the phrase. Decide whether to keep. Also quoted tweets.
         #EG: https://twitter.com/HalfStrungHarp/status/887335974539317249
         while True:
             #Periodically re-run stream to get updated set of keywords.
-            if twitterStream.running and REFRESH_STREAM:
+            if twitterStream.running:
                 twitterStream.disconnect()
                 print("Deleting old stream...")
                 del twitterStream
@@ -140,9 +140,13 @@ def twitter_stream(gps=False):
                     kill_celery_task('stream_kw')
                     return
                 twitterStream = Stream(auth, stream_listener(False, data))
-            print("Running new stream...")
+            print("Running new stream (with refresh)...")
             twitterStream.filter(track=data, async=True)
             time.sleep(STREAM_REFRESH_RATE)
+    else:
+        print("Running new stream...")
+        twitterStream.filter(track=data, async=True)
+
 
 #TODO: Fold this back into methods?
 def get_keywords():

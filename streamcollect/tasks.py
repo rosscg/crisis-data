@@ -104,12 +104,17 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
         user_data = userdata.get_user(**kwargs)
         add_user(user_class=user_class, user_data=user_data)
     except Exception as e:
-        print('Error adding user.')
+        print('Error adding user:')
         print(e)
         pass
 
     if tweet:
-        save_tweet(tweet, save_entities)
+        try:
+            save_tweet(tweet, save_entities)
+        except:
+            print('Error saving tweet:')
+            print(e)
+            pass
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
