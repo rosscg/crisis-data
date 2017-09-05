@@ -104,7 +104,7 @@ def user_timeline(**kwargs):
     # TODO: This appears to return the same as non-extended text, truncated always
     # 'False'. Likely a tweepy bug. If fixed, adjust handling in save_tweet
     try:
-        statuses = api.user_timeline(**kwargs, count=50, trim_user=True, tweet_mode='extended')
+        statuses = api.user_timeline(**kwargs, count=200, trim_user=True, tweet_mode='extended')
     except:
         print('Error with {}, user likely deleted or suspended.'.format(kwargs))
         return False

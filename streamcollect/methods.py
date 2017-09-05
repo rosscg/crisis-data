@@ -5,6 +5,10 @@ from django.core.exceptions import ObjectDoesNotExist
 import re
 import pytz
 
+
+from django.utils import timezone
+from dateutil.parser import *
+
 from twdata import userdata
 from .models import CeleryTask, User, Relo, Tweet, Hashtag, Url, Mention, Keyword
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD
@@ -108,11 +112,11 @@ def add_user(user_class=0, user_data=None, **kwargs):
     # If timezone is an issue:
     u.added_at = timezone.now()
     try:
-        tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+        tz_aware = timezone.make_aware(user_data.created_at, timezone=pytz.utc)
     except pytz.exceptions.AmbiguousTimeError:
         # Adding an hour to avoid DST ambiguity errors.
         time_adjusted = user_data.created_at + timedelta(minutes=60)
-        tz_aware = timezone.make_aware(time_adjusted, timezone.get_current_timezone())
+        tz_aware = timezone.make_aware(time_adjusted, timezone=pytz.utc)
     u.created_at = tz_aware
 
     u.default_profile = user_data.default_profile
@@ -223,11 +227,65 @@ def save_user_timeline(**kwargs):
     statuses = userdata.user_timeline(**kwargs)
     #Save to DB here
     for status in statuses:
-        save_tweet(status)
+        save_tweet(status, streamed=0)
+    return
+
+def save_all_user_timelines():
+    #users = User.objects.filter(user_class__gte=2)
+    users = User.objects.filter(user_id=123730012)
+
+    #TODO: Store in DB. Adjust for UTC. Start time as time of first tweet?
+    start_time = parse("Aug 26 01:30:00 +0100 2017") # Harvey data collection
+    end_time = parse("Sept 02 10:30:00 +0100 2017")
+
+    timeline_old_enough = False # Timeline encompasses start_time
+    max_id = False
+
+    for user in users:
+        while timeline_old_enough is False:
+
+            if max_id is False:
+                statuses = userdata.user_timeline(id=user.user_id)
+            else:
+                statuses = userdata.user_timeline(id=user.user_id, max_id=max_id)
+
+            #Save to DB here
+            for status in statuses:
+                print(status.created_at)
+                print(int(status.id_str))
+
+                if int(status.id_str) < max_id or max_id is False:
+                    max_id = int(status.id_str) - 1
+
+                tz_aware = timezone.make_aware(status.created_at, timezone=pytz.utc)
+
+                if tz_aware > start_time:
+                    if tz_aware < end_time:
+                        try:
+                            if status.truncated:
+                                text=status.extended_tweet.get('full_text')
+                            else:
+                                try:
+                                    text=status.text
+                                except:
+                                    text=status.full_text
+
+                            print("(Pretend) Saving Tweet:")
+                            print(text)
+                            save_tweet(status, streamed=0)
+                        except:
+                            print("Tweet already exists:")
+                            pass
+                    else:
+                        print('Tweet too new.')
+                        max_id = int(status.id_str) - 1
+                else:
+                    timeline_old_enough = True
+                    print('Tweet too old.')
     return
 
 
-def save_tweet(tweet_data, save_entities=False):
+def save_tweet(tweet_data, streamed, save_entities=False):
     tweet = Tweet()
     # If timezone is an issue:
     tz_aware = timezone.make_aware(tweet_data.created_at, timezone.get_current_timezone())
@@ -239,6 +297,7 @@ def save_tweet(tweet_data, save_entities=False):
     #tweet.possibly_sensitive = tweet_data.possibly_sensitive # nullable
     tweet.retweet_count = tweet_data.retweet_count
     tweet.source = tweet_data.source
+    tweet.streamed = streamed
 
     if tweet_data.truncated:
         tweet.text=tweet_data.extended_tweet.get('full_text')

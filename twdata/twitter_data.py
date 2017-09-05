@@ -76,7 +76,7 @@ class stream_listener(StreamListener):
 
         print(status.text)
 
-        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, id=int(status.user.id_str))
+        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, streamed=True, id=int(status.user.id_str))
         return
 
     def on_error(self, status):

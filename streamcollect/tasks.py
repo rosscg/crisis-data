@@ -70,11 +70,11 @@ def trim_spam_accounts(self):
                 u.user_class = 1
             #If timezone is an issue:
             try:
-                tz_aware = timezone.make_aware(user_data.created_at, timezone.get_current_timezone())
+                tz_aware = timezone.make_aware(user_data.created_at, timezone=pytz.utc)
             except (pytz.exceptions.AmbiguousTimeError, pytz.exceptions.NonExistentTimeError):
                 # Adding an hour to avoid DST ambiguity errors.
                 time_adjusted = user_data.created_at + timedelta(minutes=60)
-                tz_aware = timezone.make_aware(time_adjusted, timezone.get_current_timezone())
+                tz_aware = timezone.make_aware(time_adjusted, timezone=pytz.utc)
             #TODO: Need all these? Perhaps only for user_class >0? Merge with add_user section?
             u.created_at = tz_aware
             u.followers_count = user_data.followers_count
@@ -95,7 +95,7 @@ def trim_spam_accounts(self):
 
 
 @shared_task(bind=True)
-def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, **kwargs):
+def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, streamed=False, **kwargs):
     #Save task to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
     task_object.save()
@@ -110,7 +110,7 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
 
     if tweet:
         try:
-            save_tweet(tweet, save_entities)
+            save_tweet(tweet, streamed, save_entities)
         except:
             print('Error saving tweet:')
             print(e)

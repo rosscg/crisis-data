@@ -12,5 +12,8 @@ body {
     border-radius: 5px;
 }
 
+.streamed_tweet {
+    background-color: lightblue;
+}
 
 .top_margin_20 { margin-top:20px; }

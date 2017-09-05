@@ -8,11 +8,11 @@ from django.db.models import Q
 from celery.task.control import revoke
 import tweepy
 
-from .models import User, Relo, CeleryTask, Keyword, AccessToken, ConsumerKey
+from .models import User, Relo, Tweet, CeleryTask, Keyword, AccessToken, ConsumerKey
 from .forms import AddUserForm
 from .tasks import save_twitter_object_task, update_user_relos_task, trim_spam_accounts
 # Remove save_user_timeline:
-from .methods import kill_celery_task, save_user_timeline, update_tracked_tags, add_users_from_mentions
+from .methods import kill_celery_task, save_all_user_timelines, update_tracked_tags, add_users_from_mentions
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -33,7 +33,10 @@ def view_network(request):
 
 def user_details(request, user_id):
     user = get_object_or_404(User, user_id=user_id)
-    return render(request, 'streamcollect/user_details.html', {'user': user})
+
+    tweets = Tweet.objects.filter(author__user_id=user_id)
+    #tweets = get_object_or_404(Tweet, author__user_id=user_id)
+    return render(request, 'streamcollect/user_details.html', {'user': user, 'tweets': tweets})
 
 def stream_status(request):
     keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
@@ -166,6 +169,7 @@ def submit(request):
         return redirect('twitter_auth')
     #TODO: Remove:
     elif "user_timeline" in request.POST:
+        save_all_user_timelines()
         #data = save_user_timeline(screen_name='QueensCollege')
         return redirect('testbed')
     elif "update_data" in request.POST:

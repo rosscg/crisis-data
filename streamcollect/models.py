@@ -79,7 +79,7 @@ class Tweet(models.Model):
     favorite_count = models.IntegerField()
     #filter_level = models.CharField(max_length=10)
     #This cannot be the primary_key due to errors with Postgres and BigInt
-    tweet_id = models.BigIntegerField(null=True)
+    tweet_id = models.BigIntegerField(null=True, unique=True)
     in_reply_to_status_id = models.BigIntegerField(null=True)
     in_reply_to_user_id = models.BigIntegerField(null=True)
     lang = models.CharField(max_length=10, null=True)
@@ -94,6 +94,7 @@ class Tweet(models.Model):
     #user_data               // user object
 
     author = models.ForeignKey(User, related_name='author', on_delete=models.CASCADE)
+    streamed = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.text)
