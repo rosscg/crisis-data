@@ -108,11 +108,11 @@ def submit(request):
         return redirect('monitor_user')
     elif "start_kw_stream" in request.POST:
         task = twitter_stream_task.delay(priority=1)
-        #task2 = twitter_stream_task.delay(priority=0)
+        task2 = twitter_stream_task.delay(priority=0)
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
         task_object.save()
-        #task_object = CeleryTask(celery_task_id = task2.task_id, task_name='stream_kw')
-        #task_object.save()
+        task_object = CeleryTask(celery_task_id = task2.task_id, task_name='stream_kw')
+        task_object.save()
         return redirect('stream_status')
     elif "start_gps_stream" in request.POST:
         #TODO: Store and upate gps coords in an event object

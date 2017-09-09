@@ -108,7 +108,7 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
 
     try:
         user_data = userdata.get_user(**kwargs)
-        add_user(user_class=user_class, user_data=user_data)
+        add_user(user_class=user_class, user_data=user_data, data_source=data_source)
     except Exception as e:
         print('Error adding user:\n{}'.format(e))
         pass
@@ -116,7 +116,7 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
     if tweet:
         try:
             save_tweet(tweet, data_source, save_entities)
-        except:
+        except Exception as e:
             print('Error saving tweet:\n{}'.format(e))
             pass
 

@@ -24,4 +24,4 @@ BOUNDING_BOX_HEIGHT = 0.6
 EXCLUDE_ISOLATED_NODES = True
 
 # Process a proportion of Tweets in the low-priority keyword stream
-STREAM_PROPORTION = 0.08
+STREAM_PROPORTION = 0.06

@@ -75,12 +75,12 @@ def add_users_from_mentions():
     for user in mentions_with_counts:
         if user.tweet_count > threshold:
             print('Adding new user from mentions: {}'.format(user.mention))
-            add_user(user_class=2, screen_name=user.mention)
+            add_user(user_class=2, data_source=0, screen_name=user.mention)
     return
 
 
 #@transaction.atomic
-def add_user(user_class=0, user_data=None, **kwargs):
+def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     # User exists at the user_class level
     if 'screen_name' in kwargs:
         screen_name=kwargs.get('screen_name')
@@ -88,6 +88,9 @@ def add_user(user_class=0, user_data=None, **kwargs):
             u = User.objects.get(screen_name=screen_name)
             if u.user_class >= user_class:
                 print("User {} already exists.".format(u.screen_name))
+                if u.data_source < data_source:
+                    u.data_source = data_source
+                    u.save()
                 return
         except:
             pass
@@ -107,6 +110,9 @@ def add_user(user_class=0, user_data=None, **kwargs):
     # been saved yet (i.e. created in this function)
     if not u.user_class == None and u.user_class >= user_class:
         print("User {} already exists.".format(u.screen_name))
+        if u.data_source < data_source:
+            u.data_source = data_source
+            u.save()
         return
 
     # If timezone is an issue:
@@ -158,6 +164,7 @@ def add_user(user_class=0, user_data=None, **kwargs):
     u.verified = user_data.verified
 
     u.user_class = user_class
+    u.data_source = data_source
     u.save()
 
     # Add relationship data if the user_class is 2 or higher
@@ -341,7 +348,7 @@ def save_tweet(tweet_data, data_source, save_entities=False):
         tweet.author = User.objects.get(user_id=author_id)
     except ObjectDoesNotExist:
         print('Author not in database, adding as new user')
-        add_user(user_id=author_id)
+        add_user(user_id=author_id, data_source=data_source)
         tweet.author = User.objects.get(user_id=author_id)
     tweet.save()
 
