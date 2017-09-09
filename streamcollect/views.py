@@ -94,17 +94,31 @@ def submit(request):
             k = Keyword()
             k.keyword = info.lower()
             k.created_at = timezone.now()
+            k.priority = 0
+            k.save()
+        return redirect('monitor_user')
+    elif "add_keyword_2" in request.POST:
+        info = request.POST['info']
+        if len(info) > 0:
+            k = Keyword()
+            k.keyword = info.lower()
+            k.created_at = timezone.now()
+            k.priority = 1
             k.save()
         return redirect('monitor_user')
     elif "start_kw_stream" in request.POST:
-        task = twitter_stream_task.delay()
+        task = twitter_stream_task.delay(priority=1)
+        #task2 = twitter_stream_task.delay(priority=0)
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
         task_object.save()
+        #task_object = CeleryTask(celery_task_id = task2.task_id, task_name='stream_kw')
+        #task_object.save()
         return redirect('stream_status')
     elif "start_gps_stream" in request.POST:
         #TODO: Store and upate gps coords in an event object
         #TODO: Starting/killing gps task doesn't appear to work. May just be queued in Redis
-        gps = [-99.9590682, 26.5486063, -93.9790001, 30.3893434] # Corpus Christi, Texas
+        #gps = [-99.9590682, 26.5486063, -93.9790001, 30.3893434] # Corpus Christi, Texas
+        gps = [-83.23,24.38,-79.71,28.19]
         task = twitter_stream_task.delay(gps)
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_gps')
         task_object.save()

@@ -23,5 +23,5 @@ BOUNDING_BOX_HEIGHT = 0.6
 # Excludes isolated nodes from network_data_API
 EXCLUDE_ISOLATED_NODES = True
 
-# Process a proportion of Tweets in the keyword stream
-STREAM_PROPORTION = 0.06
+# Process a proportion of Tweets in the low-priority keyword stream
+STREAM_PROPORTION = 0.08

@@ -94,7 +94,7 @@ class Tweet(models.Model):
     #user_data               // user object
 
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
-    streamed = models.BooleanField(default=False)
+    data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
 
     def __str__(self):
         return str(self.text)
@@ -149,6 +149,7 @@ class Relo(models.Model):
 class Keyword(models.Model):
     keyword = models.CharField(max_length = 100, unique=True)
     created_at = models.DateTimeField()
+    priority = models.IntegerField(default=0)
 
     def __str__(self):
         return str(self.keyword)

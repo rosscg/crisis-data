@@ -50,7 +50,7 @@ Re-name streamcollect/tokensSKELETON.py to tokens.py and add (at least) CONSUMER
 Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate terminal windows:
 
 > ```
-> $ /redis-4.0.1/src/redis-server
+> $ redis-4.0.1/src/redis-server
 > $ celery -A homesite worker  --concurrency=10 -l info
 > $ celery -A homesite beat -l info -S django
 > ```
@@ -102,4 +102,10 @@ https://www.postgresql.org/docs/9.1/static/backup-dump.html
 > $ pg_dump dbname > outfile
 > $ createdb dbname2
 > $ psql dbname2 < infile
+> ```
+
+To flush Redis DB:
+> ```
+> $ redis-4.0.1/src/redis-cli flushdb
+> $ celery purge
 > ```

@@ -27,7 +27,7 @@
       <div class="col-sm-8">
         <div class="user_details">
           {% for tweet in tweets %}
-            {% if tweet.streamed %}
+            {% if tweet.data_source > 0 %}
               <p class="streamed_tweet">{{ tweet.text }}<br/>
               <a href="http://www.twitter.com/{{ user.screen_name }}/status/{{tweet.tweet_id}}" target="_blank">Link</a></p>
             {% else %}

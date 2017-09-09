@@ -230,7 +230,7 @@ def save_user_timeline(**kwargs):
     statuses = userdata.user_timeline(**kwargs)
     #Save to DB here
     for status in statuses:
-        save_tweet(status, streamed=False)
+        save_tweet(status, data_source=0)
     return
 
 
@@ -284,7 +284,7 @@ def save_user_timelines(users):
                                 except:
                                     text=status.full_text
 
-                            save_tweet(status, streamed=False)
+                            save_tweet(status, data_source=0)
                         except:
                             print("Tweet already exists:")
                             pass
@@ -299,7 +299,7 @@ def save_user_timelines(users):
     return
 
 
-def save_tweet(tweet_data, streamed, save_entities=False):
+def save_tweet(tweet_data, data_source, save_entities=False):
     tweet = Tweet()
     # If timezone is an issue:
     tz_aware = timezone.make_aware(tweet_data.created_at, timezone.get_current_timezone())
@@ -311,7 +311,7 @@ def save_tweet(tweet_data, streamed, save_entities=False):
     #tweet.possibly_sensitive = tweet_data.possibly_sensitive # nullable
     tweet.retweet_count = tweet_data.retweet_count
     tweet.source = tweet_data.source
-    tweet.streamed = streamed
+    tweet.data_source = data_source
 
     if tweet_data.truncated:
         tweet.text=tweet_data.extended_tweet.get('full_text')

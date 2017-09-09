@@ -12,7 +12,8 @@ from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_TH
 from streamcollect.tasks import save_twitter_object_task
 from streamcollect.methods import kill_celery_task, save_tweet
 
-keywords_global = None
+keywords_high_priority_global = None
+keywords_low_priority_global = None
 
 class stream_listener(StreamListener):
 
@@ -22,21 +23,22 @@ class stream_listener(StreamListener):
         self.data = data
 
     def on_status(self, status):
-        if self.gps_bool:
-            if status.coordinates is None:
-                return
-        else: # Process smaller proportion of Tweets
-            r = random.random()
-            if r > STREAM_PROPORTION:
-                return
 
-            # Exclude tweets with 'pray'.
-            #TODO: Test this - still received many prayer messages. Probably from GPS stream.
-            if 'pray' in status.text.lower(): # Remove some 'thoughts and prayers' messages
+        # Check that keywords exist (Twitter doesn't handle phrases with spaces)
+        #TODO: This currently excludes replies/links if the tag is in the external
+        # entity. Decide whether to handle.
+        # Status.truncated doesn't appear to be True when user reposts from Instagram or Facebook
+        if status.truncated:
+            text=status.extended_tweet.get('full_text')
+        else:
+            text=status.text
+
+        # Exclude tweets with 'pray'.
+        if 'pray' in status.text.lower():
+            return
+        for tag in status.entities.get('hashtags'):
+            if 'pray' in tag.get('text'):
                 return
-            for tag in status.entities.get('hashtags'):
-                if 'pray' in tag.get('text'):
-                    return
 
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
@@ -53,17 +55,21 @@ class stream_listener(StreamListener):
         else:
             return
 
-        # Check that keywords exist (Twitter doesn't handle phrases with spaces)
-        #TODO: This currently exxcludes replies/links if the tag is in the external
-        # entity. Decide whether to handle.
-        # Status.truncated doesn't appear to be True when user reposts from Instagram or Facebook
-        if status.truncated:
-            text=status.extended_tweet.get('full_text')
-        else:
-            text=status.text
         if not self.gps_bool:
-            global keywords_global
-            if not any(x in text.lower() for x in keywords_global):
+            data_source = 2 # data_source = High-priority keyword stream
+            global keywords_high_priority_global
+            global keywords_low_priority_global
+            # Process smaller proportion of Tweets
+            if not any(x in text.lower() for x in keywords_high_priority_global):
+                data_source = 1 # data_source = Low-priority keyword stream
+                if not any(x in text.lower() for x in keywords_low_priority_global):
+                    return
+                r = random.random()
+                if r > STREAM_PROPORTION:
+                    return
+        else: # GPS stream
+            data_source = 3# data_source = GPS stream
+            if status.coordinates is None:
                 return
 
         # May have to dump from JSON? coords = json.dumps(coords)
@@ -83,7 +89,7 @@ class stream_listener(StreamListener):
 
         print(status.text)
 
-        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, streamed=True, id=int(status.user.id_str))
+        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source, id=int(status.user.id_str))
         return
 
     def on_error(self, status):
@@ -92,7 +98,7 @@ class stream_listener(StreamListener):
     def on_timeout(self):
         print("Connection timed out, ")
 
-def twitter_stream(gps=False):
+def twitter_stream(gps=False, priority=0):
 
     try:
         ckey=ConsumerKey.objects.all()[:1].get()
@@ -122,12 +128,12 @@ def twitter_stream(gps=False):
         print("Using bounding box: {}".format(bounding_box))
         data = bounding_box
     else:
-        data = get_keywords()
+        data = get_keywords(priority)
         if len(data) == 0:
             print("Error: no keywords found.")
             kill_celery_task('stream_kw')
             return
-
+    print('running keywords: {}'.format(data))
     twitterStream = Stream(auth, stream_listener(gps, data))
 
     if gps:
@@ -141,7 +147,7 @@ def twitter_stream(gps=False):
                 twitterStream.disconnect()
                 print("Deleting old stream...")
                 del twitterStream
-                data = get_keywords()
+                data = get_keywords(priority)
                 if len(data) == 0:
                     print("Error: no keywords found.")
                     kill_celery_task('stream_kw')
@@ -156,8 +162,14 @@ def twitter_stream(gps=False):
 
 
 #TODO: Fold this back into methods?
-def get_keywords():
-    global keywords_global
-    keywords_global = list(Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at'))
+def get_keywords(priority):
+    global keywords_low_priority_global
+    global keywords_high_priority_global
+    #keywords_global = list(Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at'))
+    keywords_high_priority_global = list(Keyword.objects.filter(priority=1).values_list('keyword', flat=True).order_by('created_at'))
+    keywords_low_priority_global = list(Keyword.objects.filter(priority=0).values_list('keyword', flat=True).order_by('created_at'))
     #keywords_global = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
-    return keywords_global
+    if priority == 0:
+        return keywords_low_priority_global
+    else:
+        return keywords_high_priority_global

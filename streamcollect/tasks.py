@@ -101,7 +101,7 @@ def trim_spam_accounts(self):
 
 
 @shared_task(bind=True)
-def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, streamed=False, **kwargs):
+def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, data_source=0, **kwargs):
     #Save task to DB
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
     task_object.save()
@@ -115,7 +115,7 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
 
     if tweet:
         try:
-            save_tweet(tweet, streamed, save_entities)
+            save_tweet(tweet, data_source, save_entities)
         except:
             print('Error saving tweet:\n{}'.format(e))
             pass

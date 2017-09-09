@@ -5,32 +5,32 @@
 <div class="jumbotron">
   <h1>StreamCollect</h1>
   <p>Log live Twitter Data</p>
-  <p><a class="btn btn-primary btn-lg" href="/view_network" role="button">View the Network</a></p>
 </div>
 
 <div class="row">
   <h1 class="title"><small>Add Tracking Data:</small></h1>
-  <form action="submit" method="POST">{% csrf_token %}
-    <div class="form-group">
-      <div class="col-xs-4">
-        <label>Add Screen Name:</label>
-        <input type="text" class="form-control" name="info">
-        <input type="submit" class="btn btn-primary btn-md" name="screen_name" value="Submit">
+  <div class="row">
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-4">
+          <label>Add Low-Priority Keyword:</label>
+          <input type="text" class="form-control" name="info">
+          <input type="submit" class="btn btn-primary btn-md" name="add_keyword" value="Submit">
+        </div>
       </div>
-    </div>
-  </form>
-</div>
-
-<div class="row">
-  <form action="submit" method="POST">{% csrf_token %}
-    <div class="form-group">
-      <div class="col-xs-4">
-        <label>Add Keyword:</label>
-        <input type="text" class="form-control" name="info">
-        <input type="submit" class="btn btn-primary btn-md" name="add_keyword" value="Submit">
+    </form>
+  </div>
+  <div class="row">
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-4">
+          <label>Add Priority Keyword:</label>
+          <input type="text" class="form-control" name="info">
+          <input type="submit" class="btn btn-primary btn-md" name="add_keyword_2" value="Submit">
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 
 {% endblock %}
