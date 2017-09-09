@@ -5,7 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist
 import re
 import pytz
 
-
 from django.utils import timezone
 from dateutil.parser import *
 
@@ -54,6 +53,7 @@ def update_tracked_tags():
             try:
                 k = Keyword()
                 k.keyword = hashtag.lower()
+                k.created_at = timezone.now()
                 k.save()
                 print('Adding new hashtag to keyword list: {}'.format(hashtag))
             except:
@@ -185,6 +185,7 @@ def create_relo(existing_user, new_user_id, outgoing):
             return
 
     r = Relo()
+    r.observed_at = timezone.now()
 
     if outgoing:
         #existing_user.out_degree += 1
@@ -196,6 +197,7 @@ def create_relo(existing_user, new_user_id, outgoing):
             tuser = User.objects.get(user_id=new_user_id)
         except:
             tuser = User()
+            tuser.added_at = timezone.now()
             tuser.user_id = new_user_id
             tuser.user_class=0
         tuser.in_degree += 1
@@ -212,6 +214,7 @@ def create_relo(existing_user, new_user_id, outgoing):
                 suser = User.objects.get(user_id=new_user_id)
             except:
                 suser = User()
+                suser.added_at = timezone.now()
                 suser.user_id = new_user_id
                 suser.user_class=0
             suser.out_degree += 1
@@ -222,26 +225,34 @@ def create_relo(existing_user, new_user_id, outgoing):
     return
 
 
-#TODO: Add since_id functionality
+#TODO: Add since_id functionality. This is no longer used.
 def save_user_timeline(**kwargs):
     statuses = userdata.user_timeline(**kwargs)
     #Save to DB here
     for status in statuses:
-        save_tweet(status, streamed=0)
+        save_tweet(status, streamed=False)
     return
 
-def save_all_user_timelines():
-    #users = User.objects.filter(user_class__gte=2)
-    users = User.objects.filter(user_id=123730012)
+
+def save_user_timelines(users):
 
     #TODO: Store in DB. Adjust for UTC. Start time as time of first tweet?
     start_time = parse("Aug 26 01:30:00 +0100 2017") # Harvey data collection
     end_time = parse("Sept 02 10:30:00 +0100 2017")
 
-    timeline_old_enough = False # Timeline encompasses start_time
-    max_id = False
+    user_count = users.count()
+    progress_count = 0
 
     for user in users:
+        print('Saving timeline for user: {}'.format(user.screen_name))
+
+        timeline_old_enough = False # received timeline encompasses start_time
+        max_id = False
+
+        if progress_count % 10 == 0:
+            print('Progress: {} of {}'.format(progress_count, user_count))
+        progress_count += 1
+
         while timeline_old_enough is False:
 
             if max_id is False:
@@ -249,13 +260,16 @@ def save_all_user_timelines():
             else:
                 statuses = userdata.user_timeline(id=user.user_id, max_id=max_id)
 
+            if statuses is False:
+                print('Timeline error with user: {}'.format(user.screen_name))
+                timeline_old_enough = True
+                break
+
             #Save to DB here
             for status in statuses:
-                print(status.created_at)
-                print(int(status.id_str))
 
                 if int(status.id_str) < max_id or max_id is False:
-                    max_id = int(status.id_str) - 1
+                    max_id = int(status.id_str)
 
                 tz_aware = timezone.make_aware(status.created_at, timezone=pytz.utc)
 
@@ -270,18 +284,18 @@ def save_all_user_timelines():
                                 except:
                                     text=status.full_text
 
-                            print("(Pretend) Saving Tweet:")
-                            print(text)
-                            save_tweet(status, streamed=0)
+                            save_tweet(status, streamed=False)
                         except:
                             print("Tweet already exists:")
                             pass
                     else:
-                        print('Tweet too new.')
-                        max_id = int(status.id_str) - 1
+                        #print('Tweet too new.')
+                        max_id = int(status.id_str)
                 else:
                     timeline_old_enough = True
-                    print('Tweet too old.')
+                    #print('Tweet too old.')
+            if len(statuses) < 200:
+                timeline_old_enough = True
     return
 
 

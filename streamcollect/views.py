@@ -8,11 +8,12 @@ from django.db.models import Q
 from celery.task.control import revoke
 import tweepy
 
+from django.utils import timezone
+
 from .models import User, Relo, Tweet, CeleryTask, Keyword, AccessToken, ConsumerKey
 from .forms import AddUserForm
-from .tasks import save_twitter_object_task, update_user_relos_task, trim_spam_accounts
-# Remove save_user_timeline:
-from .methods import kill_celery_task, save_all_user_timelines, update_tracked_tags, add_users_from_mentions
+from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
+from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -25,7 +26,7 @@ def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
 
 def list_users(request):
-    users = User.objects.filter(user_class__gte=2)
+    users = User.objects.filter(user_class__gte=2)[0:100]
     return render(request, 'streamcollect/list_users.html', {'users': users})
 
 def view_network(request):
@@ -34,7 +35,7 @@ def view_network(request):
 def user_details(request, user_id):
     user = get_object_or_404(User, user_id=user_id)
 
-    tweets = Tweet.objects.filter(author__user_id=user_id)
+    tweets = Tweet.objects.filter(author__user_id=user_id).order_by('created_at')
     #tweets = get_object_or_404(Tweet, author__user_id=user_id)
     return render(request, 'streamcollect/user_details.html', {'user': user, 'tweets': tweets})
 
@@ -92,6 +93,7 @@ def submit(request):
         if len(info) > 0:
             k = Keyword()
             k.keyword = info.lower()
+            k.created_at = timezone.now()
             k.save()
         return redirect('monitor_user')
     elif "start_kw_stream" in request.POST:
@@ -169,8 +171,8 @@ def submit(request):
         return redirect('twitter_auth')
     #TODO: Remove:
     elif "user_timeline" in request.POST:
-        save_all_user_timelines()
-        #data = save_user_timeline(screen_name='QueensCollege')
+        users = User.objects.filter(user_class__gte=2)
+        save_all_user_timelines_task.delay(users)
         return redirect('testbed')
     elif "update_data" in request.POST:
         update_tracked_tags()

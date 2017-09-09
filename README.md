@@ -90,8 +90,16 @@ Run stream, disable OS auto-sleep.
 
 After collection:
   Stop stream, wait for remaining tasks to resolve (could take some time).
+    At this time, the stream often fails to stop after running for some time. In this case, terminate Celery with ctrl-C twice, then run again. It will then pick up remaining queued tasks (though you will lose the ~8 running at the time of termination)
   Run trim_spam_accounts.
+  Run save_user_timelines.
   Export to suitable format for analysis (to be implemented).
 
 Information on dumping the database to a file (for backup) can be found here:
 https://www.postgresql.org/docs/9.1/static/backup-dump.html
+
+> ```
+> $ pg_dump dbname > outfile
+> $ createdb dbname2
+> $ psql dbname2 < infile
+> ```

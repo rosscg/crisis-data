@@ -29,8 +29,15 @@ class stream_listener(StreamListener):
             r = random.random()
             if r > STREAM_PROPORTION:
                 return
+
+            # Exclude tweets with 'pray'.
+            #TODO: Test this - still received many prayer messages. Probably from GPS stream.
             if 'pray' in status.text.lower(): # Remove some 'thoughts and prayers' messages
                 return
+            for tag in status.entities.get('hashtags'):
+                if 'pray' in tag.get('text'):
+                    return
+
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
         if status.user.friends_count > FRIENDS_THRESHOLD:

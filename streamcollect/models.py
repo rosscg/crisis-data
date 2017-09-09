@@ -45,7 +45,7 @@ class User(models.Model):
     verified = models.NullBooleanField(null=True)
 
     user_class = models.IntegerField()
-    added_at = models.DateTimeField(default=timezone.now)
+    added_at = models.DateTimeField()
 
     # These currently represent the degrees to ego accounts and therefore only
     # relevant to alter objects, or egos with relationships with other egos.
@@ -93,7 +93,7 @@ class Tweet(models.Model):
     text = models.CharField(max_length=300)
     #user_data               // user object
 
-    author = models.ForeignKey(User, related_name='author', on_delete=models.CASCADE)
+    author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     streamed = models.BooleanField(default=False)
 
     def __str__(self):
@@ -126,9 +126,9 @@ class Mention(models.Model):
 
 class Relo(models.Model):
     #TODO: on_delete needs to be resolved appropriately.
-    source_user = models.ForeignKey(User, related_name='source', on_delete=models.CASCADE)
-    target_user = models.ForeignKey(User, related_name='target', on_delete=models.CASCADE)
-    observed_at = models.DateTimeField(default=timezone.now)
+    source_user = models.ForeignKey(User, related_name='relo_out', on_delete=models.CASCADE)
+    target_user = models.ForeignKey(User, related_name='relo_in', on_delete=models.CASCADE)
+    observed_at = models.DateTimeField()
     end_observed_at = models.DateTimeField(null=True)
 
     def as_json(self):
@@ -148,7 +148,7 @@ class Relo(models.Model):
 
 class Keyword(models.Model):
     keyword = models.CharField(max_length = 100, unique=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField()
 
     def __str__(self):
         return str(self.keyword)

@@ -8,7 +8,7 @@ from django.db.models import Q
 from twdata import userdata
 from .models import User, Relo, CeleryTask
 
-from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags
+from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #Uncomment the decorators here to allow tasks to run periodically. Requires a running Celery Beat (see Readme)
@@ -24,6 +24,12 @@ def trim_spam_accounts_periodic(self):
 def update_data_periodic(self):
     update_tracked_tags()   #Requires config.py: REFRESH_STREAM=True
     add_users_from_mentions()
+    return
+
+
+@shared_task(bind=True)
+def save_user_timelines_task(self, users):
+    save_all_user_timelines(users)
     return
 
 
@@ -104,16 +110,14 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
         user_data = userdata.get_user(**kwargs)
         add_user(user_class=user_class, user_data=user_data)
     except Exception as e:
-        print('Error adding user:')
-        print(e)
+        print('Error adding user:\n{}'.format(e))
         pass
 
     if tweet:
         try:
             save_tweet(tweet, streamed, save_entities)
         except:
-            print('Error saving tweet:')
-            print(e)
+            print('Error saving tweet:\n{}'.format(e))
             pass
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
