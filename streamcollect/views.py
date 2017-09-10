@@ -41,7 +41,7 @@ def user_details(request, user_id):
 
 def stream_status(request):
     keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
-    if not CeleryTask.objects.filter(task_name='stream_kw'):
+    if not CeleryTask.objects.filter(task_name='stream_kw_high'):
         kw_stream_status = False
     else:
         kw_stream_status = True
@@ -88,16 +88,7 @@ def submit(request):
         if len(info) > 0:
             save_twitter_object_task.delay(user_class=2, screen_name=info)
         return redirect('monitor_user')
-    elif "add_keyword" in request.POST:
-        info = request.POST['info']
-        if len(info) > 0:
-            k = Keyword()
-            k.keyword = info.lower()
-            k.created_at = timezone.now()
-            k.priority = 0
-            k.save()
-        return redirect('monitor_user')
-    elif "add_keyword_2" in request.POST:
+    elif "add_keyword_low" in request.POST:
         info = request.POST['info']
         if len(info) > 0:
             k = Keyword()
@@ -106,12 +97,21 @@ def submit(request):
             k.priority = 1
             k.save()
         return redirect('monitor_user')
+    elif "add_keyword_high" in request.POST:
+        info = request.POST['info']
+        if len(info) > 0:
+            k = Keyword()
+            k.keyword = info.lower()
+            k.created_at = timezone.now()
+            k.priority = 2
+            k.save()
+        return redirect('monitor_user')
     elif "start_kw_stream" in request.POST:
-        task = twitter_stream_task.delay(priority=1)
-        task2 = twitter_stream_task.delay(priority=0)
-        task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
+        task_low = twitter_stream_task.delay(priority=0)
+        task_high = twitter_stream_task.delay(priority=1)
+        task_object = CeleryTask(celery_task_id = task_low.task_id, task_name='stream_kw_low')
         task_object.save()
-        task_object = CeleryTask(celery_task_id = task2.task_id, task_name='stream_kw')
+        task_object = CeleryTask(celery_task_id = task_high.task_id, task_name='stream_kw_high')
         task_object.save()
         return redirect('stream_status')
     elif "start_gps_stream" in request.POST:
@@ -124,7 +124,8 @@ def submit(request):
         task_object.save()
         return redirect('stream_status')
     elif "stop_kw_stream" in request.POST:
-        kill_celery_task('stream_kw')
+        kill_celery_task('stream_kw_high')
+        kill_celery_task('stream_kw_low')
         return redirect('stream_status')
     elif "stop_gps_stream" in request.POST:
         kill_celery_task('stream_gps')
