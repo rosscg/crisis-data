@@ -106,7 +106,12 @@ def twitter_stream(gps=False, priority=1):
         print('Error! Failed to get Consumer Key from database.')
         return
     try:
-        access_token=AccessToken.objects.all()[:1].get()
+        if priority == 0:
+            access_token=AccessToken.objects.all()[:1].get()
+        elif gps:
+            access_token=AccessToken.objects.all()[1:2].get()
+        else:
+            access_token=AccessToken.objects.all()[2:3].get()
     except ObjectDoesNotExist:
         print('Error! Failed to get Access Key from database.')
         return
@@ -133,11 +138,10 @@ def twitter_stream(gps=False, priority=1):
             print("Error: no keywords found.")
             kill_celery_task('stream_kw')
             return
-    print('running keywords: {}'.format(data))
     twitterStream = Stream(auth, stream_listener(gps, data))
 
     if gps:
-        twitterStream.filter(locations=data, async=True)
+        twitterStream.filter(locations=data, async=False)
     elif REFRESH_STREAM:
         #TODO: Currently returns replies where the original message included the phrase. Decide whether to keep. Also quoted tweets.
         #EG: https://twitter.com/HalfStrungHarp/status/887335974539317249
@@ -154,11 +158,11 @@ def twitter_stream(gps=False, priority=1):
                     return
                 twitterStream = Stream(auth, stream_listener(False, data))
             print("Running new stream (with refresh)...")
-            twitterStream.filter(track=data, async=True)
+            twitterStream.filter(track=data, async=False)
             time.sleep(STREAM_REFRESH_RATE)
     else:
-        print("Running new stream...")
-        twitterStream.filter(track=data, async=True)
+        print('Running stream priority: {} with keywords: {}'.format(priority, data))
+        twitterStream.filter(track=data, async=False)
 
 
 #TODO: Fold this back into methods?
