@@ -98,7 +98,7 @@ class stream_listener(StreamListener):
     def on_timeout(self):
         print("Connection timed out, ")
 
-def twitter_stream(gps=False, priority=0):
+def twitter_stream(gps=False, priority=1):
 
     try:
         ckey=ConsumerKey.objects.all()[:1].get()
@@ -166,10 +166,12 @@ def get_keywords(priority):
     global keywords_low_priority_global
     global keywords_high_priority_global
     #keywords_global = list(Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at'))
-    keywords_high_priority_global = list(Keyword.objects.filter(priority=1).values_list('keyword', flat=True).order_by('created_at'))
-    keywords_low_priority_global = list(Keyword.objects.filter(priority=0).values_list('keyword', flat=True).order_by('created_at'))
+    keywords_high_priority_global = list(Keyword.objects.filter(priority=2).values_list('keyword', flat=True).order_by('created_at'))
+    keywords_low_priority_global = list(Keyword.objects.filter(priority=1).values_list('keyword', flat=True).order_by('created_at'))
     #keywords_global = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
-    if priority == 0:
+    if priority == 1:
         return keywords_low_priority_global
-    else:
+    elif priority == 2:
         return keywords_high_priority_global
+    else:
+        print('Error with priority value: {}'.format(priority))

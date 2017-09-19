@@ -94,7 +94,7 @@ def submit(request):
             k = Keyword()
             k.keyword = info.lower()
             k.created_at = timezone.now()
-            k.priority = 0
+            k.priority = 1
             k.save()
         return redirect('monitor_user')
     elif "add_keyword_2" in request.POST:
@@ -103,12 +103,12 @@ def submit(request):
             k = Keyword()
             k.keyword = info.lower()
             k.created_at = timezone.now()
-            k.priority = 1
+            k.priority = 2
             k.save()
         return redirect('monitor_user')
     elif "start_kw_stream" in request.POST:
-        task = twitter_stream_task.delay(priority=1)
-        task2 = twitter_stream_task.delay(priority=0)
+        task = twitter_stream_task.delay(priority=2)
+        task2 = twitter_stream_task.delay(priority=1)
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_kw')
         task_object.save()
         task_object = CeleryTask(celery_task_id = task2.task_id, task_name='stream_kw')
@@ -186,11 +186,20 @@ def submit(request):
     #TODO: Remove:
     elif "user_timeline" in request.POST:
         users = User.objects.filter(user_class__gte=2)
-        save_all_user_timelines_task.delay(users)
+        save_user_timelines_task.delay(users)
         return redirect('testbed')
     elif "update_data" in request.POST:
         update_tracked_tags()
         add_users_from_mentions()
+        return redirect('testbed')
+    elif "export_data" in request.POST:
+        tweets = Tweet.objects.filter(data_source__gte=1)
+        i=0
+        for tweet in tweets:
+            i += 1
+            txt = open('data_export/'+str(i)+'.txt','w')
+            txt.write(tweet.text)
+            txt.close()
         return redirect('testbed')
     else:
         print("Unlabelled button pressed")

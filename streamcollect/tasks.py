@@ -29,7 +29,7 @@ def update_data_periodic(self):
 
 @shared_task(bind=True)
 def save_user_timelines_task(self, users):
-    save_all_user_timelines(users)
+    save_user_timelines(users)
     return
 
 
@@ -133,7 +133,7 @@ def update_user_relos_task(self):
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
     task_object.save()
 
-    users = User.objects.filter(user_class__gte=2)
+    users = User.objects.filter(user_class__gte=2).order_by('added_at')
     print('Updating relo information for {} users.'.format(len(users)))
 
     for user in users:

@@ -293,7 +293,7 @@ def save_user_timelines(users):
 
                             save_tweet(status, data_source=0)
                         except:
-                            print("Tweet already exists:")
+                            #print("Tweet already exists:")
                             pass
                     else:
                         #print('Tweet too new.')

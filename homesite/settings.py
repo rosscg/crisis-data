@@ -91,7 +91,7 @@ WSGI_APPLICATION = 'homesite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hurricaneirma',
+        'NAME': 'sandbox',
         'USER': 'ross',
         'PASSWORD': '',
         'HOST': 'localhost',
