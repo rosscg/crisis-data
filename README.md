@@ -65,6 +65,7 @@ Migrate database and run server:
 
 Load Twitter authentication details with the 'Load From Config' button on the Twitter Authentication page.
 Additional access tokens can be added via the web interface, requiring a user to log in to Twitter and authorise. 'Export Tokens' can save these tokens to a file for future use.
+Streams currently need at least 3 tokens added (one for each stream).
 
 Notes:
 If Redis is running from previous launch (i.e. returns 'bind: Address already in use'):
@@ -86,13 +87,14 @@ Decide on periodic tasks in tasks.py (uncomment the decorators to run, requires 
   update_user_relos_periodic is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
   update_data_periodic allows new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. REFRESH_STREAM should be set to true, to add the new tags periodically.
 Add keywords and/or coordinates. Coordinates currently must be hard-coded into views.py
-Run stream, disable OS auto-sleep.
+High-priority keywords run as normal, low-priority return a proportion of the tweets as set in config.py. Use this to reduce load.
+Run streams, disable OS auto-sleep.
 
 After collection:
-  Stop stream, wait for remaining tasks to resolve (could take some time).
-    At this time, the stream often fails to stop after running for some time. In this case, terminate Celery with ctrl-C twice, then run again. It will then pick up remaining queued tasks (though you will lose the ~8 running at the time of termination)
+  Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until it's termination is processed.
   Run trim_spam_accounts.
   Run save_user_timelines.
+  Run update_relationship_data after a suitable time period (slow process due to rate limits).
   Export to suitable format for analysis (to be implemented).
 
 Information on dumping the database to a file (for backup) can be found here:

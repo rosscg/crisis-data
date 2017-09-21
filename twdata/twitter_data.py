@@ -106,7 +106,7 @@ def twitter_stream(gps=False, priority=1):
         print('Error! Failed to get Consumer Key from database.')
         return
     try:
-        if priority == 0:
+        if priority == 1:
             access_token=AccessToken.objects.all()[:1].get()
         elif gps:
             access_token=AccessToken.objects.all()[1:2].get()
@@ -136,7 +136,10 @@ def twitter_stream(gps=False, priority=1):
         data = get_keywords(priority)
         if len(data) == 0:
             print("Error: no keywords found.")
-            kill_celery_task('stream_kw')
+            if priority == 2:
+                kill_celery_task('stream_kw_high')
+            elif priority == 1:
+                kill_celery_task('stream_kw_low')
             return
     twitterStream = Stream(auth, stream_listener(gps, data))
 

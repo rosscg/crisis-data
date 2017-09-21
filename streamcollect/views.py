@@ -107,8 +107,8 @@ def submit(request):
             k.save()
         return redirect('monitor_user')
     elif "start_kw_stream" in request.POST:
-        task_low = twitter_stream_task.delay(priority=0)
-        task_high = twitter_stream_task.delay(priority=1)
+        task_low = twitter_stream_task.delay(priority=1)
+        task_high = twitter_stream_task.delay(priority=2)
         task_object = CeleryTask(celery_task_id = task_low.task_id, task_name='stream_kw_low')
         task_object.save()
         task_object = CeleryTask(celery_task_id = task_high.task_id, task_name='stream_kw_high')
