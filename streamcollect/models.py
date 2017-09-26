@@ -1,5 +1,48 @@
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+
+
+class Event(models.Model):
+    name = models.TextField(max_length=20)
+    time_start = models.DateTimeField(null=True, blank=True)
+    time_end = models.DateTimeField(null=True, blank=True)
+    kw_stream_start = models.DateTimeField(null=True, blank=True)
+    kw_stream_end = models.DateTimeField(null=True, blank=True)
+    gps_stream_start = models.DateTimeField(null=True, blank=True)
+    gps_stream_end = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if Event.objects.exists() and not self.pk:
+            raise ValidationError('There can be only one Event instance')
+        return super(Event, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.name)
+
+
+class GeoPoint(models.Model):
+    event = models.ForeignKey(Event, related_name='geopoint', on_delete=models.CASCADE)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+
+    def save(self, *args, **kwargs):
+        if GeoPoint.objects.all().count() >= 2 and not self.pk:
+            raise ValidationError('There can be only two GeoPoint instances')
+        return super(GeoPoint, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.latitude) + ", " + str(self.longitude)
+
+
+class Keyword(models.Model):
+    event = models.ForeignKey(Event, related_name='keyword', on_delete=models.CASCADE)
+    keyword = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField()
+    priority = models.IntegerField(default=0)
+
+    def __str__(self):
+        return str(self.keyword)
 
 
 class User(models.Model):
@@ -146,15 +189,6 @@ class Relo(models.Model):
             return "{} following: {}".format(self.source_user, self.target_user)
         else:
             return "Dead Relo: {} following: {}".format(self.source_user, self.target_user)
-
-
-class Keyword(models.Model):
-    keyword = models.CharField(max_length = 100, unique=True)
-    created_at = models.DateTimeField()
-    priority = models.IntegerField(default=0)
-
-    def __str__(self):
-        return str(self.keyword)
 
 
 class AccessToken(models.Model):

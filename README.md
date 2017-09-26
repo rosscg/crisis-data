@@ -7,7 +7,9 @@ data saved to the DB.
 
 The build uses a fork of Tweepy which allows multiple tokens to be used.
 
+Note: Excluding Tweets containing the term 'pray' is hard-coded to reduce unnecessary content.
 
+==================================
 
 Local installation (Mac):
 ------------

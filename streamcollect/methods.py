@@ -9,7 +9,7 @@ from django.utils import timezone
 from dateutil.parser import *
 
 from twdata import userdata
-from .models import CeleryTask, User, Relo, Tweet, Hashtag, Url, Mention, Keyword
+from .models import Event, CeleryTask, User, Relo, Tweet, Hashtag, Url, Mention, Keyword
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD
 
 from django.db import transaction
@@ -232,21 +232,13 @@ def create_relo(existing_user, new_user_id, outgoing):
     return
 
 
-#TODO: Add since_id functionality. This is no longer used.
-def save_user_timeline(**kwargs):
-    statuses = userdata.user_timeline(**kwargs)
-    #Save to DB here
-    for status in statuses:
-        save_tweet(status, data_source=0)
-    return
-
-
 def save_user_timelines(users):
-
-    #TODO: Store in DB. Adjust for UTC. Start time as time of first tweet?
-    start_time = parse("Aug 26 01:30:00 +0100 2017") # Harvey data collection
-    end_time = parse("Sept 02 10:30:00 +0100 2017")
-
+    try:
+        event = Event.objects.all()[0]
+    except:
+        return
+    start_time = event.time_start
+    end_time = event.time_end
     user_count = users.count()
     progress_count = 0
 
@@ -274,10 +266,8 @@ def save_user_timelines(users):
 
             #Save to DB here
             for status in statuses:
-
                 if int(status.id_str) < max_id or max_id is False:
                     max_id = int(status.id_str)
-
                 tz_aware = timezone.make_aware(status.created_at, timezone=pytz.utc)
 
                 if tz_aware > start_time:
@@ -287,20 +277,18 @@ def save_user_timelines(users):
                                 text=status.extended_tweet.get('full_text')
                             else:
                                 try:
-                                    text=status.text
+                                    text=status.text # TODO: Swap with full_text in exception?
                                 except:
-                                    text=status.full_text
-
+                                    text=status.full_text #TODO: Should try full_text before text?
                             save_tweet(status, data_source=0)
                         except:
-                            #print("Tweet already exists:")
                             pass
                     else:
                         #print('Tweet too new.')
                         max_id = int(status.id_str)
                 else:
-                    timeline_old_enough = True
                     #print('Tweet too old.')
+                    timeline_old_enough = True
             if len(statuses) < 200:
                 timeline_old_enough = True
     return

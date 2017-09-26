@@ -1,7 +1,9 @@
 from django.contrib import admin
-from .models import User, Tweet, Hashtag, Url, Relo, Keyword, ConsumerKey, AccessToken, Mention
+from .models import Event, GeoPoint, User, Tweet, Hashtag, Url, Relo, Keyword, ConsumerKey, AccessToken, Mention
 
 # Register your models here.
+admin.site.register(Event)
+admin.site.register(GeoPoint)
 admin.site.register(User)
 admin.site.register(Tweet)
 admin.site.register(Hashtag)

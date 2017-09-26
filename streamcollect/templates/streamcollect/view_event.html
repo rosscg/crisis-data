@@ -1,0 +1,41 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="title"><small>{{ event.name }}</small></h1>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-8">
+      <div class="event_details">
+        <p>Event Start Time: {{ event.time_start }}</p>
+        <p>Event End Time: {{ event.time_start }}</p>
+        <p>Keyword Stream Started: {{ event.kw_stream_start }}</p>
+        <p>Keyword Stream Ended: {{ event.kw_stream_end }}</p>
+        <p>GPS Stream Started: {{ event.gps_stream_start }}</p>
+        <p>GPS Stream Ended: {{ event.gps_stream_end }}</p>
+
+        {% for coord in event.geopoint.all %}
+          <p> Geo Point: ({{ coord.latitude }}, {{ coord.longitude }}) </p>
+        {% endfor %}
+
+        {% if event.geopoint.all.count == 2 %}
+          <p>Mid Point: {{ mid_point }}</p>
+          <p><a href="https://www.google.co.uk/maps/@{{ mid_point.0 }},{{ mid_point.1 }},7z" target="_blank">Google Maps</a></p>
+        {% else %}
+          <p><a href="https://www.google.co.uk/maps/@{{ event.geopoint.all.0.latitude }},{{ event.geopoint.all.0.longitude }},7z" target="_blank">Google Maps</a></p>
+        {% endif %}
+
+        <p> Keywords:
+        {% for keyword in event.keyword.all %}
+          {{ keyword.keyword }}
+        {% endfor %} </p>
+
+      </div>
+    </div>
+
+
+  </div>
+</div>
+{% endblock %}

@@ -10,7 +10,7 @@ import tweepy
 
 from django.utils import timezone
 
-from .models import User, Relo, Tweet, CeleryTask, Keyword, AccessToken, ConsumerKey
+from .models import User, Relo, Tweet, CeleryTask, Keyword, AccessToken, ConsumerKey, Event
 from .forms import AddUserForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
@@ -22,15 +22,30 @@ from twdata.tasks import twitter_stream_task
 #TODO: Currently causes an error on fresh db builds. Should be fine if Skeleton is renamed.
 from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
 
+
 def monitor_user(request):
     return render(request, 'streamcollect/monitor_user.html', {})
+
 
 def list_users(request):
     users = User.objects.filter(user_class__gte=2)[0:100]
     return render(request, 'streamcollect/list_users.html', {'users': users})
 
+
 def view_network(request):
     return render(request, 'streamcollect/view_network.html')
+
+
+def view_event(request):
+    mid_point = None
+    try:
+        event = Event.objects.all()[0]
+        if event.geopoint.all().count() == 2:
+            mid_point = ((event.geopoint.all()[0].latitude + event.geopoint.all()[1].latitude) / 2 , (event.geopoint.all()[0].longitude + event.geopoint.all()[1].longitude) /2)
+    except:
+        event = None
+    return render(request, 'streamcollect/view_event.html', {'event': event, 'mid_point': mid_point})
+
 
 def user_details(request, user_id):
     user = get_object_or_404(User, user_id=user_id)
@@ -38,6 +53,7 @@ def user_details(request, user_id):
     tweets = Tweet.objects.filter(author__user_id=user_id).order_by('created_at')
     #tweets = get_object_or_404(Tweet, author__user_id=user_id)
     return render(request, 'streamcollect/user_details.html', {'user': user, 'tweets': tweets})
+
 
 def stream_status(request):
     keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
@@ -51,13 +67,16 @@ def stream_status(request):
         gps_stream_status = True
     return render(request, 'streamcollect/stream_status.html', {'kw_stream_status': kw_stream_status, 'gps_stream_status': gps_stream_status, 'keywords': keywords})
 
-def testbed(request):
+
+def functions(request):
     tasks = CeleryTask.objects.all().values_list('task_name', flat=True)
-    return render(request, 'streamcollect/testbed.html', {'tasks': tasks})
+    return render(request, 'streamcollect/functions.html', {'tasks': tasks})
+
 
 def twitter_auth(request):
     tokens = AccessToken.objects.all()
     return render(request, 'streamcollect/twitter_auth.html', {'tokens': tokens})
+
 
 def callback(request):
     try:
@@ -81,6 +100,7 @@ def callback(request):
         token.save()
     return render(request, 'streamcollect/twitter_auth.html', {'success': 'True', 'token': auth.access_token, 'tokens': tokens})
 
+
 def submit(request):
     if "screen_name" in request.POST:
         #TODO: Add validation function here
@@ -88,6 +108,7 @@ def submit(request):
         if len(info) > 0:
             save_twitter_object_task.delay(user_class=2, screen_name=info)
         return redirect('monitor_user')
+
     elif "add_keyword_low" in request.POST:
         info = request.POST['info']
         if len(info) > 0:
@@ -97,6 +118,7 @@ def submit(request):
             k.priority = 1
             k.save()
         return redirect('monitor_user')
+
     elif "add_keyword_high" in request.POST:
         info = request.POST['info']
         if len(info) > 0:
@@ -106,7 +128,15 @@ def submit(request):
             k.priority = 2
             k.save()
         return redirect('monitor_user')
+
     elif "start_kw_stream" in request.POST:
+        try:
+            event = Event.objects.all()[0]
+        except:
+            return redirect('view_event')
+        if event.kw_stream_start is None or event.kw_stream_start > timezone.now():
+            event.kw_stream_start = timezone.now()
+            event.save()
         task_low = twitter_stream_task.delay(priority=1)
         task_high = twitter_stream_task.delay(priority=2)
         task_object = CeleryTask(celery_task_id = task_low.task_id, task_name='stream_kw_low')
@@ -114,36 +144,81 @@ def submit(request):
         task_object = CeleryTask(celery_task_id = task_high.task_id, task_name='stream_kw_high')
         task_object.save()
         return redirect('stream_status')
+
     elif "start_gps_stream" in request.POST:
-        #TODO: Store and upate gps coords in an event object
-        #TODO: Starting/killing gps task doesn't appear to work. May just be queued in Redis
-        #gps = [-99.9590682, 26.5486063, -93.9790001, 30.3893434] # Corpus Christi, Texas
-        gps = [-83.23,24.38,-79.71,28.19]
+        try:
+            event = Event.objects.all()[0]
+        except:
+            return redirect('view_event')
+        if event.geopoint.all().count() == 2:
+            gps = [event.geopoint.all()[0].longitude, event.geopoint.all()[0].latitude, event.geopoint.all()[1].longitude, event.geopoint.all()[1].latitude]
+        elif event.geopoint.all().count() == 1:
+            gps = [event.geopoint.all()[0].longitude, event.geopoint.all()[0].latitude]
+        else: # No GPS coordinates
+            return redirect('view_event')
+        if event.gps_stream_start is None or event.gps_stream_start > timezone.now():
+            event.gps_stream_start = timezone.now()
+            event.save()
         task = twitter_stream_task.delay(gps)
         task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_gps')
         task_object.save()
         return redirect('stream_status')
+
     elif "stop_kw_stream" in request.POST:
         kill_celery_task('stream_kw_high')
         kill_celery_task('stream_kw_low')
+        event = Event.objects.all()[0]
+        if event.kw_stream_end is None or event.kw_stream_end < timezone.now():
+            event.kw_stream_end = timezone.now()
+            event.save()
         return redirect('stream_status')
+
     elif "stop_gps_stream" in request.POST:
         kill_celery_task('stream_gps')
+        event = Event.objects.all()[0]
+        if event.gps_stream_end is None or event.gps_stream_end < timezone.now():
+            event.gps_stream_end = timezone.now()
+            event.save()
         return redirect('stream_status')
+
     elif "trim_spam_accounts" in request.POST:
         task = trim_spam_accounts.delay()
-        return redirect('testbed')
+        return redirect('functions')
+
     elif "update_user_relos" in request.POST:
         task = update_user_relos_task.delay()
-        return redirect('testbed')
+        return redirect('functions')
+
     elif "delete_keywords" in request.POST:
         Keyword.objects.all().delete()
-        return redirect('testbed')
+        return redirect('functions')
+
     elif "terminate_tasks" in request.POST:
         for t in CeleryTask.objects.all():
             revoke(t.celery_task_id, terminate=True)
             t.delete()
-        return redirect('testbed')
+        return redirect('functions')
+
+    elif "user_timeline" in request.POST:
+        users = User.objects.filter(user_class__gte=2)
+        save_user_timelines_task.delay(users)
+        return redirect('functions')
+
+    elif "update_data" in request.POST:
+        update_tracked_tags()
+        add_users_from_mentions()
+        return redirect('functions')
+
+    elif "export_data" in request.POST:
+        tweets = Tweet.objects.filter(data_source__gte=1)
+        i=0
+        for tweet in tweets:
+            i += 1
+            txt = open('data_export/'+str(i)+'.txt','w')
+            txt.write(tweet.text)
+            txt.close()
+        return redirect('functions')
+
     elif "twitter_auth" in request.POST:
         try:
             ckey=ConsumerKey.objects.all()[:1].get()
@@ -159,6 +234,7 @@ def submit(request):
             return render(request, 'streamcollect/monitor_user.html')
         return redirect(redirect_url)
     #TODO: Remove after testing?
+
     elif "load_tokens" in request.POST:
         if not ConsumerKey.objects.filter(consumer_key=CONSUMER_KEY).exists():
             ckey = ConsumerKey(consumer_key=CONSUMER_KEY, consumer_secret=CONSUMER_SECRET)
@@ -168,6 +244,7 @@ def submit(request):
                 token = AccessToken(screen_name=n, access_key=k, access_secret=s)
                 token.save()
         return redirect('twitter_auth')
+
     elif "export_tokens" in request.POST:
         try:
             ckey=ConsumerKey.objects.all()[:1].get()
@@ -184,27 +261,11 @@ def submit(request):
         f.write(')')
         f.close
         return redirect('twitter_auth')
-    #TODO: Remove:
-    elif "user_timeline" in request.POST:
-        users = User.objects.filter(user_class__gte=2)
-        save_user_timelines_task.delay(users)
-        return redirect('testbed')
-    elif "update_data" in request.POST:
-        update_tracked_tags()
-        add_users_from_mentions()
-        return redirect('testbed')
-    elif "export_data" in request.POST:
-        tweets = Tweet.objects.filter(data_source__gte=1)
-        i=0
-        for tweet in tweets:
-            i += 1
-            txt = open('data_export/'+str(i)+'.txt','w')
-            txt.write(tweet.text)
-            txt.close()
-        return redirect('testbed')
+
     else:
         print("Unlabelled button pressed")
         return redirect('monitor_user')
+
 
 #API returns users above a 'relevant in degree' threshold and the links between them
 def network_data_API(request):
