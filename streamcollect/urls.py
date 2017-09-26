@@ -7,6 +7,7 @@ urlpatterns = [
 
     url(r'^view_network$', views.view_network, name='view_network'),
     url(r'^view_event$', views.view_event, name='view_event'),
+    url(r'^edit_event$', views.edit_event, name='edit_event'),
     url(r'^list_users$', views.list_users, name='list_users'),
     url(r'^user/(?P<user_id>\d+)/$', views.user_details, name='user_details'),
     url(r'^stream_status$', views.stream_status, name='stream_status'),

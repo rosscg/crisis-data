@@ -1,0 +1,30 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+<div class="container">
+
+  <div class="page-header">
+    <h1 class="title"><small>{{ event.name }}</small></h1>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-8">
+      <div class="event_details">
+        <form method="POST" class="post-form">{% csrf_token %}
+          <p>DateTime Format: YYYY-MM-DD 00:00:00, Timezone: UTC</p>
+          {% for f in forms %}
+            {% if f.prefix %}
+              <p>{{ f.prefix }}</p>
+            {% endif %}
+            {{ f.as_p }}
+          {% endfor %}
+          <button type="submit" class="save btn btn-default">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

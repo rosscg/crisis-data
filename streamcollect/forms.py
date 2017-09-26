@@ -1,8 +1,16 @@
 from django import forms
-from .models import User
+from .models import Event, GeoPoint
 
-class AddUserForm(forms.ModelForm):
+
+class EventForm(forms.ModelForm):
 
     class Meta:
-        model = User
-        fields = ('screen_name',)
+        model = Event
+        fields = ('name', 'time_start', 'time_end')
+
+
+class GPSForm(forms.ModelForm):
+
+    class Meta:
+        model = GeoPoint
+        fields = ('latitude', 'longitude')

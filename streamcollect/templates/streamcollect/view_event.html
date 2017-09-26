@@ -9,8 +9,9 @@
   <div class="row">
     <div class="col-sm-8">
       <div class="event_details">
+
         <p>Event Start Time: {{ event.time_start }}</p>
-        <p>Event End Time: {{ event.time_start }}</p>
+        <p>Event End Time: {{ event.time_end }}</p>
         <p>Keyword Stream Started: {{ event.kw_stream_start }}</p>
         <p>Keyword Stream Ended: {{ event.kw_stream_end }}</p>
         <p>GPS Stream Started: {{ event.gps_stream_start }}</p>
@@ -31,6 +32,8 @@
         {% for keyword in event.keyword.all %}
           {{ keyword.keyword }}
         {% endfor %} </p>
+
+        <a class="btn btn-default" href="{% url 'edit_event' %}"><span class="glyphicon glyphicon-pencil"></span></a>
 
       </div>
     </div>

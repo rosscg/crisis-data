@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 
 class Event(models.Model):
-    name = models.TextField(max_length=20)
+    name = models.CharField(max_length=20)
     time_start = models.DateTimeField(null=True, blank=True)
     time_end = models.DateTimeField(null=True, blank=True)
     kw_stream_start = models.DateTimeField(null=True, blank=True)
@@ -22,13 +22,20 @@ class Event(models.Model):
 
 
 class GeoPoint(models.Model):
-    event = models.ForeignKey(Event, related_name='geopoint', on_delete=models.CASCADE)
-    latitude = models.FloatField()
-    longitude = models.FloatField()
+    event = models.ForeignKey(Event, related_name='geopoint', on_delete=models.CASCADE, null=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if GeoPoint.objects.all().count() >= 2 and not self.pk:
             raise ValidationError('There can be only two GeoPoint instances')
+        if self.latitude is None or self.longitude is None: # Delete if field left blank
+            try:
+                self.delete()
+            except:
+                pass
+            return
+        self.event = Event.objects.all()[0]
         return super(GeoPoint, self).save(*args, **kwargs)
 
     def __str__(self):
@@ -36,10 +43,18 @@ class GeoPoint(models.Model):
 
 
 class Keyword(models.Model):
-    event = models.ForeignKey(Event, related_name='keyword', on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, related_name='keyword', on_delete=models.CASCADE, null=True)
     keyword = models.CharField(max_length=100, unique=True)
     created_at = models.DateTimeField()
     priority = models.IntegerField(default=0)
+
+    def save(self, *args, **kwargs):
+        try:
+            self.event = Event.objects.all()[0]
+        except:
+            print("ERROR adding keyword - create event first")
+            return
+        return super(Keyword, self).save(*args, **kwargs)
 
     def __str__(self):
         return str(self.keyword)

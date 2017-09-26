@@ -10,8 +10,8 @@ import tweepy
 
 from django.utils import timezone
 
-from .models import User, Relo, Tweet, CeleryTask, Keyword, AccessToken, ConsumerKey, Event
-from .forms import AddUserForm
+from .models import User, Relo, Tweet, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
+from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
@@ -45,6 +45,35 @@ def view_event(request):
     except:
         event = None
     return render(request, 'streamcollect/view_event.html', {'event': event, 'mid_point': mid_point})
+
+
+def edit_event(request): # Temp
+    try:
+        event = Event.objects.all()[0]
+    except:
+        event = None
+    try:
+        geo1 = GeoPoint.objects.all()[0]
+    except:
+        geo1 = None
+    try:
+        geo2 = GeoPoint.objects.all()[1]
+    except:
+        geo2 = None
+    if request.method == "POST":
+        form1 = EventForm(request.POST, instance=event)
+        form2 = GPSForm(request.POST, instance=geo1, prefix='GeoPoint 1')
+        form3 = GPSForm(request.POST, instance=geo2, prefix='GeoPoint 2')
+        if form1.is_valid() and form2.is_valid() and form3.is_valid():
+            form1.save()
+            form2.save()
+            form3.save()
+        return redirect('view_event')
+    else:
+        form = EventForm(instance=event)
+        form2 = GPSForm(instance=geo1, prefix='GeoPoint 1')
+        form3 = GPSForm(instance=geo2, prefix='GeoPoint 2')
+        return render(request, 'streamcollect/edit_event.html', {'forms': [form, form2, form3]})
 
 
 def user_details(request, user_id):
@@ -102,6 +131,7 @@ def callback(request):
 
 
 def submit(request):
+    # TODO Remove - is no longer used ?
     if "screen_name" in request.POST:
         #TODO: Add validation function here
         info = request.POST['info']
