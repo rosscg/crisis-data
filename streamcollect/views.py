@@ -175,6 +175,22 @@ def submit(request):
             k.save()
         return redirect('monitor_user')
 
+    elif "add_data_code" in request.POST:
+        code = request.POST['code']
+        description = request.POST['description']
+        d = list(DataCode.objects.values_list('data_code_id', flat=True))
+        data_code_id = min([i for i in list(range(1,10)) if i not in d]) # Smallest ID not already in use
+        if len(code) > 0:
+            c = DataCode(name=code, description=description, data_code_id=data_code_id)
+            c.save()
+        return redirect('coding_interface', 0)
+
+    elif "delete_data_code" in request.POST:
+        data_code_id = request.POST['data_code_id']
+        data_code = DataCode.objects.filter(data_code_id=data_code_id)
+        data_code.delete()
+        return redirect('coding_interface', 0)
+
     elif "start_kw_stream" in request.POST:
         try:
             event = Event.objects.all()[0]

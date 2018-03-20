@@ -97,7 +97,7 @@ After collection:
   Run trim_spam_accounts.
   Run save_user_timelines.
   Run update_relationship_data after a suitable time period (slow process due to rate limits).
-  Optional: Code the Tweets. Codes currently must be added manually through the shell or admin interface. Selection of Tweets to code needs to be refined.
+  Optional: Add codes and code Tweets. System supports up to 9 coders (though 3-9 need to use direct URL as no buttons in place).
   Export to suitable format for analysis (to be implemented).
 
 Information on dumping the database to a file (for backup) can be found here:

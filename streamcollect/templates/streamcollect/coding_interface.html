@@ -5,10 +5,12 @@
 <div class="container">
   <div class="page-header">
     <h1 class="title"><small>Coding Interface</small></h1>
-    <h1 class="title"><small>Remaining: {{ count }}</small></h1>
+    {% if coder != '0' %}
+      <h1 class="title"><small>Remaining: {{ count }}</small></h1>
+    {% endif %}
   </div>
 
-{% if count != 0 %}
+{% if count != 0 and coder != '0' %}
   <div class="row">
     <div class="col-sm-8">
       <div class="user_details">
@@ -38,12 +40,52 @@
   </div>
 {% endif %}
 
+{% if coder == '0' %}
+  <div class="row">
+    <div class="col-sm-8">
+      <p align='right'><a href="/coding_interface/1">Change to Primary Coder</a></p>
+    </div>
+  </div>
+
+  {% for code in codes %}
+  <div class="row">
+    <div class="col-sm-8">
+     <p>{{ code.data_code_id }}: <b>{{ code.name }}</b><br/>
+     {{ code.description }}
+     <form action="submit" method="POST">{% csrf_token %}
+       <input type="hidden" value={{ code.data_code_id }} name="data_code_id">
+       <input type="submit" class="btn btn-danger btn-xs" name="delete_data_code" value="Delete '{{ code.name }}'"></form>
+    </p>
+   </div>
+  </div>
+{% endfor %}
+
+  <div class="row">
+    <div class="col-sm-8">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-4">
+            <label>Add Code:</label>
+            <input type="text" class="form-control" name="code">
+            <label>Description:</label>
+            <textarea rows="4" cols="50" name="description"></textarea>
+            <input type="submit" class="btn btn-primary btn-md" name="add_data_code" value="Add Code">
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+
   <div class="row">
     <div class="col-sm-8">
       {% if coder == '1' %}
         <p align='right'><a href="/coding_interface/2">Change to Secondary Coder</a></p>
-      {% else %}
+        <p align='right'><a href="/coding_interface/0">Add/View Codes</a></p>
+      {% elif coder != '0' %}
         <p align='right'><a href="/coding_interface/1">Change to Primary Coder</a></p>
+        <p align='right'><a href="/coding_interface/0">Add/View Codes</a></p>
       {% endif %}
     </div>
   </div>
@@ -81,9 +123,6 @@
       }
       else if (event.keyCode == 57){
         document.getElementById("9").click()
-      }
-      else if (event.keyCode == 48){
-        document.getElementById("0").click()
       }
   }
 </script>
