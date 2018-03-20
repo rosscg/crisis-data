@@ -10,7 +10,7 @@ import tweepy
 
 from django.utils import timezone
 
-from .models import User, Relo, Tweet, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
+from .models import User, Relo, Tweet, DataCode, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
@@ -100,6 +100,12 @@ def stream_status(request):
 def functions(request):
     tasks = CeleryTask.objects.all().values_list('task_name', flat=True)
     return render(request, 'streamcollect/functions.html', {'tasks': tasks})
+
+
+def coding_interface(request):
+    tweet = Tweet.objects.filter(datacode__isnull=True)[0] #TODO: Fix the selection method
+    codes = DataCode.objects.all()
+    return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes})
 
 
 def twitter_auth(request):
@@ -291,6 +297,18 @@ def submit(request):
         f.write(')')
         f.close
         return redirect('twitter_auth')
+
+    elif "assign_code" in request.POST:
+        code_id = request.POST['assign_code']
+        tweet_id = request.POST['tweet_id']
+
+        tweet = Tweet.objects.get(tweet_id=tweet_id)
+        data_code = DataCode.objects.get(id=code_id)
+
+        data_code.tweets.add(tweet)
+        data_code.save()
+
+        return redirect('coding_interface')
 
     else:
         print("Unlabelled button pressed")

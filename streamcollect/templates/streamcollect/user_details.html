@@ -28,11 +28,11 @@
         <div class="user_details">
           {% for tweet in tweets %}
             {% if tweet.data_source > 0 %}
-              <p class="streamed_tweet">{{ tweet.text }}<br/>
-              <a href="http://www.twitter.com/{{ user.screen_name }}/status/{{tweet.tweet_id}}" target="_blank">Link</a></p>
+              <p class="streamed_tweet">{{ tweet.text }}</p>
+              <p><a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
             {% else %}
-              <p>{{ tweet.text }}<br/>
-              <a href="http://www.twitter.com/{{ user.screen_name }}/status/{{tweet.tweet_id}}" target="_blank">Link</a></p>
+              <p>{{ tweet.text }}</p>
+              <p><a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
             {% endif %}
           {% endfor %}
         </div>

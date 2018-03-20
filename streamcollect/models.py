@@ -155,9 +155,19 @@ class Tweet(models.Model):
 
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
+    #data_code = models.IntegerField(default=0) #0 = un-coded
 
     def __str__(self):
         return str(self.text)
+
+
+class DataCode(models.Model):
+    name = models.CharField(max_length=20)
+    description = models.CharField(null=True, max_length=400)
+    tweets = models.ManyToManyField(Tweet)
+
+    def __str__(self):
+        return "Code {}: {}".format(str(self.id), self.name)
 
 
 class Hashtag(models.Model):

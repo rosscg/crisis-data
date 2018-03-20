@@ -1,0 +1,88 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="title"><small>Coding Interface</small></h1>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-8">
+      <div class="user_details">
+
+        <p>{{ tweet.text }}</p>
+        <p><a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
+        <p><a href="{% url 'user_details' user_id=tweet.author.user_id %}">Author</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-8">
+      <div>
+
+        <form action="submit" method="POST">{% csrf_token %}
+          <input type="hidden" value={{ tweet.tweet_id }} name="tweet_id">
+          <div class="row" style="text-align:center">
+            {% for code in codes %}
+              <button id={{ code.id }} type="submit" value={{ code.id }} class="btn btn-primary" name="assign_code">
+               {{ code.id }}: {{ code.name }}
+              </button>
+            {% endfor %}
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+<!--
+  <div class="row">
+    <div class="col-sm-8">
+      <p align='right'><a href="/">Code Information (TBD)</a></p>
+    </div>
+  </div>
+  -->
+
+</div>
+
+
+<script>
+  document.body.onkeypress = function() {set_code(event)};
+
+  function set_code(event) {
+      if (event.keyCode == 49){
+        document.getElementById("1").click()
+      }
+      else if (event.keyCode == 50){
+        document.getElementById("2").click()
+      }
+      else if (event.keyCode == 51){
+        document.getElementById("3").click()
+      }
+      else if (event.keyCode == 52){
+        document.getElementById("4").click()
+      }
+      else if (event.keyCode == 53){
+        document.getElementById("5").click()
+      }
+      else if (event.keyCode == 54){
+        document.getElementById("6").click()
+      }
+      else if (event.keyCode == 55){
+        document.getElementById("7").click()
+      }
+      else if (event.keyCode == 56){
+        document.getElementById("8").click()
+      }
+      else if (event.keyCode == 57){
+        document.getElementById("9").click()
+      }
+      else if (event.keyCode == 48){
+        document.getElementById("0").click()
+      }
+  }
+</script>
+
+{% endblock %}

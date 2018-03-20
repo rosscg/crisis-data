@@ -34,13 +34,13 @@ Install Redis from https://redis.io/ or brew, and build:
 > $ src/redis-server
 > ```
 
-Clone this project and open directory. Create virtual environment, and install dependencies. Pip should be included in the venv, otherwise may need to install manually:
+Clone this project and open directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually:
 
 > ```
 > $ git clone https://github.com/rosscg/crisis-data.git
 > $ cd crisis-data
 > $ python3 -m venv venv
-> $ python3 source venv/bin/activate
+> $ source venv/bin/activate
 > $ pip install -r requirements.txt
 > ```
 
@@ -97,6 +97,7 @@ After collection:
   Run trim_spam_accounts.
   Run save_user_timelines.
   Run update_relationship_data after a suitable time period (slow process due to rate limits).
+  Optional: Code the Tweets. Codes currently must be added manually through the shell or admin interface. Selection of Tweets to code needs to be refined.
   Export to suitable format for analysis (to be implemented).
 
 Information on dumping the database to a file (for backup) can be found here:
