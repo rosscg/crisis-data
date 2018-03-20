@@ -7,10 +7,11 @@ from django.utils import timezone
 from django.db.models import Q
 from celery.task.control import revoke
 import tweepy
+import random
 
 from django.utils import timezone
 
-from .models import User, Relo, Tweet, DataCode, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
+from .models import User, Relo, Tweet, DataCode, Coder, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
@@ -102,10 +103,19 @@ def functions(request):
     return render(request, 'streamcollect/functions.html', {'tasks': tasks})
 
 
-def coding_interface(request):
-    tweet = Tweet.objects.filter(datacode__isnull=True)[0] #TODO: Fix the selection method
-    codes = DataCode.objects.all()
-    return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes})
+def coding_interface(request, coder):
+    if coder is '1':
+        tweet_query = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
+    else:
+        tweet_query = Tweet.objects.filter(datacode__isnull=False).filter(~Q(coder__coder_id=coder))
+    count = tweet_query.count() # Select coded Tweet which hasn't been coded by the current coder.
+    if count > 0:
+        rand = random.randint(0, (count-1))
+        tweet = tweet_query[rand]
+    else:
+        tweet = None
+    codes = DataCode.objects.order_by('data_code_id')
+    return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes, 'coder': coder, 'count': count})
 
 
 def twitter_auth(request):
@@ -301,14 +311,12 @@ def submit(request):
     elif "assign_code" in request.POST:
         code_id = request.POST['assign_code']
         tweet_id = request.POST['tweet_id']
-
+        coder_id = request.POST['coder']
         tweet = Tweet.objects.get(tweet_id=tweet_id)
-        data_code = DataCode.objects.get(id=code_id)
-
-        data_code.tweets.add(tweet)
-        data_code.save()
-
-        return redirect('coding_interface')
+        data_code = DataCode.objects.get(data_code_id=code_id)
+        coder = Coder(tweet=tweet, data_code=data_code, coder_id=coder_id)
+        coder.save()
+        return redirect('/coding_interface/{}'.format(coder_id))
 
     else:
         print("Unlabelled button pressed")

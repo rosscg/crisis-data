@@ -12,7 +12,8 @@ urlpatterns = [
     url(r'^user/(?P<user_id>\d+)/$', views.user_details, name='user_details'),
     url(r'^stream_status$', views.stream_status, name='stream_status'),
     url(r'^functions$', views.functions, name='functions'),
-    url(r'^coding_interface$', views.coding_interface, name='coding_interface'),
+    url(r'^coding_interface/(?P<coder>\d)$', views.coding_interface, name='coding_interface'),
+    url(r'^coding_interface/submit', views.submit, name='submit'),
 
     url(r'^callback$', views.callback, name='callback'),
     url(r'^twitter_auth$', views.twitter_auth, name='twitter_auth'),

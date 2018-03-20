@@ -155,19 +155,28 @@ class Tweet(models.Model):
 
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
-    #data_code = models.IntegerField(default=0) #0 = un-coded
 
     def __str__(self):
         return str(self.text)
 
 
 class DataCode(models.Model):
+    data_code_id = models.IntegerField(unique=True) # Required as the PK doesn't reset when rows are removed.
     name = models.CharField(max_length=20)
     description = models.CharField(null=True, max_length=400)
-    tweets = models.ManyToManyField(Tweet)
+    tweets = models.ManyToManyField(Tweet, through='Coder')
 
     def __str__(self):
-        return "Code {}: {}".format(str(self.id), self.name)
+        return "Code ID {}: {}".format(str(self.data_code_id), self.name)
+
+
+class Coder(models.Model):
+    tweet = models.ForeignKey(Tweet)
+    data_code = models.ForeignKey(DataCode)
+    coder_id = models.IntegerField(default=1)
+
+    def __str__(self):
+        return "Code ID: {}, Tweet: {}, Coder ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coder_id))
 
 
 class Hashtag(models.Model):
