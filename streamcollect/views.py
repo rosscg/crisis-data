@@ -112,12 +112,13 @@ def coding_interface(request, coder):
             d.save()
         if DataCode.objects.get(data_code_id=0).tweets.all().count() is 0:
             tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
-            tweet_sample = tweet_all.order_by('?')[:10]                     #TODO: Scales very poorly, reconsider using random.sample to extract by row
+            tweet_sample = tweet_all.order_by('?')[:100]                     #TODO: Scales very poorly, reconsider using random.sample to extract by row
             for i in tweet_sample:
                     new_coder = Coder(tweet=i, data_code=d)
                     new_coder.save()
         tweet_query = DataCode.objects.get(data_code_id=0).tweets.all()
-        remaining = Tweet.objects.filter(data_source__gt=0).filter(~Q(datacode__data_code_id__gt=0)).count()
+        #remaining = Tweet.objects.filter(data_source__gt=0).filter(~Q(datacode__data_code_id__gt=0)).count() #Too slow
+        remaining = None
         count = tweet_query.count()
     else:
         tweet_query = Tweet.objects.filter(datacode__isnull=False).filter(~Q(coder__coder_id=coder)).filter(datacode__data_code_id__gt=0) # Select coded Tweet which hasn't been coded by the current coder.

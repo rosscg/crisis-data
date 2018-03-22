@@ -5,7 +5,9 @@
 <div class="container">
   <div class="page-header">
     <h1 class="title"><small>Coding Interface</small></h1>
-    {% if coder != '0' %}
+    {% if coder == '1' %}
+      <h1 class="title"><small>Total Coded: {{ total_coded }}</small></h1>
+    {% elif coder > '1' %}
       <h1 class="title"><small>Remaining: {{ remaining }} Total Coded: {{ total_coded }}</small></h1>
     {% endif %}
   </div>
