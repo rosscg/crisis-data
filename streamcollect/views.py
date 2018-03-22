@@ -105,17 +105,32 @@ def functions(request):
 
 def coding_interface(request, coder):
     if coder is '1':
-        tweet_query = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
+        try:
+            d = DataCode.objects.get(data_code_id=0)
+        except:
+            d = DataCode(data_code_id=0, name='To Be Coded')
+            d.save()
+        if DataCode.objects.get(data_code_id=0).tweets.all().count() is 0:
+            tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
+            tweet_sample = tweet_all.order_by('?')[:10]                     #TODO: Scales very poorly, reconsider using random.sample to extract by row
+            for i in tweet_sample:
+                    new_coder = Coder(tweet=i, data_code=d)
+                    new_coder.save()
+        tweet_query = DataCode.objects.get(data_code_id=0).tweets.all()
+        remaining = Tweet.objects.filter(data_source__gt=0).filter(~Q(datacode__data_code_id__gt=0)).count()
+        count = tweet_query.count()
     else:
-        tweet_query = Tweet.objects.filter(datacode__isnull=False).filter(~Q(coder__coder_id=coder))
-    count = tweet_query.count() # Select coded Tweet which hasn't been coded by the current coder.
+        tweet_query = Tweet.objects.filter(datacode__isnull=False).filter(~Q(coder__coder_id=coder)).filter(datacode__data_code_id__gt=0) # Select coded Tweet which hasn't been coded by the current coder.
+        count = tweet_query.count()
+        remaining = count
     if count > 0:
         rand = random.randint(0, (count-1))
         tweet = tweet_query[rand]
     else:
         tweet = None
-    codes = DataCode.objects.order_by('data_code_id')
-    return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes, 'coder': coder, 'count': count})
+    total_coded = Coder.objects.filter(coder_id=int(coder)).filter(data_code__data_code_id__gt=0).count() #Total coded by current coder
+    codes = DataCode.objects.order_by('data_code_id')[1:] #Excludes 0 'to be coded' code
+    return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes, 'coder': coder, 'remaining': remaining, 'total_coded': total_coded})
 
 
 def twitter_auth(request):
@@ -330,7 +345,8 @@ def submit(request):
         coder_id = request.POST['coder']
         tweet = Tweet.objects.get(tweet_id=tweet_id)
         data_code = DataCode.objects.get(data_code_id=code_id)
-        coder = Coder(tweet=tweet, data_code=data_code, coder_id=coder_id)
+        coder = Coder(tweet=tweet, data_code=data_code, coder_id=coder_id) #Add new code classification
+        Coder.objects.filter(tweet=tweet).filter(data_code__data_code_id=0).delete() #Delete 'To Be Coded' classification
         coder.save()
         return redirect('/coding_interface/{}'.format(coder_id))
 

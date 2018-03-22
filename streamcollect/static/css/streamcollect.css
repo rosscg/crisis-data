@@ -9,11 +9,26 @@ body {
     padding: 5px;
     margin: 10px;
     border: 2px solid grey;
-    border-radius: 5px;
+    border-radius: 10px;
+}
+
+.added_tweet {
+    padding: 15px;
+    margin: 10px;
+    border: 5px solid SteelBlue;
+    border-radius: 10px;
+    height:140px;
+    font-size:140%;
 }
 
 .streamed_tweet {
-    background-color: lightblue;
+    padding: 15px;
+    margin: 10px;
+    border: 5px solid SteelBlue;
+    border-radius: 10px;
+    height:140px;
+    font-size:140%;
+    background-color: powderblue;
 }
 
 .top_margin_20 { margin-top:20px; }
