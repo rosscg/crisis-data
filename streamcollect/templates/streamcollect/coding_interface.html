@@ -95,7 +95,19 @@
 
 
 <script>
+
+  window.onload = function() {set_window()}
   document.body.onkeypress = function() {set_code(event)};
+
+  function set_window() { // Opens secondary window to display URL destination in Tweet for reference
+      var x = screen.width;
+      var y = screen.height;
+      var url = "about:blank";
+      if("{{ tweet.url_set.count }}" > 0 ) { //TODO: Consider handling multiple URLs, or loading the last one (rather than first) for consistency.
+        url = "http://{{ tweet.url_set.all.0 }}";
+      }
+      var url_window = window.open(url, "url_window", "width=" + x/3 + ", height=" + y + ", left=" + x/3*2 + ", menubar=no, toolbar=no, status=no");
+  }
 
   function set_code(event) {
       if (event.keyCode == 49){
@@ -126,6 +138,7 @@
         document.getElementById("9").click()
       }
   }
+
 </script>
 
 {% endblock %}
