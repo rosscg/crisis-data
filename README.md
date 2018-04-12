@@ -1,13 +1,11 @@
 Twitter social network data collection
 ==================================
 
-App currently either takes screen name as input and saves data to DB, or takes
-keywords to monitor for in stream. Streamed tweets are saved and their author's
-data saved to the DB.
+This application is designed to collect user network data from Twitter using keyword and GPS streams. Rich user data is recorded, including their follower/following network. This network data can then be monitored for changes over time.
 
 The build uses a fork of Tweepy which allows multiple tokens to be used.
 
-Note: Excluding Tweets containing the term 'pray' is hard-coded to reduce unnecessary content.
+Note: Excluding Tweets containing the term 'pray' is hard-coded to reduce unnecessary content (as the original application involved disaster events).
 
 ==================================
 
@@ -79,7 +77,7 @@ If Redis is running from previous launch (i.e. returns 'bind: Address already in
 Any change to the code requires Celery terminal commands to be relaunched.
 
 
-Usage:
+Usage - Data Collection:
 ------------
 The key functionality of the software is tracking keywords and GPS coordinates.
 
@@ -114,3 +112,16 @@ To flush Redis DB:
 > $ redis-4.0.1/src/redis-cli flushdb
 > $ celery purge
 > ```
+
+
+Usage - Data Coding:
+------------
+Once the collection is complete, use the 'Data Coding' interface to code the Tweets. Currently only one dimension of code is supported.
+
+The 'Data Coding' link will open three new windows - the top is the main interface. The other two larger windows show the original Tweet and linked content if included in the Tweet.
+Add codes as appropriate and then navigate back to the 'primary coder'. Tweets will be randomly displayed from a pool of 100 and can be coded either by pressing the buttons, or using numeric keys (up to 9).
+There is a button to change to a secondary coder. This 'user' will be presented with any Tweets that have been coded by the primary coder. This is intended for coding schema validation purposes. More coders are available but their 'page' must be accessed by manipulating the URL.
+
+Note:
+  Currently only one url from a Tweet is shown in the lower-right window, but in rare cases a Tweet may contain multiple urls.
+  If the Tweet (or user) has been deleted and therefore is not displayed in the bottom-left window, the original text content can still be seen by scrolling down in the top interface window.

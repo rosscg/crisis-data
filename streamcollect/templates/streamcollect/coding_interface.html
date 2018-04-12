@@ -14,7 +14,7 @@
 
       {% if coder != '0' %}
       <div class="row">
-        <div class="col-lg-8">
+        <div class="col-lg-10">
           {% if remaining != 0 %}
           <form action="submit" method="POST">{% csrf_token %}
             <input type="hidden" value={{ tweet.tweet_id }} name="tweet_id">
@@ -29,14 +29,14 @@
           </form>
           {% endif %}
         </div>
-        <div class="col-lg-4">
+        <div class="col-lg-2">
           <div class="coding_button_row" align='right'>
             {% if coder == '1' %}
             <p>Total Coded: {{ total_coded }}</p>
-            <p><a href="/coding_interface/2">Change to Secondary Coder</a></p>
+            <p><a href="/coding_interface/2">Change to Second Coder</a></p>
             <p><a id="add_codes" href="/coding_interface/0">Add/View Codes</a></p>
             {% elif coder != '0' %}
-            <p>Remaining: {{ remaining }}, Total Coded: {{ total_coded }}</p>
+            <p>Remaining: {{ remaining }} <br/> Total Coded: {{ total_coded }}</p>
             <p><a href="/coding_interface/1">Change to Primary Coder</a></p>
             {% endif %}
           </div>
@@ -58,7 +58,7 @@
       {% if coder == '0' %}
         <div class="row">
           <div class="coding_button_row">
-            <div class="col-lg-8">
+            <div class="col-lg-10">
               <form action="submit" method="POST" class="form-inline">{% csrf_token %}
                 <div class="form-group">
                   <div class="col-xl-8">
@@ -71,7 +71,7 @@
                 </div>
               </form>
             </div>
-            <div class="col-lg-4">
+            <div class="col-lg-2">
               <p align='right'><a href="/coding_interface/1">Change to Primary Coder</a></p>
               <p align='right'>Scroll down to view and remove existing codes</p>
             </div>
