@@ -31,4 +31,18 @@ body {
     background-color: powderblue;
 }
 
+.tweet_to_code {
+    padding: 15px;
+    margin: 10px;
+    border: 5px solid SteelBlue;
+    border-radius: 10px;
+    height:90px;
+    font-size:100%;
+}
+
+.coding_button_row {
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
 .top_margin_20 { margin-top:20px; }

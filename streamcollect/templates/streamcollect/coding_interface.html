@@ -1,144 +1,160 @@
-{% extends 'streamcollect/base.html' %}
+{% load staticfiles %}
+<html>
+  <head>
+    <title>StreamCollect - Coding Interface</title>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 
-{% block content %}
+    <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
 
-<div class="container">
-  <div class="page-header">
-    <h1 class="title"><small>Coding Interface</small></h1>
-    {% if coder == '1' %}
-      <h1 class="title"><small>Total Coded: {{ total_coded }}</small></h1>
-    {% elif coder > '1' %}
-      <h1 class="title"><small>Remaining: {{ remaining }} Total Coded: {{ total_coded }}</small></h1>
-    {% endif %}
-  </div>
 
-{% if remaining != 0 and coder != '0' %}
-  <div class="row">
-    <div class="col-sm-8">
-      <div class="added_tweet">
-        <p>{{ tweet.text }}</p>
-        <p>&emsp;<a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a>&emsp;&emsp;&emsp;<a href="{% url 'user_details' user_id=tweet.author.user_id %}" target="_blank">Author</a></p>
-      </div>
-    </div>
-  </div>
+  </head>
+  <body>
+    <div class="container">
 
-  <div class="row">
-    <div class="col-sm-8">
-      <div>
-        <form action="submit" method="POST">{% csrf_token %}
-          <input type="hidden" value={{ tweet.tweet_id }} name="tweet_id">
-          <input type="hidden" value={{ coder }} name="coder">
-          <div class="row" style="text-align:center">
-            {% for code in codes %}
-              <button id={{ code.data_code_id }} type="submit" value={{ code.data_code_id }} class="btn btn-primary" name="assign_code">
-               {{ code.data_code_id }}: {{ code.name }}
-              </button>
-            {% endfor %}
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-{% endif %}
-
-{% if coder == '0' %}
-  <div class="row">
-    <div class="col-sm-8">
-      <p align='right'><a href="/coding_interface/1">Change to Primary Coder</a></p>
-    </div>
-  </div>
-
-  {% for code in codes %}
-  <div class="row">
-    <div class="col-sm-8">
-     <p style="font-size:130%;">{{ code.data_code_id }}: <b>{{ code.name }}</b><br/>
-     {{ code.description }}
-     <form action="submit" method="POST">{% csrf_token %}
-       <input type="hidden" value={{ code.data_code_id }} name="data_code_id">
-       <input type="submit" class="btn btn-danger btn-xs" name="delete_data_code" value="Delete '{{ code.name }}'"></form>
-    </p>
-   </div>
-  </div>
-{% endfor %}
-
-  <div class="row">
-    <div class="col-sm-8">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-8">
-            <label for="code">Add Code:</label>
-            <input type="text" class="form-control" name="code">
-            <label for="description">Description:</label>
-            <textarea class="form-control" rows="4" name="description"></textarea>
-            <input type="submit" class="btn btn-primary btn-md" name="add_data_code" value="Add Code">
+      {% if coder != '0' %}
+      <div class="row">
+        <div class="col-lg-8">
+          {% if remaining != 0 %}
+          <form action="submit" method="POST">{% csrf_token %}
+            <input type="hidden" value={{ tweet.tweet_id }} name="tweet_id">
+            <input type="hidden" value={{ coder }} name="coder">
+            <div class="coding_button_row" style="text-align:center">
+              {% for code in codes %}
+                <button id={{ code.data_code_id }} type="submit" value={{ code.data_code_id }} class="btn btn-primary btn-lg" name="assign_code">
+                 {{ code.data_code_id }}: {{ code.name }}
+                </button>
+              {% endfor %}
+            </div>
+          </form>
+          {% endif %}
+        </div>
+        <div class="col-lg-4">
+          <div class="coding_button_row" align='right'>
+            {% if coder == '1' %}
+            <p>Total Coded: {{ total_coded }}</p>
+            <p><a href="/coding_interface/2">Change to Secondary Coder</a></p>
+            <p><a id="add_codes" href="/coding_interface/0">Add/View Codes</a></p>
+            {% elif coder != '0' %}
+            <p>Remaining: {{ remaining }}, Total Coded: {{ total_coded }}</p>
+            <p><a href="/coding_interface/1">Change to Primary Coder</a></p>
+            {% endif %}
           </div>
         </div>
-      </form>
-    </div>
-  </div>
-{% endif %}
-
-
-  <div class="row">
-    <div class="col-sm-8">
-      {% if coder == '1' %}
-        <p align='right'><a href="/coding_interface/2">Change to Secondary Coder</a></p>
-        <p align='right'><a href="/coding_interface/0">Add/View Codes</a></p>
-      {% elif coder != '0' %}
-        <p align='right'><a href="/coding_interface/1">Change to Primary Coder</a></p>
-        <p align='right'><a href="/coding_interface/0">Add/View Codes</a></p>
+      </div>
       {% endif %}
+
+      {% if remaining != 0 and coder != '0' %}
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="tweet_to_code">
+            <p>{{ tweet.text }}</p>
+            <p>&emsp;<a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a>&emsp;&emsp;&emsp;<a href="{% url 'user_details' user_id=tweet.author.user_id %}" target="_blank">Author</a></p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if coder == '0' %}
+        <div class="row">
+          <div class="coding_button_row">
+            <div class="col-lg-8">
+              <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+                <div class="form-group">
+                  <div class="col-xl-8">
+                    <label for="code">Add Code:</label>
+                    <input type="text" class="form-control" name="code">
+                    <label for="description">Description:</label>
+                    <textarea class="form-control" rows="2" name="description"></textarea>
+                    <input type="submit" class="btn btn-primary btn-md" name="add_data_code" value="Add Code">
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class="col-lg-4">
+              <p align='right'><a href="/coding_interface/1">Change to Primary Coder</a></p>
+              <p align='right'>Scroll down to view and remove existing codes</p>
+            </div>
+          </div>
+        </div>
+
+        {% for code in codes %}
+        <div class="row">
+          <div class="coding_button_row">
+            <div class="col-lg-12">
+             <p style="font-size:130%;">{{ code.data_code_id }}: <b>{{ code.name }}</b>
+             {{ code.description }}
+             <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+               <input type="hidden" value={{ code.data_code_id }} name="data_code_id">
+               <input type="submit" class="btn btn-danger btn-xs" name="delete_data_code" value="Delete '{{ code.name }}'"></form>
+            </p>
+           </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
     </div>
-  </div>
 
-</div>
+    <script type="text/javascript">
 
+      window.onload = function() {set_window()}
 
-<script>
+      document.body.onkeypress = function() {set_code(event)};
 
-  window.onload = function() {set_window()}
-  document.body.onkeypress = function() {set_code(event)};
+      function set_window() { // Opens secondary window to display URL destination in Tweet for reference
 
-  function set_window() { // Opens secondary window to display URL destination in Tweet for reference
-      var x = screen.width;
-      var y = screen.height;
-      var url = "about:blank";
-      if("{{ tweet.url_set.count }}" > 0 ) { //TODO: Consider handling multiple URLs, or loading the last one (rather than first) for consistency.
-        url = "http://{{ tweet.url_set.all.0 }}";
-      }
-      var url_window = window.open(url, "url_window", "width=" + x/3 + ", height=" + y + ", left=" + x/3*2 + ", menubar=no, toolbar=no, status=no");
-  }
+          if("{{coder}}" > 0) {
+            var x = screen.width;
+            var y = screen.height;
+            var code_window_height = window.outerHeight; // Using var rather than fixed value means resizing window affects reopening other windows. Initial value set in base.html
+            var url_user = "http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}";
+            var url_2 = "about:blank";
+            if("{{ tweet.url_set.count }}" > 0 ) { //TODO: Consider handling multiple URLs, or loading the last one (rather than first) for consistency.
+              url_2 = "http://{{ tweet.url_set.all.0 }}";
+            }
+            var url_window_user = window.open(url_user, "url_window_user", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
+            var url_window_url = window.open(url_2, "url_window_url", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
+          }
 
-  function set_code(event) {
-      if (event.keyCode == 49){
-        document.getElementById("1").click()
+          var a = document.getElementById("add_codes");
+          a.onclick = function() {
+            url_window_user.close()
+            url_window_url.close()
+          }
       }
-      else if (event.keyCode == 50){
-        document.getElementById("2").click()
-      }
-      else if (event.keyCode == 51){
-        document.getElementById("3").click()
-      }
-      else if (event.keyCode == 52){
-        document.getElementById("4").click()
-      }
-      else if (event.keyCode == 53){
-        document.getElementById("5").click()
-      }
-      else if (event.keyCode == 54){
-        document.getElementById("6").click()
-      }
-      else if (event.keyCode == 55){
-        document.getElementById("7").click()
-      }
-      else if (event.keyCode == 56){
-        document.getElementById("8").click()
-      }
-      else if (event.keyCode == 57){
-        document.getElementById("9").click()
-      }
-  }
 
-</script>
+      function set_code(event) {
+          if (event.keyCode == 49){
+            document.getElementById("1").click()
+          }
+          else if (event.keyCode == 50){
+            document.getElementById("2").click()
+          }
+          else if (event.keyCode == 51){
+            document.getElementById("3").click()
+          }
+          else if (event.keyCode == 52){
+            document.getElementById("4").click()
+          }
+          else if (event.keyCode == 53){
+            document.getElementById("5").click()
+          }
+          else if (event.keyCode == 54){
+            document.getElementById("6").click()
+          }
+          else if (event.keyCode == 55){
+            document.getElementById("7").click()
+          }
+          else if (event.keyCode == 56){
+            document.getElementById("8").click()
+          }
+          else if (event.keyCode == 57){
+            document.getElementById("9").click()
+          }
+      }
 
-{% endblock %}
+    </script>
+
+  </body>
+</html>
