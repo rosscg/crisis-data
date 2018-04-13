@@ -14,18 +14,23 @@
 
       <div class="row">
         <div class="col-lg-10">
+          <div class="coding_button_row" style="text-align:center">
           {% if remaining != 0 %}
-          <form action="submit" method="POST">{% csrf_token %}
-            <input type="hidden" value={{ tweet.tweet_id }} name="tweet_id">
-            <div class="coding_button_row" style="text-align:center">
-              {% for code in codes %}
+            <form action="submit" method="POST">{% csrf_token %}
+              <input type="hidden" value={{ tweet.tweet_id }} name="tweet_id">
+                {% for code in codes %}
                 <button id={{ forloop.counter }} type="submit" value={{ code.data_code_id }} class="btn btn-primary btn-lg" name="assign_code">
                  {{ forloop.counter }}: {{ code.name }} {{ code.data_code_id }}
                 </button>
-              {% endfor %}
-            </div>
-          </form>
-          {% endif %}
+                {% endfor %}
+                {% if codes|length == 0 %}
+                <p>No codes detected.</p>
+                {% endif %}
+            </form>
+            {% else %}
+            <p>No Tweets remaining.</p>
+            {% endif %}
+          </div>
         </div>
         <div class="col-lg-2">
           <div class="coding_button_row" align='right'>

@@ -108,12 +108,13 @@ def coding_dash(request):
     active_coding_dimension = request.session.get('active_coding_dimension', None)
     active_coder = request.session.get('active_coder', None)
 
-    if active_coding_dimension is None:
+    if active_coding_dimension is None and dimensions.count() > 0:
         active_coding_dimension = dimensions.order_by('id')[0].id
         request.session['active_coding_dimension'] = active_coding_dimension
 
     if active_coder is None:
         request.session['active_coder'] = 1
+        active_coder = 1
 
     return render(request, 'streamcollect/coding_dash.html', {'dimensions': dimensions, 'active_coding_dimension': active_coding_dimension, 'active_coder': active_coder})
 
