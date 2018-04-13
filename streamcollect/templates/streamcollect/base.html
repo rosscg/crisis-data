@@ -6,21 +6,6 @@
 	      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 
         <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
-
-        <script type="text/javascript">
-          window.onload = function() {
-            var a = document.getElementById("coding_link");
-            a.onclick = function() {
-              var x = screen.width;
-              var y = screen.height;
-              var code_window_height = 100; // Value may duplicated in coding_interface.html (currently is not)
-              var url_window_user = window.open("about:blank", "url_window_user", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
-              var url_window_url = window.open("about:blank", "url_window_url", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
-              var coding_window = window.open("/coding_interface/1", "coding_window", "width=" + x + ", height=" + code_window_height + ", menubar=no, toolbar=no, status=no");
-              }
-            }
-        </script>
-
     </head>
 
     <body>
@@ -37,7 +22,7 @@
               <li><a href="/view_network">View Network</a></li>
               <li><a href="/stream_status">Stream Status</a></li>
               <li><a href="/functions">Functions</a></li>
-              <li><a id="coding_link" href="">Data Coding</a></li>
+              <li><a href="/coding_dash">Data Coding</a></li>
               <li><a href="/twitter_auth">Twitter Authentication</a></li>
             </ul>
           </div>

@@ -160,19 +160,29 @@ class Tweet(models.Model):
         return str(self.text)
 
 
-class DataCode(models.Model):
-    data_code_id = models.IntegerField(unique=True) # Required as the PK doesn't reset when rows are removed.
-    name = models.CharField(max_length=20)
+class DataCodeDimension(models.Model):
+    name = models.CharField(max_length=20, null=False)
     description = models.CharField(null=True, max_length=400)
-    tweets = models.ManyToManyField(Tweet, through='Coder')
 
     def __str__(self):
-        return "Code ID {}: {}".format(str(self.data_code_id), self.name)
+        return str(self.name)
+
+
+class DataCode(models.Model):
+    data_code_id = models.IntegerField(unique=True, null=False) # Required as the PK doesn't reset when rows are removed.
+    name = models.CharField(max_length=20, null=False)
+    description = models.CharField(null=True, max_length=400)
+    tweets = models.ManyToManyField(Tweet, through='Coder')
+    dimension = models.ForeignKey(DataCodeDimension, related_name='datacode', on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return "Code ID {}: {}, Dimension: {}".format(str(self.data_code_id), self.name, self.dimension)
+
 
 
 class Coder(models.Model):
-    tweet = models.ForeignKey(Tweet)
-    data_code = models.ForeignKey(DataCode)
+    tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE)
+    data_code = models.ForeignKey(DataCode, on_delete=models.CASCADE)
     coder_id = models.IntegerField(default=1)
 
     def __str__(self):

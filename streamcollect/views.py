@@ -11,7 +11,7 @@ import random
 
 from django.utils import timezone
 
-from .models import User, Relo, Tweet, DataCode, Coder, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
+from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coder, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
@@ -103,14 +103,33 @@ def functions(request):
     return render(request, 'streamcollect/functions.html', {'tasks': tasks})
 
 
-def coding_interface(request, coder):
-    if coder is '1':
+def coding_dash(request):
+    dimensions = DataCodeDimension.objects.all()
+    active_coding_dimension = request.session.get('active_coding_dimension', None)
+    active_coder = request.session.get('active_coder', None)
+
+    if active_coding_dimension is None:
+        active_coding_dimension = dimensions.order_by('id')[0].id
+        request.session['active_coding_dimension'] = active_coding_dimension
+
+    if active_coder is None:
+        request.session['active_coder'] = 1
+
+    return render(request, 'streamcollect/coding_dash.html', {'dimensions': dimensions, 'active_coding_dimension': active_coding_dimension, 'active_coder': active_coder})
+
+
+def coding_interface(request):
+    active_coder = request.session.get('active_coder', None)
+    active_coding_dimension = request.session.get('active_coding_dimension', None)
+    if active_coder is None:
+        return redirect('coding_dash')
+    if active_coder == 1:
         try:
             d = DataCode.objects.get(data_code_id=0)
         except:
             d = DataCode(data_code_id=0, name='To Be Coded')
             d.save()
-        if DataCode.objects.get(data_code_id=0).tweets.all().count() is 0:
+        if DataCode.objects.get(data_code_id=0).tweets.all().count() == 0:
             tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
             tweet_sample = tweet_all.order_by('?')[:100]                     #TODO: Scales very poorly, reconsider using random.sample to extract by row
             for i in tweet_sample:
@@ -121,7 +140,7 @@ def coding_interface(request, coder):
         remaining = None
         count = tweet_query.count()
     else:
-        tweet_query = Tweet.objects.filter(datacode__isnull=False).filter(~Q(coder__coder_id=coder)).filter(datacode__data_code_id__gt=0) # Select coded Tweet which hasn't been coded by the current coder.
+        tweet_query = Tweet.objects.filter(datacode__isnull=False).filter(~Q(coder__coder_id=active_coder)).filter(datacode__data_code_id__gt=0) # Select coded Tweet which hasn't been coded by the current coder.
         count = tweet_query.count()
         remaining = count
     if count > 0:
@@ -129,9 +148,9 @@ def coding_interface(request, coder):
         tweet = tweet_query[rand]
     else:
         tweet = None
-    total_coded = Coder.objects.filter(coder_id=int(coder)).filter(data_code__data_code_id__gt=0).count() #Total coded by current coder
-    codes = DataCode.objects.order_by('data_code_id')[1:] #Excludes 0 'to be coded' code
-    return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes, 'coder': coder, 'remaining': remaining, 'total_coded': total_coded})
+    total_coded = Coder.objects.filter(coder_id=active_coder).filter(data_code__data_code_id__gt=0).count() #Total coded by current coder
+    codes = DataCode.objects.filter(dimension__id=active_coding_dimension).order_by('data_code_id')
+    return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes, 'active_coder': active_coder, 'remaining': remaining, 'total_coded': total_coded})
 
 
 def twitter_auth(request):
@@ -190,22 +209,6 @@ def submit(request):
             k.priority = 2
             k.save()
         return redirect('monitor_user')
-
-    elif "add_data_code" in request.POST:
-        code = request.POST['code']
-        description = request.POST['description']
-        d = list(DataCode.objects.values_list('data_code_id', flat=True))
-        data_code_id = min([i for i in list(range(1,10)) if i not in d]) # Smallest ID not already in use
-        if len(code) > 0:
-            c = DataCode(name=code, description=description, data_code_id=data_code_id)
-            c.save()
-        return redirect('coding_interface', 0)
-
-    elif "delete_data_code" in request.POST:
-        data_code_id = request.POST['data_code_id']
-        data_code = DataCode.objects.filter(data_code_id=data_code_id)
-        data_code.delete()
-        return redirect('coding_interface', 0)
 
     elif "start_kw_stream" in request.POST:
         try:
@@ -340,16 +343,64 @@ def submit(request):
         f.close
         return redirect('twitter_auth')
 
+    elif "add_data_code" in request.POST:
+        code = request.POST['code']
+        description = request.POST['description']
+        if len(code) > 0:
+            d = list(DataCode.objects.values_list('data_code_id', flat=True))
+            data_code_id = min([i for i in list(range(1,10)) if i not in d]) # Smallest ID not already in use
+
+            active_coding_dimension = request.session.get('active_coding_dimension', None)
+            dimension = DataCodeDimension.objects.get(id=active_coding_dimension)
+            print(dimension)
+
+            c = DataCode(name=code, description=description, data_code_id=data_code_id, dimension=dimension)
+            c.save()
+        return redirect('coding_dash')
+
+    elif "delete_data_code" in request.POST:
+        print("trying")
+        data_code_id = request.POST['data_code_id']
+        data_code = DataCode.objects.filter(data_code_id=data_code_id)
+        data_code.delete()
+        return redirect('coding_dash')
+
     elif "assign_code" in request.POST:
+        print("assigning code")
         code_id = request.POST['assign_code']
         tweet_id = request.POST['tweet_id']
-        coder_id = request.POST['coder']
+        coder_id = request.session.get('active_coder', 1)
         tweet = Tweet.objects.get(tweet_id=tweet_id)
         data_code = DataCode.objects.get(data_code_id=code_id)
         coder = Coder(tweet=tweet, data_code=data_code, coder_id=coder_id) #Add new code classification
         Coder.objects.filter(tweet=tweet).filter(data_code__data_code_id=0).delete() #Delete 'To Be Coded' classification
         coder.save()
-        return redirect('/coding_interface/{}'.format(coder_id))
+        return redirect('coding_interface')
+
+    elif "set_code_dimension" in request.POST:
+        dimension_id = request.POST['dimension_id']
+        request.session['active_coding_dimension'] = int(dimension_id)
+        return redirect('coding_dash')
+
+    elif "add_dimension" in request.POST:
+        name = request.POST['dimension_name']
+        description = request.POST['description']
+        if len(name) > 0:
+            d = DataCodeDimension(name=name, description=description)
+            d.save()
+        return redirect('coding_dash')
+
+    elif "delete_dimension" in request.POST:
+        dimension_id = request.POST['dimension_id']
+        DataCodeDimension.objects.filter(id=dimension_id).delete()
+        if request.session.get('active_coding_dimension', None) == int(dimension_id):
+            request.session['active_coding_dimension'] = None
+        return redirect('coding_dash')
+
+    elif "set_coder" in request.POST:
+        coder_id = int(request.POST['coder_id'])
+        request.session['active_coder'] = coder_id
+        return redirect('coding_dash')
 
     else:
         print("Unlabelled button pressed")

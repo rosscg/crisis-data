@@ -1,0 +1,135 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+
+<div class="container">
+
+  <div class="row">
+    <div class="coding_button_row">
+      <div class="col-lg-12" align="center">
+        <button id="start_coding" type="submit" class="btn btn-primary btn-lg" name="start_coding">Start Coding</button>
+        <br/>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="coding_button_row">
+      <div class="col-lg-12" align="center">
+        {% if active_coder == 1 %}
+        <button class="btn btn-success">First Coder Active</button>
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <input type="hidden" value=2 name="coder_id">
+          <input type="submit" class="btn btn-default btn-md" name="set_coder" value="Switch to Secondary Coder">
+        </form>
+        {% elif active_coder == 2 %}
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <input type="hidden" value=1 name="coder_id">
+          <input type="submit" class="btn btn-default" name="set_coder" value="Switch to Primary Coder">
+        </form>
+        <button class="btn btn-success">Second Coder Active</button>
+        {% endif %}
+
+
+        <br/><br/>
+      </div>
+    </div>
+  </div>
+
+  {% for dimension in dimensions %}
+  <div class="row">
+    <div class="coding_button_row">
+      <div class="col-lg-1">
+        {% if dimension.id == active_coding_dimension %}
+        <button class="btn btn-success">Current:</button>
+        {% else %}
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <input type="hidden" value={{ dimension.id }} name="dimension_id">
+          <input type="submit" class="btn btn-primary" name="set_code_dimension" value="Activate:">
+        </form>
+        {% endif %}
+      </div>
+      <div class="col-lg-4">
+       <p style="font-size:130%;">{{ dimension.name }}</p>
+       <p>{{ dimension.description }}</p>
+      </div>
+
+      <div class="col-lg-4">
+       {% for d in dimension.datacode.all %}
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <input type="hidden" value={{ d.data_code_id }} name="data_code_id">
+          <input type="submit" class="btn btn-remove btn-xs" name="delete_data_code" value="{{ d.name }}">
+        </form>
+       {% endfor %}
+      </div>
+
+      <div class="col-lg-1">
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <input type="hidden" value={{ dimension.id }} name="dimension_id">
+          <input type="submit" class="btn btn-danger btn-xs" name="delete_dimension" value="Delete">
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="row">
+    <br/>
+  </div>
+
+  <div class="row">
+    <div class="coding_button_row">
+      <div class="col-lg-8">
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <div class="form-group">
+            <input type="submit" class="btn btn-info btn-md" name="add_dimension" value="Add Dimension">
+            <label for="dimension">Add Dimension:</label>
+            <input type="text" class="form-control" name="dimension_name">
+            <label for="description">Description:</label>
+            <input class="form-control" name="description">
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="coding_button_row">
+      <div class="col-lg-8">
+
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <div class="form-group">
+            <input type="submit" class="btn btn-info btn-md" name="add_data_code" value="Add Code">
+            <label for="code">Add Code:</label>
+            <input type="text" class="form-control" name="code">
+            <label for="description">Description:</label>
+            <input class="form-control" name="description">
+          </div>
+        </form>
+
+        <br/>
+        <br/>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<script type="text/javascript">
+  window.onload = function() {
+    var a = document.getElementById("start_coding");
+    a.onclick = function() {
+      var x = screen.width;
+      var y = screen.height;
+      var code_window_height = 100; // Value may duplicated in coding_interface.html (currently is not)
+      var url_window_user = window.open("about:blank", "url_window_user", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
+      var url_window_url = window.open("about:blank", "url_window_url", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
+      var coding_window = window.open("/coding_interface", "coding_window", "width=" + x + ", height=" + code_window_height + ", menubar=no, toolbar=no, status=no");
+      }
+    }
+</script>
+
+
+{% endblock %}

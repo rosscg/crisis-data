@@ -46,3 +46,13 @@ body {
 }
 
 .top_margin_20 { margin-top:20px; }
+
+
+form {
+    display: inline-block;
+}
+
+.btn-remove:hover {
+  background: #f44336;
+  color: white;
+}
