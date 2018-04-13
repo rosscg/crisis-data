@@ -116,11 +116,14 @@ To flush Redis DB:
 
 Usage - Data Coding:
 ------------
-Once the collection is complete, use the 'Data Coding' interface to code the Tweets. Currently only one dimension of code is supported.
+Once the collection is complete, use the 'Data Coding' interface to code the Tweets.
 
-The 'Data Coding' link will open three new windows - the top is the main interface. The other two larger windows show the original Tweet and linked content if included in the Tweet.
-Add codes as appropriate and then navigate back to the 'primary coder'. Tweets will be randomly displayed from a pool of 100 and can be coded either by pressing the buttons, or using numeric keys (up to 9).
-There is a button to change to a secondary coder. This 'user' will be presented with any Tweets that have been coded by the primary coder. This is intended for coding schema validation purposes. More coders are available but their 'page' must be accessed by manipulating the URL.
+From the 'Coding Dashboard', add the code dimension (or add a generic name if multiple dimensions are unneeded) then add the codes. From this page, the current code dimension and coder id can be selected before launching the coding interface.
+
+The coding interface link will open three new windows - the top is the main interface. The other two larger windows show the original Tweet and linked content if included in the Tweet.
+Tweets are randomly displayed from a pool of 100 and can be coded either by using the buttons or keyboard.
+
+If selected from the coding dashboard, the secondary coder will be presented with any Tweets that have been coded by the primary coder. This is intended for coding schema validation purposes. The database supports more than two coders, but require relevant buttons to be implemented on the dash.
 
 Note:
   Currently only one url from a Tweet is shown in the lower-right window, but in rare cases a Tweet may contain multiple urls.
