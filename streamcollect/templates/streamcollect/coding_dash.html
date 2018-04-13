@@ -83,8 +83,7 @@
       <div class="col-lg-8">
         <form action="submit" method="POST" class="form-inline">{% csrf_token %}
           <div class="form-group">
-            <input type="submit" class="btn btn-info btn-md" name="add_dimension" value="Add Dimension">
-            <label for="dimension">Add Dimension:</label>
+            <input type="submit" class="btn btn-info btn-md" name="add_dimension" value="Add Dimension:">
             <input type="text" class="form-control" name="dimension_name">
             <label for="description">Description:</label>
             <input class="form-control" name="description">
@@ -100,8 +99,7 @@
 
         <form action="submit" method="POST" class="form-inline">{% csrf_token %}
           <div class="form-group">
-            <input type="submit" class="btn btn-info btn-md" name="add_data_code" value="Add Code">
-            <label for="code">Add Code:</label>
+            <input type="submit" class="btn btn-info btn-md" name="add_data_code" value="Add Code:">
             <input type="text" class="form-control" name="code">
             <label for="description">Description:</label>
             <input class="form-control" name="description">
