@@ -130,18 +130,30 @@ def coding_interface(request):
         except:
             d = DataCode(data_code_id=0, name='To Be Coded')
             d.save()
-        if DataCode.objects.get(data_code_id=0).tweets.all().count() == 0:
-            tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
-            tweet_sample = tweet_all.order_by('?')[:100]                     #TODO: Scales very poorly, reconsider using random.sample to extract by row
-            for i in tweet_sample:
-                    new_coder = Coder(tweet=i, data_code=d)
-                    new_coder.save()
-        tweet_query = DataCode.objects.get(data_code_id=0).tweets.all()
+
+        # Look for tweets coded in another dimension already:
+        tweet_query = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
+
+        if tweet_query.count() == 0: #
+            if DataCode.objects.get(data_code_id=0).tweets.all().count() == 0:
+                tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
+                #TODO Handle out of index below:::::
+                batch_size = 10
+                if tweet_all.count() >= batch_size:
+                    tweet_sample = tweet_all.order_by('?')[:batch_size] # TODO: Scales very poorly, reconsider using random.sample to extract by row
+                else:
+                    tweet_sample = tweet_all.order_by('?')[:tweet_all.count()]
+                for i in tweet_sample:
+                        new_coder = Coder(tweet=i, data_code=d) # Register sampled tweets as 'To Be Coded'
+                        new_coder.save()
+            tweet_query = DataCode.objects.get(data_code_id=0).tweets.all()
+
         #remaining = Tweet.objects.filter(data_source__gt=0).filter(~Q(datacode__data_code_id__gt=0)).count() #Too slow
         remaining = None
         count = tweet_query.count()
-    else:
-        tweet_query = Tweet.objects.filter(datacode__isnull=False).filter(~Q(coder__coder_id=active_coder)).filter(datacode__data_code_id__gt=0) # Select coded Tweet which hasn't been coded by the current coder.
+    else: # Secondary coders view only messages already coded by primary coder.
+        tweet_query = Tweet.objects.filter(datacode__dimension_id=active_coding_dimension).filter(~Q(coder__in=Coder.objects.filter(coder_id=active_coder).filter(data_code__dimension__id=active_coding_dimension))) # Select coded Tweet which hasn't been coded by the current coder in the current dimension.
+
         count = tweet_query.count()
         remaining = count
     if count > 0:
@@ -149,7 +161,7 @@ def coding_interface(request):
         tweet = tweet_query[rand]
     else:
         tweet = None
-    total_coded = Coder.objects.filter(coder_id=active_coder).filter(data_code__data_code_id__gt=0).count() #Total coded by current coder
+    total_coded = Coder.objects.filter(coder_id=active_coder).filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension).count() #Total coded by current coder
     codes = DataCode.objects.filter(dimension__id=active_coding_dimension).order_by('data_code_id')
     return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes, 'active_coder': active_coder, 'remaining': remaining, 'total_coded': total_coded})
 
