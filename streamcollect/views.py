@@ -362,15 +362,13 @@ def submit(request):
         if len(code) > 0:
             d = list(DataCode.objects.values_list('data_code_id', flat=True))
             data_code_id = min([i for i in list(range(1,10)) if i not in d]) # Smallest ID not already in use
-
             active_coding_dimension = request.session.get('active_coding_dimension', None)
-
             try:
-                dimension = DataCodeDimension.objects.get(id=active_coding_dimension)c = DataCode(name=code, description=description, data_code_id=data_code_id, dimension=dimension)
+                dimension = DataCodeDimension.objects.get(id=active_coding_dimension)
+                c = DataCode(name=code, description=description, data_code_id=data_code_id, dimension=dimension)
                 c.save()
             except:
                 pass
-
         return redirect('coding_dash')
 
     elif "delete_data_code" in request.POST:
