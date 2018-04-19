@@ -364,22 +364,22 @@ def submit(request):
             data_code_id = min([i for i in list(range(1,10)) if i not in d]) # Smallest ID not already in use
 
             active_coding_dimension = request.session.get('active_coding_dimension', None)
-            dimension = DataCodeDimension.objects.get(id=active_coding_dimension)
-            print(dimension)
 
-            c = DataCode(name=code, description=description, data_code_id=data_code_id, dimension=dimension)
-            c.save()
+            try:
+                dimension = DataCodeDimension.objects.get(id=active_coding_dimension)c = DataCode(name=code, description=description, data_code_id=data_code_id, dimension=dimension)
+                c.save()
+            except:
+                pass
+
         return redirect('coding_dash')
 
     elif "delete_data_code" in request.POST:
-        print("trying")
         data_code_id = request.POST['data_code_id']
         data_code = DataCode.objects.filter(data_code_id=data_code_id)
         data_code.delete()
         return redirect('coding_dash')
 
     elif "assign_code" in request.POST:
-        print("assigning code")
         code_id = request.POST['assign_code']
         tweet_id = request.POST['tweet_id']
         coder_id = request.session.get('active_coder', 1)
