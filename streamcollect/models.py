@@ -169,7 +169,7 @@ class DataCodeDimension(models.Model):
 
 
 class DataCode(models.Model):
-    data_code_id = models.IntegerField(unique=True, null=False) # Required as the PK doesn't reset when rows are removed.
+    data_code_id = models.IntegerField(unique=True, null=False) # Required as the PK doesn't reset when rows are removed. #TODO: May not be required anymore
     name = models.CharField(max_length=40, null=False)
     description = models.CharField(null=True, max_length=400)
     tweets = models.ManyToManyField(Tweet, through='Coder')
