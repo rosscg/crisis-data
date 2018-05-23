@@ -181,7 +181,7 @@ class DataCode(models.Model):
 
 
 class Coder(models.Model):
-    tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE)
+    tweet = models.ForeignKey(Tweet, related_name='coder', on_delete=models.CASCADE)
     data_code = models.ForeignKey(DataCode, on_delete=models.CASCADE)
     coder_id = models.IntegerField(default=1)
 
