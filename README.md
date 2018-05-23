@@ -32,14 +32,14 @@ Install Redis from https://redis.io/ or brew, and build:
 > $ src/redis-server
 > ```
 
-Clone this project and open directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually:
+Clone this project and open directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually. The pip command below avoids using cache due to pip bug:
 
 > ```
 > $ git clone https://github.com/rosscg/crisis-data.git
 > $ cd crisis-data
 > $ python3 -m venv venv
 > $ source venv/bin/activate
-> $ pip install -r requirements.txt
+> $ pip install -r requirements.txt --no-cache-dir
 > ```
 
 Set database name [dbname], username and password in homesite/settings.py, line ~91.
