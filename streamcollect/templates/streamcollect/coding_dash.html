@@ -57,7 +57,7 @@
 
       <div class="col-lg-4">
        {% for d in dimension.datacode.all %}
-        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+        <form action="submit" method="POST" class="form-inline" onsubmit="return confirm('Confirm data code deletion.');">{% csrf_token %}
           <input type="hidden" value={{ d.data_code_id }} name="data_code_id">
           <input type="submit" class="btn btn-remove btn-xs" name="delete_data_code" value="{{ d.name }}">
         </form>
@@ -65,7 +65,7 @@
       </div>
 
       <div class="col-lg-1">
-        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+        <form action="submit" method="POST" class="form-inline" onsubmit="return confirm('Confirm dimension deletion.');">{% csrf_token %}
           <input type="hidden" value={{ dimension.id }} name="dimension_id">
           <input type="submit" class="btn btn-danger btn-xs" name="delete_dimension" value="Delete">
         </form>
