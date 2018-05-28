@@ -152,6 +152,7 @@ def coding_interface(request):
         remaining = None
         count = tweet_query.count()
     else: # Secondary coders view only messages already coded by primary coder.
+        # TODO: This is currently very slow, consider creating a 'to be coded' cache for secondary coder as done with primary above. Be careful that primary coder cache query above won't return these values. 
         tweet_query = Tweet.objects.filter(datacode__dimension_id=active_coding_dimension).filter(~Q(coder__in=Coder.objects.filter(coder_id=active_coder).filter(data_code__dimension__id=active_coding_dimension))) # Select coded Tweet which hasn't been coded by the current coder in the current dimension.
 
         count = tweet_query.count()
@@ -391,9 +392,13 @@ def submit(request):
     elif "undo_code" in request.POST:
         coder_id = request.session.get('active_coder', 1)
         last_coder = Coder.objects.filter(coder_id=coder_id).filter(data_code__data_code_id__gt=0).order_by('updated').last() # Get Last coded object for active coder
-        blank_data_code = DataCode.objects.get(data_code_id=0)
-        last_coder.data_code = blank_data_code
-        last_coder.save()
+        if last_coder:
+            if coder_id is 1:
+                blank_data_code = DataCode.objects.get(data_code_id=0)
+                last_coder.data_code = blank_data_code
+                last_coder.save()
+            else:
+                last_coder.delete()
         return redirect('coding_interface')
 
     elif "set_code_dimension" in request.POST:
