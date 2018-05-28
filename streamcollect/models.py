@@ -184,6 +184,7 @@ class Coder(models.Model):
     tweet = models.ForeignKey(Tweet, related_name='coder', on_delete=models.CASCADE)
     data_code = models.ForeignKey(DataCode, on_delete=models.CASCADE)
     coder_id = models.IntegerField(default=1)
+    updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return "Code ID: {}, Tweet: {}, Coder ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coder_id))

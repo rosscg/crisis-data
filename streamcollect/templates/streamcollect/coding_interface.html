@@ -40,6 +40,12 @@
             <p>Remaining: {{ remaining }} <br/> Total Coded: {{ total_coded }}</p>
             {% endif %}
             <p>Working as Coder: {{ active_coder }}</p>
+            <form action="submit" method="POST">{% csrf_token %}
+              <button type="submit" class="btn btn-default btn-sm" name="undo_code">
+               Undo Last Code
+              </button>
+            </form>
+
           </div>
         </div>
       </div>

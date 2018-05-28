@@ -388,6 +388,14 @@ def submit(request):
         coder.save()
         return redirect('coding_interface')
 
+    elif "undo_code" in request.POST:
+        coder_id = request.session.get('active_coder', 1)
+        last_coder = Coder.objects.filter(coder_id=coder_id).filter(data_code__data_code_id__gt=0).order_by('updated').last() # Get Last coded object for active coder
+        blank_data_code = DataCode.objects.get(data_code_id=0)
+        last_coder.data_code = blank_data_code
+        last_coder.save()
+        return redirect('coding_interface')
+
     elif "set_code_dimension" in request.POST:
         dimension_id = request.POST['dimension_id']
         request.session['active_coding_dimension'] = int(dimension_id)
