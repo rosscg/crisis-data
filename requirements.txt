@@ -3,10 +3,12 @@ billiard==3.5.0.2
 celery==4.0.2
 certifi==2017.4.17
 chardet==3.0.4
+decorator==4.3.0
 Django==1.11.1
 django-celery-beat==1.0.1
 idna==2.5
 kombu==4.0.2
+networkx==2.1
 oauthlib==2.0.2
 psycopg2==2.7.1
 PySocks==1.6.7

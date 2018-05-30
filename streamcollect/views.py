@@ -15,6 +15,7 @@ from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coder, Celer
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
+from .networks import create_gephi_file
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
@@ -445,7 +446,7 @@ def network_data_API(request):
     coded_users = User.objects.filter(tweet__in=coded_tweets)
 
     relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
-    #relevant_users = classed_users | coded_users 
+    #relevant_users = classed_users | coded_users
 
     print("Coded Users: {}, Classed Users: {}, Relevant Users: {}".format(coded_users.count(), classed_users.count(), len(relevant_users)))
 
@@ -470,12 +471,8 @@ def network_data_API(request):
     data = {"nodes" : resultsuser, "links" : resultsrelo}
     jsondata = json.dumps(data)
 
-    # Save to CSV for use in Gephi
-    print("Writing to CSV..")
-    csv = open('data_csv.csv','w')
-    for relo in relevant_relos:
-        csv.write(relo.as_csv()+'\n')
-    csv.close()
+    # Create GEXF file of network.
+    create_gephi_file(relevant_users, relevant_relos)
 
     #TODO: HttpReponse vs Jsonresponse? Latter doesn't work with current d3
     return HttpResponse(jsondata)
