@@ -119,6 +119,14 @@ class User(models.Model):
             return str(self.user_id)
 
     def as_json(self):
+        # Calculate the best (lowest) coded tweet for a user
+        # TODO: Remove this or place it elsewhere.
+        best_code = ''
+        for t in self.tweet.all():
+            for c in t.coder.all():
+                if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
+                    best_code = c.data_code.data_code_id
+
         if self.screen_name is None:
             title = str(self.user_id)
         else:
@@ -127,7 +135,8 @@ class User(models.Model):
         return dict(
             id=str(self.user_id),
             title=title,
-            group=str(self.user_class))
+            user_class=str(self.user_class),
+            group=str(best_code))
 
 
 class Tweet(models.Model):

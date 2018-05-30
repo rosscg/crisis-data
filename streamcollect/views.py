@@ -152,7 +152,7 @@ def coding_interface(request):
         remaining = None
         count = tweet_query.count()
     else: # Secondary coders view only messages already coded by primary coder.
-        # TODO: This is currently very slow, consider creating a 'to be coded' cache for secondary coder as done with primary above. Be careful that primary coder cache query above won't return these values. 
+        # TODO: This is currently very slow, consider creating a 'to be coded' cache for secondary coder as done with primary above. Be careful that primary coder cache query above won't return these values.
         tweet_query = Tweet.objects.filter(datacode__dimension_id=active_coding_dimension).filter(~Q(coder__in=Coder.objects.filter(coder_id=active_coder).filter(data_code__dimension__id=active_coding_dimension))) # Select coded Tweet which hasn't been coded by the current coder in the current dimension.
 
         count = tweet_query.count()
@@ -436,31 +436,46 @@ def network_data_API(request):
     print("Collecting network_data...")
 
     #All ego nodes, and alters with an in/out degree of X or greater.
-    relevant_users = User.objects.filter(user_class__gte=1).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))
+    slice_size = 2000 #TODO: Change to a random sample
+    classed_users = User.objects.filter(user_class__gte=1).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
+
+    # Only show users which have had Tweets coded
+    coded_tweets = Tweet.objects.filter(coder__data_code__data_code_id__gt=0).filter(coder__coder_id=1)
+    #coded_users = User.objects.filter(tweet__in=coded_tweets).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
+    coded_users = User.objects.filter(tweet__in=coded_tweets)
+
+    relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
+    #relevant_users = classed_users | coded_users 
+
+    print("Coded Users: {}, Classed Users: {}, Relevant Users: {}".format(coded_users.count(), classed_users.count(), len(relevant_users)))
 
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     relevant_relos = Relo.objects.filter(target_user__in=relevant_users, source_user__in=relevant_users, end_observed_at=None)
+    print("Creating Relo JSON..")
     resultsrelo = [ob.as_json() for ob in relevant_relos]
 
     #Remove isolated nodes: TODO: May be too slow
     if EXCLUDE_ISOLATED_NODES:
+        print("Excluding Isolated Nodes..")
         targets = list(relevant_relos.values_list('target_user', flat=True))
         sources = list(relevant_relos.values_list('source_user', flat=True))
 
         relo_node_list = targets + list(set(sources) - set(targets))
-
+        print("Creating User JSON..")
         resultsuser = [ob.as_json() for ob in relevant_users if ob.id in relo_node_list]
     else:
+        print("Creating User JSON..")
         resultsuser = [ob.as_json() for ob in relevant_users]
 
     data = {"nodes" : resultsuser, "links" : resultsrelo}
     jsondata = json.dumps(data)
 
     # Save to CSV for use in Gephi
-    #csv = open('data_csv.csv','w')
-    #for relo in relevant_relos:
-    #    csv.write(relo.as_csv()+'\n')
-    #csv.close()
+    print("Writing to CSV..")
+    csv = open('data_csv.csv','w')
+    for relo in relevant_relos:
+        csv.write(relo.as_csv()+'\n')
+    csv.close()
 
     #TODO: HttpReponse vs Jsonresponse? Latter doesn't work with current d3
     return HttpResponse(jsondata)
