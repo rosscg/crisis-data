@@ -140,13 +140,30 @@ def coding_interface(request):
                 tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
                 #TODO Handle out of index below:::::
                 batch_size = 10
+                print("Fetching new batch of un-coded..")
                 if tweet_all.count() >= batch_size:
                     tweet_sample = tweet_all.order_by('?')[:batch_size] # TODO: Scales very poorly, reconsider using random.sample to extract by row
                 else:
                     tweet_sample = tweet_all.order_by('?')[:tweet_all.count()]
-                for i in tweet_sample:
-                        new_coder = Coder(tweet=i, data_code=d) # Register sampled tweets as 'To Be Coded'
-                        new_coder.save()
+                for t in tweet_sample:
+
+                     # TODO: Remove before implementing elsewhere, uncomment the new_coder line below.
+                    '''
+                    Hardcoded shortcut to avoid coding spam tweets with specific URLs.
+                    '''
+                    spam_source_1 = 'Paper.li'
+                    spam_source_2 = 'TweetMyJOBS'
+                    if spam_source_1 in t.source or spam_source_2 in t.source:
+                        print('Auto-coding Tweet as unrelated: {}'.format(t.text))
+                        d_unrelated = DataCode.objects.get(data_code_id=7)
+                        new_coder = Coder(tweet=t, data_code=d_unrelated) # Register sampled tweets as 'To Be Coded'
+                    else:
+                        new_coder = Coder(tweet=t, data_code=d) # Register sampled tweets as 'To Be Coded'
+                    '''
+                    '''
+
+                    #new_coder = Coder(tweet=t, data_code=d)
+                    new_coder.save()
             tweet_query = DataCode.objects.get(data_code_id=0).tweets.all()
 
         #remaining = Tweet.objects.filter(data_source__gt=0).filter(~Q(datacode__data_code_id__gt=0)).count() #Too slow
@@ -437,7 +454,7 @@ def network_data_API(request):
     print("Collecting network_data...")
 
     #All ego nodes, and alters with an in/out degree of X or greater.
-    slice_size = 2000 #TODO: Change to a random sample
+    slice_size = 10000 #TODO: Change to a random sample
     classed_users = User.objects.filter(user_class__gte=1).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
 
     # Only show users which have had Tweets coded
@@ -451,8 +468,8 @@ def network_data_API(request):
     print("Coded Users: {}, Classed Users: {}, Relevant Users: {}".format(coded_users.count(), classed_users.count(), len(relevant_users)))
 
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
-    relevant_relos = Relo.objects.filter(target_user__in=relevant_users, source_user__in=relevant_users, end_observed_at=None)
     print("Creating Relo JSON..")
+    relevant_relos = Relo.objects.filter(end_observed_at=None, target_user__in=relevant_users, source_user__in=relevant_users)
     resultsrelo = [ob.as_json() for ob in relevant_relos]
 
     #Remove isolated nodes: TODO: May be too slow

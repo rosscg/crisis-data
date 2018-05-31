@@ -1,11 +1,18 @@
 # Required ego degree values for an alter account to be considered relevant
-REQUIRED_IN_DEGREE = 3
-REQUIRED_OUT_DEGREE = 3
+REQUIRED_IN_DEGREE = 5
+REQUIRED_OUT_DEGREE = 5
 
 # Thresholds for determining spam/celebrity/news accounts (to reject)
 FOLLOWERS_THRESHOLD = 5000
 FRIENDS_THRESHOLD = 5000
 STATUSES_THRESHOLD = 10000
+
+# Ignore Tweets by keyword:
+IGNORED_KWS = ['pray']
+# Ignore from following sources:
+IGNORED_SOURCES = ['Paper.li', 'TweetMyJOBS']
+# Ignore Re-Tweets:
+IGNORE_RTS = True
 
 # Threshold proportion for a hashtag to appear before it is added to tracked tags
 TAG_OCCURENCE_THRESHOLD = 0.02
@@ -21,7 +28,7 @@ BOUNDING_BOX_WIDTH = 1.2
 BOUNDING_BOX_HEIGHT = 0.6
 
 # Excludes isolated nodes from network_data_API
-EXCLUDE_ISOLATED_NODES = True
+EXCLUDE_ISOLATED_NODES = False
 
 # Process a proportion of Tweets in the low-priority keyword stream
 STREAM_PROPORTION = 0.06

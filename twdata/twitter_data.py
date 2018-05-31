@@ -7,7 +7,7 @@ from tweepy.streaming import StreamListener
 
 from streamcollect.models import Keyword, AccessToken, ConsumerKey
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
-from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, STREAM_PROPORTION
+from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, STREAM_PROPORTION, IGNORED_KWS, IGNORED_SOURCES, IGNORE_RTS
 
 from streamcollect.tasks import save_twitter_object_task
 from streamcollect.methods import kill_celery_task, save_tweet
@@ -33,11 +33,17 @@ class stream_listener(StreamListener):
         else:
             text=status.text
 
-        # Exclude tweets with 'pray'.
-        if 'pray' in status.text.lower():
-            return
-        for tag in status.entities.get('hashtags'):
-            if 'pray' in tag.get('text'):
+        # Exclude tweets with phrases from exclusion list.
+        for kw in IGNORED_KWS:
+            if kw in status.text.lower():
+                return
+            for tag in status.entities.get('hashtags'):
+                if kw in tag.get('text'):
+                    return
+
+        # Exclude sources from exclusion list.
+        for source in IGNORED_SOURCES:
+            if source in tweet.source:
                 return
 
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
@@ -47,13 +53,14 @@ class stream_listener(StreamListener):
         if status.user.statuses_count > STATUSES_THRESHOLD:
             return
 
-        # Return if retweet.
-        try:
-            status.retweeted_status
-        except AttributeError:
-            pass
-        else:
-            return
+        # Ignore if retweet.
+        if IGNORE_RTS:
+            try:
+                status.retweeted_status
+            except AttributeError:
+                pass
+            else:
+                return
 
         if not self.gps_bool:
             data_source = 2 # data_source = High-priority keyword stream
