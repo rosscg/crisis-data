@@ -38,7 +38,7 @@ SECRET_KEY = '^jhmoug5pmt^(x(4)c*5cjwi&(v913&@b*$yqs4-_!1!)41-%)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', '34695bac.ngrok.io']
 
 
 # Application definition
@@ -92,7 +92,7 @@ WSGI_APPLICATION = 'homesite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'sandbox',
+        'NAME': 'hurricaneharvey2',
         'USER': 'ross',
         'PASSWORD': '',
         'HOST': 'localhost',

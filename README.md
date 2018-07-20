@@ -42,6 +42,8 @@ Clone this project and open directory. Create virtual environment and install de
 > $ pip install -r requirements.txt --no-cache-dir
 > ```
 
+Check if Hardcoded auto-coding line is still in views.py - from approx line 150 and remove (uncomment appropriate line beneath block).
+
 Set database name [dbname], username and password in homesite/settings.py, line ~91.
 Default username is the system user name, default password is none.
 
@@ -83,6 +85,7 @@ The key functionality of the software is tracking keywords and GPS coordinates.
 
 If necessary, create new database in Postgres and adjust in settings.py.
 Edit config.py details as needed.
+  The exclusions aim to reduce the amount of processing and noise but affect the sample and therefore need to be considered with respect to the proposed analysis.
 Decide on periodic tasks in tasks.py (uncomment the decorators to run, requires the celery beat running).
   update_user_relos_periodic is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
   update_data_periodic allows new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. REFRESH_STREAM should be set to true, to add the new tags periodically.
