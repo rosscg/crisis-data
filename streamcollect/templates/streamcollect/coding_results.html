@@ -1,0 +1,58 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+
+<div class="container">
+
+  <div class="row" align='left'>
+    <div class="col-md-6">
+      Total Coding Stats:
+      <table>
+          {% for row in total_table %}
+              <tr>
+              {% for cell in row %}
+                  {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
+                    {{ cell }}
+                  {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
+              {% endfor %}
+              </tr>
+          {% endfor %}
+      </table>
+    </div>
+
+    <div class="col-md-6">
+      Disagreement Matrix:
+      <table>
+        <tr>
+          <td></td>
+          <td align="right">Secondary Coder</td>
+        </tr>
+        <tr>
+          <td>Primary <br/>Coder</td>
+          <td>
+            <table>
+                {% for row in disagree_table %}
+                    <tr>
+                    {% for cell in row %}
+                        {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
+                          {% if not forloop.first and forloop.counter == forloop.parentloop.counter %}
+                          -
+                          {% else %}
+                            {{ cell }}
+                          {% endif %}
+                        {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
+                    {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+
+</div>
+
+{% endblock %}

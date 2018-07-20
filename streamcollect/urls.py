@@ -14,6 +14,7 @@ urlpatterns = [
     url(r'^functions$', views.functions, name='functions'),
     url(r'^coding_interface', views.coding_interface, name='coding_interface'),
     url(r'^coding_dash$', views.coding_dash, name='coding_dash'),
+    url(r'^coding_results$', views.coding_results, name='coding_results'),
 
     url(r'^callback$', views.callback, name='callback'),
     url(r'^twitter_auth$', views.twitter_auth, name='twitter_auth'),

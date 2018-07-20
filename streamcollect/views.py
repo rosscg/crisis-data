@@ -168,6 +168,48 @@ def coding_interface(request):
     return render(request, 'streamcollect/coding_interface.html', {'tweet': tweet, 'codes': codes, 'active_coder': active_coder, 'remaining': remaining, 'total_coded': total_coded})
 
 
+# TODO: This function only functions for secondary_coder with coder_id=2, may need to adjust for more secondary coders when scaling. Template would also need adjusting.
+def coding_results(request):
+
+    active_coding_dimension = request.session.get('active_coding_dimension', None)
+
+    total_main_coder = Coder.objects.filter(coder_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension)
+    total_secondary_coder = Coder.objects.filter(coder_id='2').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension)
+
+    double_coded_tweets = Tweet.objects.filter(coder__coder_id = 2, coder__data_code__dimension = active_coding_dimension)
+    codes = DataCode.objects.filter(dimension=active_coding_dimension)
+
+    total_table = [['', 'Primary', 'Percentage', 'Secondary']]
+    disagree_table = []
+    disagree_table.append([''] + list(codes.values_list('name', flat=True)))
+    index_dict = {}
+    i = 1 # Start from 1 to skip headers
+    for c in codes:
+        total_table.append([c.name] + [0]*3)
+        disagree_table.append([c.name] + [0]*codes.count())
+        index_dict[c.name] = i
+        i += 1
+
+    # Populate summary table
+    for c in total_main_coder:
+        index = index_dict.get(c.data_code.name)
+        total_table[index][1] += 1
+        total_table[index][2] = '{:.1%}'.format(total_table[index][1] / total_main_coder.count())
+    for c in total_secondary_coder:
+        index = index_dict.get(c.data_code.name)
+        total_table[index][3] += 1
+    total_table.append(['', total_main_coder.count(), '', total_secondary_coder.count()])
+
+    # Populate disagree matrix
+    for t in double_coded_tweets:
+        coder1 = t.coder.filter(coder_id=1)[0]
+        coder2 = t.coder.filter(coder_id=2)[0]
+        if coder1.data_code.data_code_id != coder2.data_code.data_code_id:
+            disagree_table[index_dict.get(coder1.data_code.name)][index_dict.get(coder2.data_code.name)] += 1
+
+    return render(request, 'streamcollect/coding_results.html', {'total_table':total_table, 'disagree_table':disagree_table})
+
+
 def twitter_auth(request):
     tokens = AccessToken.objects.all()
     return render(request, 'streamcollect/twitter_auth.html', {'tokens': tokens})
