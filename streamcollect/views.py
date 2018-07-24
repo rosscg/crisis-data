@@ -9,8 +9,6 @@ from celery.task.control import revoke
 import tweepy
 import random
 
-from django.utils import timezone
-
 from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coder, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
@@ -248,6 +246,13 @@ def coding_results(request):
         i += 1
     disagree_table.append(['Disagreement:'] + disagreement_cols)
     disagree_table.append(['Of Total: '] + total_cols)
+
+    #TODO: Check either Coder has no duplicate codes (this should now be handled in the models.py unique_together meta):
+    #active_coding_dimension = request.session.get('active_coding_dimension', None)
+    #for c in Coder.objects.filter(coder_id=1, data_code__id=active_coding_dimension):
+    #  if c.tweet.coder.filter(coder_id=2, data_code__id=active_coding_dimension).count>1:
+    #    c.delete()
+    #
 
     return render(request, 'streamcollect/coding_results.html', {'total_table':total_table, 'disagree_table':disagree_table})
 

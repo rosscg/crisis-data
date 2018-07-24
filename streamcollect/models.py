@@ -195,6 +195,9 @@ class Coder(models.Model):
     coder_id = models.IntegerField(default=1)
     updated = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        unique_together = ('coder_id', 'data_code',)
+
     def __str__(self):
         return "Code ID: {}, Tweet: {}, Coder ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coder_id))
 

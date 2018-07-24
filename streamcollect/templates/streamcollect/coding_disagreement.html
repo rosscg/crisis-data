@@ -17,7 +17,7 @@
     </tr>
     {% for t in tweets %}
     <tr>
-      {% for c in t.coder.all %}
+      {% for c in t.coder.all|dictsort:'coder_id' %}
         {% if c.data_code.dimension.id == request.session.active_coding_dimension %}
           <td>{{c.data_code.name}}</td>
         {% endif %}

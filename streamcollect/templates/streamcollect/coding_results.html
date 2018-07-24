@@ -42,7 +42,7 @@
                 -
                 {% else %}
                   {% if forloop.parentloop.counter > 1 and forloop.counter > 1 and forloop.counter < disagree_table|length|add:'-1' and forloop.parentloop.counter < disagree_table.0|length|add:'-1' and cell > 0 %}
-                    <a href="{% url 'coding_disagreement' coder1code=forloop.parentloop.counter|add:'-2'  coder2code=forloop.counter|add:'-2' %}">{{ cell }}</a>
+                    <a href="{% url 'coding_disagreement' coder1code=forloop.parentloop.counter|add:'-2'  coder2code=forloop.counter|add:'-2' %}" target="_blank">{{ cell }}</a>
                   {% else %}
                     {{ cell }}
                   {% endif %}
@@ -56,5 +56,6 @@
   </div>
 
 </div>
+
 
 {% endblock %}
