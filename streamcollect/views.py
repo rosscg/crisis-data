@@ -198,7 +198,7 @@ def coding_results(request):
 
     total_table = [['', 'Primary', 'Percentage', 'Secondary']]
     disagree_table = []
-    disagree_table.append([''] + list(codes.values_list('name', flat=True)))
+    disagree_table.append([''] + list(codes.values_list('name', flat=True)) + ['Disagreement:'])
     index_dict = {}
     i = 1 # Start from 1 to skip headers
     for c in codes:
@@ -223,6 +223,27 @@ def coding_results(request):
         coder2 = t.coder.filter(coder_id=2)[0]
         if coder1.data_code.data_code_id != coder2.data_code.data_code_id:
             disagree_table[index_dict.get(coder1.data_code.name)][index_dict.get(coder2.data_code.name)] += 1
+    # Add proportion of disagreed codes by row
+    for row in disagree_table[1:]:
+        total_double_coded = Tweet.objects.filter(coder__coder_id=2, coder__data_code__dimension_id=active_coding_dimension).filter(coder__coder_id=1, coder__data_code__name=row[0], coder__data_code__dimension_id=active_coding_dimension).count()
+        if total_double_coded > 0:
+            prop = '{:.1%}'.format(sum(row[1:]) / total_double_coded)
+        else:
+            prop = '0%'
+        row.append(prop)
+    # Add proportion of disagreed codes by col
+    disagreement_cols = []
+    i = 1
+    while i < (len(disagree_table[0])-1):
+        total_double_coded = Tweet.objects.filter(coder__coder_id=2, coder__data_code__dimension_id=active_coding_dimension, coder__data_code__name=disagree_table[0][i]).filter(coder__coder_id=1, coder__data_code__dimension_id=active_coding_dimension).count()
+        total_disagreed = sum([x[i] for x in disagree_table[1:4]])
+        if total_double_coded > 0:
+            prop = '{:.1%}'.format(total_disagreed / total_double_coded)
+        else:
+            prop = '0%'
+        disagreement_cols.append(prop)
+        i += 1
+    disagree_table.append(['Disagreement:'] + disagreement_cols)
 
     return render(request, 'streamcollect/coding_results.html', {'total_table':total_table, 'disagree_table':disagree_table})
 
