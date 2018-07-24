@@ -198,7 +198,7 @@ def coding_results(request):
 
     total_table = [['', 'Primary', 'Percentage', 'Secondary']]
     disagree_table = []
-    disagree_table.append([''] + list(codes.values_list('name', flat=True)) + ['Disagreement:'])
+    disagree_table.append([''] + list(codes.values_list('name', flat=True)) + ['Disagreement:', 'Total:'])
     index_dict = {}
     i = 1 # Start from 1 to skip headers
     for c in codes:
@@ -231,10 +231,12 @@ def coding_results(request):
         else:
             prop = '0%'
         row.append(prop)
+        row.append(total_double_coded)
     # Add proportion of disagreed codes by col
     disagreement_cols = []
+    total_cols = []
     i = 1
-    while i < (len(disagree_table[0])-1):
+    while i < (len(disagree_table[0])-2):
         total_double_coded = Tweet.objects.filter(coder__coder_id=2, coder__data_code__dimension_id=active_coding_dimension, coder__data_code__name=disagree_table[0][i]).filter(coder__coder_id=1, coder__data_code__dimension_id=active_coding_dimension).count()
         total_disagreed = sum([x[i] for x in disagree_table[1:4]])
         if total_double_coded > 0:
@@ -242,8 +244,10 @@ def coding_results(request):
         else:
             prop = '0%'
         disagreement_cols.append(prop)
+        total_cols.append(total_double_coded)
         i += 1
     disagree_table.append(['Disagreement:'] + disagreement_cols)
+    disagree_table.append(['Total: '] + total_cols)
 
     return render(request, 'streamcollect/coding_results.html', {'total_table':total_table, 'disagree_table':disagree_table})
 
