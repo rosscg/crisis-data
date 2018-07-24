@@ -2,56 +2,58 @@
 
 {% block content %}
 
-
 <div class="container">
 
   <div class="row" align='left'>
     <div class="col-md-4">
-      Total Coding Stats:
+      <h3>Total Coding Stats:</h3>
       <table>
-          {% for row in total_table %}
-              <tr>
-              {% for cell in row %}
-                  {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
-                    {{ cell }}
-                  {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
-              {% endfor %}
-              </tr>
+        {% for row in total_table %}
+          <tr>
+          {% for cell in row %}
+              {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
+                {{ cell }}
+              {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
           {% endfor %}
+          </tr>
+        {% endfor %}
       </table>
     </div>
 
     <div class="col-md-6">
-      Disagreement Matrix:
+      <h3>Disagreement Matrix:</h3>
       <table>
         <tr>
-          <td></td>
-          <td align="center">Secondary Coder</td>
+          <td></td><td></td>
+          <td align='center' colspan={{disagree_table.0|length|add:'-3'}}><b>Secondary Coder</b></td>
+          <td></td><td></td>
         </tr>
-        <tr>
-          <td>Primary <br/>Coder</td>
-          <td>
-            <table>
-                {% for row in disagree_table %}
-                    <tr>
-                    {% for cell in row %}
-                        {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
-                          {% if not forloop.first and forloop.counter == forloop.parentloop.counter %}
-                          -
-                          {% else %}
-                            {{ cell }}
-                          {% endif %}
-                        {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
-                    {% endfor %}
-                    </tr>
-                {% endfor %}
-            </table>
-          </td>
-        </tr>
+          {% for row in disagree_table %}
+            <tr>
+              {% if forloop.first %}
+                <td></td>
+              {% elif forloop.counter == 2 %}
+                <td rowspan={{disagree_table|length|add:'-3'}}><b>Primary Coder</b></td>
+              {% elif forloop.counter > disagree_table|length|add:'-2' %}<td></td>
+              {% endif %}
+              {% for cell in row %}
+                {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
+                {% if not forloop.first and forloop.counter == forloop.parentloop.counter %}
+                -
+                {% else %}
+                  {% if forloop.parentloop.counter > 1 and forloop.counter > 1 and forloop.counter < disagree_table|length|add:'-1' and forloop.parentloop.counter < disagree_table.0|length|add:'-1' and cell > 0 %}
+                    <a href="{% url 'coding_disagreement' coder1code=forloop.parentloop.counter|add:'-2'  coder2code=forloop.counter|add:'-2' %}">{{ cell }}</a>
+                  {% else %}
+                    {{ cell }}
+                  {% endif %}
+                {% endif %}
+                {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
+              {% endfor %}
+            </tr>
+          {% endfor %}
       </table>
     </div>
   </div>
-
 
 </div>
 

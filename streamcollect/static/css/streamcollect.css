@@ -56,3 +56,12 @@ form {
   background: #f44336;
   color: white;
 }
+
+
+th, td {
+    padding: 3px;
+}
+
+tr:nth-child(odd) {
+    background-color: #e8e8e8
+}

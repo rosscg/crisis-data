@@ -1,0 +1,35 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+
+<div class="container">
+  <a href="{% url 'coding_results' %}">Back to Tables</a>
+
+  <h3>Disagreement</h3>
+
+  <table>
+    <tr>
+      <th>First Coder</th>
+      <th>Second Coder</th>
+      <th>Tweet</th>
+      <th></th>
+    </tr>
+    {% for t in tweets %}
+    <tr>
+      {% for c in t.coder.all %}
+        {% if c.data_code.dimension.id == request.session.active_coding_dimension %}
+          <td>{{c.data_code.name}}</td>
+        {% endif %}
+      {% endfor %}
+      <td>{{t.text}}</td>
+      <td><a href='http://www.twitter.com/{{ t.author.screen_name }}/status/{{ t.tweet_id }}'>Source</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <p align='right'><b>Total Disagreed Tweets: {{ tweets|length }}</b></p>
+
+</div>
+
+{% endblock %}

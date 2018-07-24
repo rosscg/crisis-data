@@ -198,7 +198,7 @@ def coding_results(request):
 
     total_table = [['', 'Primary', 'Percentage', 'Secondary']]
     disagree_table = []
-    disagree_table.append([''] + list(codes.values_list('name', flat=True)) + ['Disagreement:', 'Total:'])
+    disagree_table.append([''] + list(codes.values_list('name', flat=True)) + ['Disagreement:', 'Of Total:'])
     index_dict = {}
     i = 1 # Start from 1 to skip headers
     for c in codes:
@@ -238,7 +238,7 @@ def coding_results(request):
     i = 1
     while i < (len(disagree_table[0])-2):
         total_double_coded = Tweet.objects.filter(coder__coder_id=2, coder__data_code__dimension_id=active_coding_dimension, coder__data_code__name=disagree_table[0][i]).filter(coder__coder_id=1, coder__data_code__dimension_id=active_coding_dimension).count()
-        total_disagreed = sum([x[i] for x in disagree_table[1:4]])
+        total_disagreed = sum([x[i] for x in disagree_table[1:]])
         if total_double_coded > 0:
             prop = '{:.1%}'.format(total_disagreed / total_double_coded)
         else:
@@ -247,9 +247,28 @@ def coding_results(request):
         total_cols.append(total_double_coded)
         i += 1
     disagree_table.append(['Disagreement:'] + disagreement_cols)
-    disagree_table.append(['Total: '] + total_cols)
+    disagree_table.append(['Of Total: '] + total_cols)
 
     return render(request, 'streamcollect/coding_results.html', {'total_table':total_table, 'disagree_table':disagree_table})
+
+
+def coding_disagreement(request, coder1code, coder2code):
+    active_coding_dimension = request.session.get('active_coding_dimension', None)
+    # Double lookup here to preserve the order of codes as originally passed to the html,
+    # as it was not possible to pass the datacode back from the template due to the format
+    # of the table loop. Therefore, have passed the forloop counter integers as indices.
+    codes = DataCode.objects.filter(dimension=active_coding_dimension).values_list('name', flat=True)
+
+    coder1code = DataCode.objects.get(name = codes[int(coder1code)])
+    coder2code = DataCode.objects.get(name = codes[int(coder2code)])
+
+    total_double_coded = Tweet.objects.filter(coder__coder_id=2, coder__data_code__dimension_id=active_coding_dimension, coder__data_code=coder2code).filter(coder__coder_id=1, coder__data_code__dimension_id=active_coding_dimension, coder__data_code=coder1code)
+    tweets = []
+    for t in total_double_coded:
+        if t.coder.filter(coder_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id is not t.coder.filter(coder_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
+            tweets.append(t)
+
+    return render(request, 'streamcollect/coding_disagreement.html', {'tweets': tweets})
 
 
 def twitter_auth(request):
