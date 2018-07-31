@@ -7,7 +7,7 @@ def create_gephi_file(relevant_users, relevant_relos):
 
         best_code = ''
         for t in node.tweet.all():
-            for c in t.coder.all():
+            for c in t.coding.all():
                 if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
                     best_code = c.data_code.data_code_id
 

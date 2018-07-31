@@ -21,6 +21,26 @@
   <div class="row">
     <div class="coding_button_row">
       <div class="col-lg-12" align="center">
+        {% if coding_subject == 'tweet' %}
+        <button class="btn btn-success">Currently Coding Tweets</button>
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <input type="hidden" value='user' name="coding_subject">
+          <input type="submit" class="btn btn-default btn-md" name="set_coding_subject" value="Code Users">
+        </form>
+        {% elif coding_subject == 'user' %}
+        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+          <input type="hidden" value='tweet' name="coding_subject">
+          <input type="submit" class="btn btn-default" name="set_coding_subject" value="Code Tweets">
+        </form>
+        <button class="btn btn-success">Currently Coding Users</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="coding_button_row">
+      <div class="col-lg-12" align="center">
         {% if active_coder == 1 %}
         <button class="btn btn-success">First Coder Active</button>
         <form action="submit" method="POST" class="form-inline">{% csrf_token %}
@@ -34,8 +54,6 @@
         </form>
         <button class="btn btn-success">Second Coder Active</button>
         {% endif %}
-
-
         <br/><br/>
       </div>
     </div>
@@ -125,14 +143,20 @@
     a.onclick = function() {
       var x = screen.width;
       var y = screen.height;
+
       var code_window_height = 250; // Value may duplicated in coding_interface.html (currently is not)
-      if ("{{active_coding_dimension}}" != 'None') {
-        var url_window_user = window.open("about:blank", "url_window_user", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
-        var url_window_url = window.open("about:blank", "url_window_url", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
-        var coding_window = window.open("/coding_interface", "coding_window", "width=" + x + ", height=" + code_window_height + ", menubar=no, toolbar=no, status=no");
+      if ("{{ active_coding_dimension }}" != 'None') {
+        if ("{{ coding_subject }}" == 'tweet') {
+          var url_window_user = window.open("about:blank", "url_window_user", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
+          var url_window_url = window.open("about:blank", "url_window_url", "width=" + x/2 + ", top=" + (code_window_height+100) + ", height=" + (y-code_window_height-100) + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
+          var coding_window = window.open("/coding_interface", "coding_window", "width=" + x + ", height=" + code_window_height + ", top=0, menubar=no, toolbar=no, status=no");
+        }
+        else {
+          var coding_window = window.open("/coding_interface", "coding_window", "width=" + x/2 + ", height=" + code_window_height/2 + ", top=0, menubar=no, toolbar=no, status=no");
+        }
       }
       else {
-        alert("Create a dimension first.")
+        alert("Create a dimension first.");
       }
     }
   }

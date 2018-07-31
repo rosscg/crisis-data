@@ -13,11 +13,11 @@
     <div class="container">
 
       <div class="row">
-        <div class="col-lg-10">
+        <div class="col-md-10 col-sm-9">
           <div class="coding_button_row" style="text-align:center">
           {% if remaining != 0 %}
             <form action="submit" method="POST">{% csrf_token %}
-              <input type="hidden" value={{ tweet.tweet_id }} name="tweet_id">
+              <input type="hidden" value={{ data_object.tweet_id }} name="tweet_id">
               {% for code in codes %}
               <button id={{ forloop.counter }} type="submit" value={{ code.data_code_id }} class="btn btn-primary btn-lg" name="assign_code">
                {{ forloop.counter }}: {{ code.name }}
@@ -28,11 +28,11 @@
               {% endif %}
             </form>
             {% else %}
-            <p>No Tweets remaining.</p>
+            <p>No Content Remaining.</p>
             {% endif %}
           </div>
         </div>
-        <div class="col-lg-2">
+        <div class="col-md-2 col-sm-3">
           <div class="coding_button_row" align='right'>
             {% if active_coder == 1 %}
             <p>Total Coded: {{ total_coded }}</p>
@@ -50,12 +50,12 @@
         </div>
       </div>
 
-      {% if remaining != 0 %}
+      {% if remaining != 0 and coding_subject == 'tweet' %}
       <div class="row">
         <div class="col-lg-12">
           <div class="tweet_to_code">
-            <p>{{ tweet.text }}</p>
-            <p>&emsp;<a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a>&emsp;&emsp;&emsp;<a href="{% url 'user_details' user_id=tweet.author.user_id %}" target="_blank">Author</a></p>
+            <p>{{ data_object.text }}</p>
+            <p>&emsp;<a href="http://www.twitter.com/{{ data_object.author.screen_name }}/status/{{ data_object.tweet_id }}" target="_blank">Source</a>&emsp;&emsp;&emsp;<a href="{% url 'user_details' user_id=data_object.author.user_id %}" target="_blank">Author</a></p>
           </div>
         </div>
       </div>
@@ -70,22 +70,29 @@
 
       document.body.onkeypress = function() {set_code(event)};
 
-      function set_window() { // Opens secondary window to display URL destination in Tweet for reference
+      function set_window() { // Opens secondary window to display URL destination in data_object for reference
 
-          var x = screen.width;
-          var y = screen.height;
-          var code_window_height = window.outerHeight; // Using var rather than fixed value means resizing window affects reopening other windows. Initial value set in base.html
-          var url_user = "about:blank";
-          var url_2 = "about:blank";
-          if ("{{ active_coder }}" == 1 || "{{ remaining }}" > 0) {
-            url_user = "http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}";
-          }
-          if("{{ tweet.url_set.count }}" > 0 ) { //TODO: Consider handling multiple URLs, or loading the last one (rather than first) for consistency. This opens a new window is existing window is a Facebook URL.
-            url_2 = "http://{{ tweet.url_set.all.0 }}";
-          }
-          var url_window_user = window.open(url_user, "url_window_user", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
-          var url_window_url = window.open(url_2, "url_window_url", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
-
+            var x = screen.width;
+            var y = screen.height;
+            var code_window_height = window.outerHeight; // Using var rather than fixed value means resizing window affects reopening other windows. Initial value set in base.html
+            var url_user = "about:blank";
+            var url_2 = "about:blank";
+            if ("{{ coding_subject}}" == 'tweet') {
+              if ("{{ active_coder }}" == 1 || "{{ remaining }}" > 0) {
+                url_user = "http://www.twitter.com/{{ data_object.author.screen_name }}/status/{{ data_object.tweet_id }}";
+              }
+              if("{{ data_object.url_set.count }}" > 0 ) { //TODO: Consider handling multiple URLs, or loading the last one (rather than first) for consistency. This opens a new window is existing window is a Facebook URL.
+                url_2 = "http://{{ data_object.url_set.all.0 }}";
+              }
+              var url_window_user = window.open(url_user, "url_window_user", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
+              var url_window_url = window.open(url_2, "url_window_url", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
+            }
+            else {
+              if ("{{ active_coder }}" == 1 || "{{ remaining }}" > 0) {
+                url_user = "http://www.twitter.com/{{ data_object.screen_name }}";
+              }
+              var url_window_user = window.open(url_user, "url_window_user", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
+            }
           }
 
       function set_code(event) {

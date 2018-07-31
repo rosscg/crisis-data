@@ -42,7 +42,7 @@ data_source: 0 = Rest API, 1 = Low-priority keyword stream, 2 = priority keyword
 DataCode
 List of codes for classifying Tweets. ManyToManyField with Tweet model and the Coder intermediate model. Uses a custom id value that is manually set as the PK doesn't reset when rows are deleted, and therefore causes issues with the button interface. Current support for up to 10 codes, any more will work but won't be assigned hotkeys in the coding interface.
 
-Coder
+Coding
 Intermediate model between DataCode and Tweet which identifies which coder assigned the code. Multiple coders can be used for validation purposes.
 
 Hashtag

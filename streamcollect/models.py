@@ -123,7 +123,7 @@ class User(models.Model):
         # TODO: Remove this or place it elsewhere.
         best_code = ''
         for t in self.tweet.all():
-            for c in t.coder.all():
+            for c in t.coding.all():
                 if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
                     best_code = c.data_code.data_code_id
 
@@ -181,25 +181,28 @@ class DataCode(models.Model):
     data_code_id = models.IntegerField(unique=True, null=False) # Required as the PK doesn't reset when rows are removed. #TODO: May not be required anymore
     name = models.CharField(max_length=40, null=False)
     description = models.CharField(null=True, max_length=400)
-    tweets = models.ManyToManyField(Tweet, through='Coder')
+    tweets = models.ManyToManyField(Tweet, through='Coding')
+    users = models.ManyToManyField(User, through='Coding')
     dimension = models.ForeignKey(DataCodeDimension, related_name='datacode', on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return "Code ID {}: {}, Dimension: {}".format(str(self.data_code_id), self.name, self.dimension)
 
 
-
-class Coder(models.Model):
-    tweet = models.ForeignKey(Tweet, related_name='coder', on_delete=models.CASCADE)
+class Coding(models.Model):
+    # TODO: Write validation to allow only one FK here - either tweet OR user.
+    tweet = models.ForeignKey(Tweet, related_name='coding_for_tweet', on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(User, related_name='coding_for_user', on_delete=models.CASCADE, null=True)
     data_code = models.ForeignKey(DataCode, on_delete=models.CASCADE)
-    coder_id = models.IntegerField(default=1)
+    coding_id = models.IntegerField(default=1)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('coder_id', 'data_code',)
+        unique_together = ('coding_id', 'data_code', 'tweet')
+        unique_together = ('coding_id', 'data_code', 'user')
 
     def __str__(self):
-        return "Code ID: {}, Tweet: {}, Coder ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coder_id))
+        return "Code ID: {}, Tweet: {}, Coding ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coding_id))
 
 
 class Hashtag(models.Model):
