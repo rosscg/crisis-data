@@ -172,6 +172,7 @@ class Tweet(models.Model):
 class DataCodeDimension(models.Model):
     name = models.CharField(max_length=20, null=False)
     description = models.CharField(null=True, max_length=400)
+    coding_subject = models.CharField(max_length=20, null=False)
 
     def __str__(self):
         return str(self.name)
@@ -190,7 +191,7 @@ class DataCode(models.Model):
 
 
 class Coding(models.Model):
-    # TODO: Write validation to allow only one FK here - either tweet OR user.
+    # TODO: Write validation to allow only one FK here? - either tweet OR user.
     tweet = models.ForeignKey(Tweet, related_name='coding_for_tweet', on_delete=models.CASCADE, null=True)
     user = models.ForeignKey(User, related_name='coding_for_user', on_delete=models.CASCADE, null=True)
     data_code = models.ForeignKey(DataCode, on_delete=models.CASCADE)

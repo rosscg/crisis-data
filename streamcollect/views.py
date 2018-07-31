@@ -103,22 +103,25 @@ def functions(request):
 
 
 def coding_dash(request):
-    dimensions = DataCodeDimension.objects.all()
     coding_subject = request.session.get('coding_subject', None)
     active_coding_dimension = request.session.get('active_coding_dimension', None)
     active_coder = request.session.get('active_coder', None)
 
-    if active_coding_dimension is None and dimensions.count() > 0:
-        active_coding_dimension = dimensions.order_by('id')[0].id
-        request.session['active_coding_dimension'] = active_coding_dimension
+    if coding_subject is None:
+        request.session['coding_subject'] = 'tweet'
+        coding_subject = 'tweet'
 
     if active_coder is None:
         request.session['active_coder'] = 1
         active_coder = 1
 
-    if coding_subject is None:
-        request.session['coding_subject'] = 'tweet'
-        coding_subject = 'tweet'
+    dimensions = DataCodeDimension.objects.filter(coding_subject=coding_subject)
+    if active_coding_dimension not in dimensions.values_list('id', flat=True) or active_coding_dimension is None:
+        if dimensions.count() > 0:
+            active_coding_dimension = dimensions.order_by('id')[0].id
+        else:
+            active_coding_dimension = None
+        request.session['active_coding_dimension'] = active_coding_dimension
 
     return render(request, 'streamcollect/coding_dash.html', {'dimensions': dimensions, 'active_coding_dimension': active_coding_dimension, 'active_coder': active_coder, 'coding_subject': coding_subject})
 
@@ -212,7 +215,6 @@ def coding_results(request):
     active_coding_dimension = request.session.get('active_coding_dimension', None)
 
     total_main_coder = Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension)
-    print("Total main coder: {}".format(total_main_coder))
     total_secondary_coder = Coding.objects.filter(coding_id='2').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension)
 
     double_coded_tweets = Tweet.objects.filter(coding_for_tweet__coding_id = 2, coding_for_tweet__data_code__dimension = active_coding_dimension)
@@ -549,8 +551,9 @@ def submit(request):
     elif "add_dimension" in request.POST:
         name = request.POST['dimension_name']
         description = request.POST['description']
+        coding_subject = request.session.get('coding_subject')
         if len(name) > 0:
-            d = DataCodeDimension(name=name, description=description)
+            d = DataCodeDimension(name=name, description=description, coding_subject=coding_subject)
             d.save()
         return redirect('coding_dash')
 

@@ -1,7 +1,5 @@
 {% extends 'streamcollect/base.html' %}
-
 {% block content %}
-
 
 <div class="container">
 
@@ -60,49 +58,58 @@
   </div>
 
   {% for dimension in dimensions %}
-  <div class="row">
-    <div class="coding_button_row">
-      <div class="col-lg-1">
-        {% if dimension.id == active_coding_dimension %}
-        <button class="btn btn-success">Current:</button>
-        {% else %}
-        <form action="submit" method="POST" class="form-inline">{% csrf_token %}
-          <input type="hidden" value={{ dimension.id }} name="dimension_id">
-          <input type="submit" class="btn btn-primary" name="set_code_dimension" value="Activate:">
-        </form>
-        {% endif %}
-      </div>
-      <div class="col-lg-4">
-       <p style="font-size:130%;">{{ dimension.name }}</p>
-       <p>{{ dimension.description }}</p>
-      </div>
+    {% if dimension.coding_subject == coding_subject %}
+      <div class="row">
+        <div class="coding_button_row">
+          <div class="col-sm-1">
+            {% if dimension.id == active_coding_dimension %}
+            <button class="btn btn-success">Current:</button>
+            {% else %}
+            <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+              <input type="hidden" value={{ dimension.id }} name="dimension_id">
+              <input type="submit" class="btn btn-primary" name="set_code_dimension" value="Activate:">
+            </form>
+            {% endif %}
+          </div>
+          <div class="col-sm-4">
+           <p style="font-size:130%;">{{ dimension.name }}</p>
+           <p>{{ dimension.description }}</p>
+          </div>
 
-      <div class="col-lg-4">
-       {% for d in dimension.datacode.all %}
-        <form action="submit" method="POST" class="form-inline" onsubmit="return confirm('Confirm data code deletion.');">{% csrf_token %}
-          <input type="hidden" value={{ d.data_code_id }} name="data_code_id">
-          <input type="submit" class="btn btn-remove btn-xs" name="delete_data_code" value="{{ d.name }}">
-        </form>
-       {% endfor %}
-      </div>
+          <div class="col-sm-4">
+           {% for d in dimension.datacode.all %}
+             {% if active_coder == 1 %}
+              <form action="submit" method="POST" class="form-inline" onsubmit="return confirm('Confirm data code deletion.');">{% csrf_token %}
+                <input type="hidden" value={{ d.data_code_id }} name="data_code_id">
+                <input type="submit" class="btn btn-remove btn-xs" name="delete_data_code" value="{{ d.name }}">
+              </form>
+             {% else %}
+              <button type="submit" class="btn btn-light btn-xs" name="">{{ d.name }}</button>
+             {% endif %}
+           {% endfor %}
+          </div>
 
-      <div class="col-lg-1">
-        <form action="submit" method="POST" class="form-inline" onsubmit="return confirm('Confirm dimension deletion.');">{% csrf_token %}
-          <input type="hidden" value={{ dimension.id }} name="dimension_id">
-          <input type="submit" class="btn btn-danger btn-xs" name="delete_dimension" value="Delete">
-        </form>
+          {% if active_coder == 1 %}
+          <div class="col-sm-1">
+            <form action="submit" method="POST" class="form-inline" onsubmit="return confirm('Confirm dimension deletion.');">{% csrf_token %}
+              <input type="hidden" value={{ dimension.id }} name="dimension_id">
+              <input type="submit" class="btn btn-danger btn-xs" name="delete_dimension" value="Delete">
+            </form>
+          </div>
+         {% endif %}
+        </div>
       </div>
-    </div>
-  </div>
+    {% endif %}
   {% endfor %}
 
   <div class="row">
     <br/>
   </div>
 
+{% if active_coder == 1 %}
   <div class="row">
     <div class="coding_button_row">
-      <div class="col-lg-8">
+      <div class="col-md-8">
         <form action="submit" method="POST" class="form-inline">{% csrf_token %}
           <div class="form-group">
             <input type="submit" class="btn btn-info btn-md" name="add_dimension" value="Add Dimension:">
@@ -117,8 +124,7 @@
 
   <div class="row">
     <div class="coding_button_row">
-      <div class="col-lg-8">
-
+      <div class="col-md-8">
         <form action="submit" method="POST" class="form-inline">{% csrf_token %}
           <div class="form-group">
             <input type="submit" class="btn btn-info btn-md" name="add_data_code" value="Add Code:">
@@ -127,12 +133,10 @@
             <input class="form-control" name="description">
           </div>
         </form>
-
-        <br/>
-        <br/>
       </div>
     </div>
   </div>
+{% endif %}
 
 </div>
 
