@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'^edit_event$', views.edit_event, name='edit_event'),
     url(r'^list_users$', views.list_users, name='list_users'),
     url(r'^user/(?P<user_id>\d+)/$', views.user_details, name='user_details'),
+    url(r'^user_feed/(?P<user_id>\d+)/$', views.user_feed, name='user_feed'),
     url(r'^stream_status$', views.stream_status, name='stream_status'),
     url(r'^functions$', views.functions, name='functions'),
     url(r'^coding_interface', views.coding_interface, name='coding_interface'),

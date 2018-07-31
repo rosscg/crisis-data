@@ -1,42 +1,40 @@
 {% load staticfiles %}
 <html>
-    <head>
-        <title>StreamCollect</title>
-	      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-	      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+  <head>
+      <title>StreamCollect</title>
+      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 
-        <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
-    </head>
+      <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
+  </head>
 
-    <body>
+  <body>
 
-      <nav class="navbar navbar-inverse">
-        <div class="container">
-          <div class="navbar-header">
-            <a class="navbar-brand" href="/">StreamCollect</a>
-          </div>
-          <div class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-              <li><a href="/list_users">List Users</a></li>
-              <li><a href="/view_event">View Event</a></li>
-              <li><a href="/view_network">View Network</a></li>
-              <li><a href="/stream_status">Stream Status</a></li>
-              <li><a href="/functions">Functions</a></li>
-              <li><a href="/coding_dash">Data Coding</a></li>
-              <li><a href="/twitter_auth">Twitter Authentication</a></li>
-            </ul>
-          </div>
-        </div>
-      </nav>
-
+    <nav class="navbar navbar-inverse">
       <div class="container">
-        <div class="row">
-          <div class="col-md-12">
-            {% block content %}
-            {% endblock %}
-          </div>
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/">StreamCollect</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/list_users">List Users</a></li>
+            <li><a href="/view_event">View Event</a></li>
+            <li><a href="/view_network">View Network</a></li>
+            <li><a href="/stream_status">Stream Status</a></li>
+            <li><a href="/functions">Functions</a></li>
+            <li><a href="/coding_dash">Data Coding</a></li>
+            <li><a href="/twitter_auth">Twitter Authentication</a></li>
+          </ul>
         </div>
       </div>
+    </nav>
 
-    </body>
+    <div class="container">
+      <div class="row">
+        {% block content %}
+        {% endblock %}
+      </div>
+    </div>
+
+  </body>
 </html>

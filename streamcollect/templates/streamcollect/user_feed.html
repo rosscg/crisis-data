@@ -1,0 +1,29 @@
+{% load staticfiles %}
+<html>
+  <head>
+      <title>StreamCollect</title>
+	     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+	     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+      <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          {% for tweet in tweets %}
+            {% if tweet.data_source > 0 %}
+              <div class="streamed_tweet">
+            {% else %}
+              <div class="added_tweet">
+            {% endif %}
+                <p>{{ tweet.text }}</p>
+                <p><a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
+              </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

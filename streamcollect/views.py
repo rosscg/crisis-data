@@ -78,10 +78,14 @@ def edit_event(request): # Temp
 
 def user_details(request, user_id):
     user = get_object_or_404(User, user_id=user_id)
-
     tweets = Tweet.objects.filter(author__user_id=user_id).order_by('created_at')
-    #tweets = get_object_or_404(Tweet, author__user_id=user_id)
     return render(request, 'streamcollect/user_details.html', {'user': user, 'tweets': tweets})
+
+
+def user_feed(request, user_id):
+    user = get_object_or_404(User, user_id=user_id)
+    tweets = Tweet.objects.filter(author__user_id=user_id).order_by('created_at')
+    return render(request, 'streamcollect/user_feed.html', {'user': user, 'tweets': tweets})
 
 
 def stream_status(request):

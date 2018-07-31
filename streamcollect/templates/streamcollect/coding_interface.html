@@ -96,6 +96,7 @@
                 url_user = "http://www.twitter.com/{{ data_object.screen_name }}";
               }
               var url_window_user = window.open(url_user, "url_window_user", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + (y-code_window_height-50) + ", left=" + 0 + ", menubar=no, toolbar=no, status=no");
+              var url_window_url = window.open('/user_feed/{{ data_object.user_id }}/', "url_window_url", "width=" + x/2 + ", top=" + (code_window_height) + ", height=" + y + ", left=" + x/2 + ", menubar=no, toolbar=no, status=no");
             }
           }
 
