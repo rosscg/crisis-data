@@ -202,7 +202,10 @@ class Coding(models.Model):
         unique_together = ('coding_id', 'data_code', 'user')
 
     def __str__(self):
-        return "Code ID: {}, Tweet: {}, Coding ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coding_id))
+        if self.tweet is not None:
+            return "Code ID: {}, Tweet: {}, Coding ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coding_id))
+        else:
+            return "Code ID: {}, Tweet: {}, Coding ID: {}".format(str(self.data_code.data_code_id), self.user.screen_name, str(self.coding_id))
 
 
 class Hashtag(models.Model):

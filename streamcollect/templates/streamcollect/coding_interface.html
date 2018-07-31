@@ -17,7 +17,11 @@
           <div class="coding_button_row" style="text-align:center">
           {% if remaining != 0 %}
             <form action="submit" method="POST">{% csrf_token %}
-              <input type="hidden" value={{ data_object.tweet_id }} name="tweet_id">
+              {% if coding_subject == 'tweet' %}
+              <input type="hidden" value={{ data_object.tweet_id }} name="data_id">
+              {% else %}
+              <input type="hidden" value={{ data_object.user_id }} name="data_id">
+              {% endif %}
               {% for code in codes %}
               <button id={{ forloop.counter }} type="submit" value={{ code.data_code_id }} class="btn btn-primary btn-lg" name="assign_code">
                {{ forloop.counter }}: {{ code.name }}

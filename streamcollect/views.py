@@ -137,74 +137,70 @@ def coding_interface(request):
             d = DataCode(data_code_id=0, name='To Be Coded')
             d.save()
 
-        if coding_subject is 'tweet':
+        if coding_subject == 'tweet':
             # Look for tweets coded in another dimension already:
             data_query = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
+            data_to_code = DataCode.objects.get(data_code_id=0).tweets.all()
+            data_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
+        else: # coding_subject is user
+            data_query = User.objects.filter(user_class__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
+            data_to_code = DataCode.objects.get(data_code_id=0).users.all()
+            data_all = User.objects.filter(user_class__gt=0).filter(datacode__isnull=True)
 
-            if data_query.count() == 0: #
-                if DataCode.objects.get(data_code_id=0).tweets.all().count() == 0:
-                    tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
-                    #TODO Handle out of index below:::::
-                    batch_size = 10
-                    print("Fetching new batch of un-coded..")
-                    if tweet_all.count() >= batch_size:
-                        tweet_sample = tweet_all.order_by('?')[:batch_size] # TODO: Scales very poorly, reconsider using random.sample to extract by row
-                    else:
-                        tweet_sample = tweet_all.order_by('?')[:tweet_all.count()]
-                    for t in tweet_sample:
-
-                         # TODO: Remove before implementing elsewhere, uncomment the new_coding line below.
-                        '''
-                        Hardcoded shortcut to avoid coding spam tweets with specific URLs.
-                        '''
+        if data_query.count() == 0:
+            if data_to_code.count() == 0:
+                #TODO Handle out of index below:::::
+                batch_size = 10
+                print("Fetching new batch of un-coded..")
+                if data_all.count() >= batch_size:
+                    data_sample = data_all.order_by('?')[:batch_size] # TODO: Scales very poorly, reconsider using random.sample to extract by row
+                else:
+                    data_sample = data_all.order_by('?')[:data_all.count()]
+                for data in data_sample:
+                     # TODO: Remove before implementing elsewhere, uncomment the if coding_subject, new_coding lines below.
+                    '''
+                    Hardcoded shortcut to avoid coding spam tweets with specific URLs.
+                    '''
+                    if coding_subject == 'tweet':
                         spam_source_1 = 'Paper.li'
                         spam_source_2 = 'TweetMyJOBS'
-                        if spam_source_1 in t.source or spam_source_2 in t.source:
-                            print('Auto-coding Tweet as unrelated: {}'.format(t.text))
+                        if spam_source_1 in data.source or spam_source_2 in data.source:
+                            print('Auto-coding Tweet as unrelated: {}'.format(data.text))
                             d_unrelated = DataCode.objects.get(data_code_id=7)
-                            new_coding = Coding(tweet=t, data_code=d_unrelated) # Register sampled tweets as 'To Be Coded'
+                            new_coding = Coding(tweet=data, data_code=d_unrelated) # Register sampled tweets as 'To Be Coded'
                         else:
-                            new_coding = Coding(tweet=t, data_code=d) # Register sampled tweets as 'To Be Coded'
-                        '''
-                        '''
+                            new_coding = Coding(tweet=data, data_code=d) # Register sampled tweets as 'To Be Coded'
 
-                        #new_coding = Coding(tweet=t, data_code=d)
-                        new_coding.save()
-                data_query = DataCode.objects.get(data_code_id=0).tweets.all()
-        else: # Coding Subject is User Accounts #TODO: Update everything inside this nest to return users instead of tweets.
-            data_query = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
-
-            if data_query.count() == 0: #
-                if DataCode.objects.get(data_code_id=0).tweets.all().count() == 0:
-                    tweet_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
-                    #TODO Handle out of index below:::::
-                    batch_size = 10
-                    print("Fetching new batch of un-coded..")
-                    if tweet_all.count() >= batch_size:
-                        tweet_sample = tweet_all.order_by('?')[:batch_size] # TODO: Scales very poorly, reconsider using random.sample to extract by row
+                    #if coding_subject=='tweet':
+                    #   new_coding = Coding(tweet=data, data_code=d)
                     else:
-                        tweet_sample = tweet_all.order_by('?')[:tweet_all.count()]
-                    for t in tweet_sample:
-                        new_coding = Coding(tweet=t, data_code=d)
-                        new_coding.save()
-                data_query = DataCode.objects.get(data_code_id=0).tweets.all()
-
+                        new_coding = Coding(user=data, data_code=d)
+                    new_coding.save()
+            data_query = data_to_code
 
         #remaining = Tweet.objects.filter(data_source__gt=0).filter(~Q(datacode__data_code_id__gt=0)).count() #Too slow
         remaining = None
         count = data_query.count()
     else: # Secondary coders view only objects already coded by primary coder.
         # TODO: This is currently very slow, consider creating a 'to be coded' cache for secondary coder as done with primary above. Be careful that primary coder cache query above won't return these values.
-        data_query = Tweet.objects.filter(datacode__dimension_id=active_coding_dimension).filter(~Q(coding_for_tweet__in=Coding.objects.filter(coding_id=active_coder).filter(data_code__dimension__id=active_coding_dimension))) # Select coded Tweet which hasn't been coded by the current coder in the current dimension.
-
+        if coding_subject == 'tweet':
+            data_query = Tweet.objects.filter(datacode__dimension_id=active_coding_dimension).filter(~Q(coding_for_tweet__in=Coding.objects.filter(coding_id=active_coder).filter(data_code__dimension__id=active_coding_dimension))) # Select coded Tweet which hasn't been coded by the current coder in the current dimension.
+        else:
+            data_query = User.objects.filter(datacode__dimension_id=active_coding_dimension).filter(~Q(coding_for_user__in=Coding.objects.filter(coding_id=active_coder).filter(data_code__dimension__id=active_coding_dimension))) # Select coded User which hasn't been coded by the current coder in the current dimension.
         count = data_query.count()
         remaining = count
+
     if count > 0:
         rand = random.randint(0, (count-1))
         data_object = data_query[rand]
     else:
         data_object = None
-    total_coded = Coding.objects.filter(coding_id=active_coder).filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension).count() #Total coded by current coder
+
+    if coding_subject == 'tweet':
+        total_coded = Coding.objects.filter(coding_id=active_coder, tweet__isnull=False).filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension).count() #Total coded by current coder
+    else:
+        total_coded = Coding.objects.filter(coding_id=active_coder, user__isnull=False).filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension).count() #Total coded by current coder
+
     codes = DataCode.objects.filter(dimension__id=active_coding_dimension).order_by('data_code_id')
 
     return render(request, 'streamcollect/coding_interface.html', {'data_object': data_object, 'codes': codes, 'active_coder': active_coder, 'remaining': remaining, 'total_coded': total_coded, 'coding_subject': coding_subject})
@@ -298,7 +294,7 @@ def coding_disagreement(request, coder1code, coder2code):
     total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding__data_code__dimension_id=active_coding_dimension, coding__data_code=coder2code).filter(coding__coding_id=1, coding__data_code__dimension_id=active_coding_dimension, coding__data_code=coder1code)
     tweets = []
     for t in total_double_coded:
-        if t.coding.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id is not t.coding.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
+        if t.coding.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != t.coding.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
             tweets.append(t)
 
     return render(request, 'streamcollect/coding_disagreement.html', {'tweets': tweets})
@@ -516,21 +512,28 @@ def submit(request):
         return redirect('coding_dash')
 
     elif "assign_code" in request.POST:
+        coding_subject = request.session.get('coding_subject', None)
         code_id = request.POST['assign_code']
-        tweet_id = request.POST['tweet_id']
+        data_id = request.POST['data_id']
         coding_id = request.session.get('active_coder', 1)
-        tweet = Tweet.objects.get(tweet_id=tweet_id)
         data_code = DataCode.objects.get(data_code_id=code_id)
-        coding = Coding(tweet=tweet, data_code=data_code, coding_id=coding_id) # Add new code classification
-        Coding.objects.filter(tweet=tweet).filter(data_code__data_code_id=0).delete() # Delete 'To Be Coded' classification
+        if coding_subject == 'tweet':
+            tweet = Tweet.objects.get(tweet_id=data_id)
+            coding = Coding(tweet=tweet, data_code=data_code, coding_id=coding_id) # Add new code classification
+            Coding.objects.filter(tweet=tweet).filter(data_code__data_code_id=0).delete() # Delete 'To Be Coded' classification
+        else:
+            user = User.objects.get(user_id=data_id)
+            coding = Coding(user=user, data_code=data_code, coding_id=coding_id) # Add new code classification
+            Coding.objects.filter(user=user).filter(data_code__data_code_id=0).delete() # Delete 'To Be Coded' classification
         coding.save() #TODO: This may need Integrity error handling where it attempts to save the coding object twice (now prevented through the unique_together attribute)
         return redirect('coding_interface')
 
     elif "undo_code" in request.POST:
         coding_id = request.session.get('active_coder', 1)
-        last_coding = Coding.objects.filter(coding_id=coding_id).filter(data_code__data_code_id__gt=0).order_by('updated').last() # Get Last coded object for active coder
+        active_coding_dimension = int(request.session.get('active_coding_dimension'))
+        last_coding = Coding.objects.filter(coding_id=coding_id, data_code__dimension__id=active_coding_dimension, data_code__data_code_id__gt=0).order_by('updated').last() # Get Last coded object for active coder, in current dimension.
         if last_coding:
-            if coding_id is 1:
+            if coding_id == 1:
                 blank_data_code = DataCode.objects.get(data_code_id=0)
                 last_coding.data_code = blank_data_code
                 last_coding.save()
