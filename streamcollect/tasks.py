@@ -8,7 +8,7 @@ from django.db.models import Q
 from twdata import userdata
 from .models import User, Relo, CeleryTask
 
-from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines
+from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #Uncomment the decorators here to allow tasks to run periodically. Requires a running Celery Beat (see Readme)
@@ -29,7 +29,14 @@ def update_data_periodic(self):
 
 @shared_task(bind=True)
 def save_user_timelines_task(self, users):
+    # Remove existing task and save new task to DB
+    kill_celery_task('save_user_timelines')
+    task_object = CeleryTask(celery_task_id=self.request.id, task_name='save_user_timelines')
+    task_object.save()
+
     save_user_timelines(users)
+
+    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 
@@ -123,6 +130,17 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
+@shared_task(bind=True)
+def update_screen_names_task(self):
+    # Remove existing task and save new task to DB
+    kill_celery_task('update_screen_names')
+    task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_screen_names')
+    task_object.save()
+
+    update_screen_names()
+
+    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    return
 
 #TODO: Move to methods and import?
 #TODO: Currently appears buggy. Lists too long shortly after adding user, should be near-0

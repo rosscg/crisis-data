@@ -57,6 +57,14 @@
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-3">
+          <input type="submit" class="btn btn-primary btn-md" name="update_screen_names" value="Update Screen Names">
+        </div>
+      </div>
+    </form>
+
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-3">
           <input type="submit" class="btn btn-primary btn-md" name="export_data" value="Export Data">
         </div>
       </div>

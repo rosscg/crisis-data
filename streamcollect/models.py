@@ -105,6 +105,7 @@ class User(models.Model):
     user_class = models.IntegerField()
     added_at = models.DateTimeField()
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
+    new_screen_name = models.CharField(max_length=200, null=True) # Updated when used is detected to have changed their screen_name
 
 
     # These currently represent the degrees to ego accounts and therefore only

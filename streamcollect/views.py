@@ -13,7 +13,7 @@ import random
 
 from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
 from .forms import EventForm, GPSForm
-from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts
+from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts, update_screen_names_task
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
 from .networks import create_gephi_file
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
@@ -460,6 +460,10 @@ def submit(request):
     elif "update_data" in request.POST:
         update_tracked_tags()
         add_users_from_mentions()
+        return redirect('functions')
+
+    elif "update_screen_names" in request.POST:
+        task = update_screen_names_task.delay()
         return redirect('functions')
 
     elif "export_data" in request.POST:

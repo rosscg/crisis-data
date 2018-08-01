@@ -16,6 +16,27 @@ from django.db import transaction
 from django.db.models import Count
 
 
+def update_screen_names(users=None):
+    print('Updating Screen Names...')
+    if users is None:
+        users = User.objects.filter(user_class__gt=0)
+    print('Total users: {}'.format(users.count()))
+    i = 0
+    c = 0
+    for u in users:
+        i += 1
+        if i % 100 == 0:
+            print('Processing user {} of {}'.format(i, users.count()))
+        live_u = userdata.get_user(user_id=u.user_id)
+        if live_u != False and live_u.screen_name != u.screen_name and live_u.screen_name != u.new_screen_name:
+            print('New screen name for user: {} - {}.'.format(u.screen_name, live_u.screen_name))
+            u.new_screen_name = live_u.screen_name
+            u.save()
+            c += 1
+    print('{} users changed names out of {} total.'.format(c, users.count()))
+    return
+
+
 def kill_celery_task(task_name):
     for t in CeleryTask.objects.filter(task_name=task_name):
         print("Killing task {}: {}".format(task_name, t.celery_task_id))
