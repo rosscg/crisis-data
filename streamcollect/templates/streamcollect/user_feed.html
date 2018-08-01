@@ -10,6 +10,7 @@
 
   <body>
     <div class="container">
+
       <div class="row">
         <div class="col-md-12">
           {% for tweet in tweets %}
@@ -24,6 +25,24 @@
           {% endfor %}
         </div>
       </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="user_details">
+            <p><b>{{ user.name }},</b> <a href="http://www.twitter.com/{{ user.screen_name }}">{{ user.screen_name }}</a></p>
+            <p><i>{{ user.description }}</i></p>
+            <p>{{ user.location }}</p>
+            </br>
+            <p>Timezone: {{ user.time_zone }}</p>
+            <p>Account created on: {{ user.created_at }}</p>
+            <p>Followers: {{ user.followers_count }}</p>
+            <p>Friends: {{ user.friends_count }}</p>
+            <p>Statuses: {{ user.statuses_count }}</p>
+          </div>
+        </div>
+      </div>
+
     </div>
+
   </body>
 </html>

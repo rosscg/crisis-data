@@ -3,39 +3,31 @@ p {
 
 body {
     padding-left: 0px;
+    background: #DBEBFF;
 }
 
 .user_details {
-    padding: 5px;
+    padding: 15px;
     margin: 10px;
     border: 2px solid grey;
     border-radius: 10px;
+    background: #fffbdb;
 }
 
-.added_tweet {
+.added_tweet, .streamed_tweet, .tweet_to_code {
     padding: 15px;
     margin: 10px;
     border: 5px solid SteelBlue;
     border-radius: 10px;
     height:150px;
-    font-size:140%;
+    font-size:120%;
 }
 
 .streamed_tweet {
-    padding: 15px;
-    margin: 10px;
-    border: 5px solid SteelBlue;
-    border-radius: 10px;
-    height:150px;
-    font-size:140%;
-    background-color: powderblue;
+    background-color: #fffbdb;
 }
 
 .tweet_to_code {
-    padding: 15px;
-    margin: 10px;
-    border: 5px solid SteelBlue;
-    border-radius: 10px;
     height:90px;
     font-size:100%;
 }
@@ -45,11 +37,8 @@ body {
     padding-bottom: 15px;
 }
 
-.top_margin_20 { margin-top:20px; }
-
-
-form {
-    display: inline-block;
+.top_margin_20 {
+  margin-top:20px;
 }
 
 .btn-remove:hover {
@@ -57,6 +46,10 @@ form {
   color: white;
 }
 
+
+form {
+    display: inline-block;
+}
 
 th, td {
     padding: 8px;
