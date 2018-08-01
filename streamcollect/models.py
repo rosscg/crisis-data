@@ -123,15 +123,13 @@ class User(models.Model):
         # TODO: Remove this or place it elsewhere.
         best_code = ''
         for t in self.tweet.all():
-            for c in t.coding.all():
+            for c in t.coding_for_tweet.all():
                 if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
                     best_code = c.data_code.data_code_id
-
         if self.screen_name is None:
             title = str(self.user_id)
         else:
             title = self.screen_name
-
         return dict(
             id=str(self.user_id),
             title=title,
@@ -174,6 +172,13 @@ class DataCodeDimension(models.Model):
     description = models.CharField(null=True, max_length=400)
     coding_subject = models.CharField(max_length=20, null=False)
 
+    def save(self, *args, **kwargs):
+        if self.coding_subject == 'user' or self.coding_subject == 'tweet' :
+            return super(DataCodeDimension, self).save(*args, **kwargs)
+        else:
+            print('Error with coding subject label: \'{}\'. Must be \'tweet\' or \'user\'.'.format(self.coding_subject))
+            return
+
     def __str__(self):
         return str(self.name)
 
@@ -204,9 +209,9 @@ class Coding(models.Model):
 
     def __str__(self):
         if self.tweet is not None:
-            return "Code ID: {}, Tweet: {}, Coding ID: {}".format(str(self.data_code.data_code_id), self.tweet.text, str(self.coding_id))
+            return "DataCode: {}, Tweet: {}, Coder: {}".format(str(self.data_code.data_code_id), self.tweet.text[:40], str(self.coding_id))
         else:
-            return "Code ID: {}, Tweet: {}, Coding ID: {}".format(str(self.data_code.data_code_id), self.user.screen_name, str(self.coding_id))
+            return "DataCode: {}, User ID: {}, Coder: {}".format(str(self.data_code.data_code_id), self.user.screen_name, str(self.coding_id))
 
 
 class Hashtag(models.Model):

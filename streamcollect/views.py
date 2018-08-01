@@ -5,6 +5,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
+from django.db import IntegrityError
+
 from celery.task.control import revoke
 import tweepy
 import random
@@ -144,46 +146,63 @@ def coding_interface(request):
             d = DataCode(data_code_id=0, name='To Be Coded')
             d.save()
 
+        # TODO: The below blocks aim to select data which has been coded in other dimensions already,
+        # however it does not prioritise data which has been coded in two dimensions, it samples
+        # randomly from data which has been coded in *at least* one dimension. This isn't ideal at scale.
         if coding_subject == 'tweet':
             # Look for tweets coded in another dimension already:
-            data_query = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
-            data_to_code = DataCode.objects.get(data_code_id=0).tweets.all()
-            data_all = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=True) # Select un-coded Tweet from streams
-        else: # coding_subject is user
-            data_query = User.objects.filter(user_class__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
-            data_to_code = DataCode.objects.get(data_code_id=0).users.all()
-            data_all = User.objects.filter(user_class__gt=0).filter(datacode__isnull=True)
+            data_coded_in_other_dimension = Tweet.objects.filter(data_source__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
+            data_to_be_coded = DataCode.objects.get(data_code_id=0).tweets.all() # This currently ignores dimension, but shouldn't impact functionality.
+            data_cross_coded = Tweet.objects.filter(data_source__gt=0, author__datacode__data_code_id__gt=0, datacode__isnull=True) # Uncoded tweets which have authors already coded.
+            data_cross_coded_queued = Tweet.objects.filter(data_source__gt=0, author__datacode__data_code_id=0, datacode__isnull=True) # Uncoded tweets which have authors queued for coding.
+            data_all = Tweet.objects.filter(data_source__gt=0, datacode__isnull=True) # All uncoded Tweets
+        else: # coding_subject is 'user'
+            data_coded_in_other_dimension = User.objects.filter(user_class__gt=0).filter(datacode__isnull=False).filter(~Q(datacode__dimension_id=active_coding_dimension)).filter(datacode__data_code_id__gt=0)
+            data_to_be_coded = DataCode.objects.get(data_code_id=0).users.all() # This currently ignores dimension, but shouldn't impact functionality.
+            data_cross_coded = User.objects.filter(user_class__gt=0, tweet__datacode__data_code_id__gt=0, datacode__isnull=True) # Uncoded users which have tweets already coded.
+            data_cross_coded_queued = User.objects.filter(user_class__gt=0, tweet__datacode__data_code_id=0, datacode__isnull=True) # Uncoded users whose tweets are queued for coding.
+            data_all = User.objects.filter(user_class__gt=0, datacode__isnull=True) # All uncoded users
 
-        if data_query.count() == 0:
-            if data_to_code.count() == 0:
+        if data_coded_in_other_dimension.count() == 0: # Check if data has been coded in other dimensions but not current dimension.
+            if data_to_be_coded.count() == 0: # Check if there are data marked as 'To Be Coded', and create if not.
                 #TODO Handle out of index below:::::
                 batch_size = 10
                 print("Fetching new batch of un-coded..")
+                if data_cross_coded.count() > 0:
+                    data_all = data_cross_coded
+                elif data_cross_coded_queued.count() > 0:
+                    data_all = data_cross_coded_queued
                 if data_all.count() >= batch_size:
                     data_sample = data_all.order_by('?')[:batch_size] # TODO: Scales very poorly, reconsider using random.sample to extract by row
                 else:
                     data_sample = data_all.order_by('?')[:data_all.count()]
                 for data in data_sample:
-                     # TODO: Remove before implementing elsewhere, uncomment the if coding_subject, new_coding lines below.
-                    '''
-                    Hardcoded shortcut to avoid coding spam tweets with specific URLs.
-                    '''
-                    if coding_subject == 'tweet':
-                        spam_source_1 = 'Paper.li'
-                        spam_source_2 = 'TweetMyJOBS'
-                        if spam_source_1 in data.source or spam_source_2 in data.source:
-                            print('Auto-coding Tweet as unrelated: {}'.format(data.text))
-                            d_unrelated = DataCode.objects.get(data_code_id=7)
-                            new_coding = Coding(tweet=data, data_code=d_unrelated) # Register sampled tweets as 'To Be Coded'
-                        else:
-                            new_coding = Coding(tweet=data, data_code=d) # Register sampled tweets as 'To Be Coded'
+                     # TODO: Used for HurricaneHarvey Dataset, Remove before implementing elsewhere, uncomment the if coding_subject, new_coding lines below.
+                     # Currently doesn't work as query doesn't refresh ?
 
-                    #if coding_subject=='tweet':
-                    #   new_coding = Coding(tweet=data, data_code=d)
+                    #Hardcoded shortcut to avoid coding spam tweets with specific URLs. Needs updating.
+                    #if coding_subject == 'tweet':
+                    #    spam_source_1 = 'Paper.li'
+                    #    spam_source_2 = 'TweetMyJOBS'
+                    #   ###if active_coding_dimension = VALUE_OF_MAIN_TWEET_DIMENSION #TODO: fix this so block only executes under main dimension.
+                    #    if spam_source_1 in data.source or spam_source_2 in data.source:
+                    #        print('Auto-coding Tweet as unrelated: {}'.format(data.text))
+                    #        d_unrelated = DataCode.objects.get(data_code_id=7) #TODO: This ID will not work with new builds, must hard code the 'irrelevant' code here, add dimensionality
+                    #        new_coding = Coding(tweet=data, data_code=d_unrelated) # Register sampled tweets as 'Unrelated'
+                    #    else:
+                    #        new_coding = Coding(tweet=data, data_code=d) # Register sampled tweets as 'To Be Coded'
+
+                    if coding_subject=='tweet':                         # Remove these two lines if using the block above
+                        new_coding = Coding(tweet=data, data_code=d)     ######
                     else:
                         new_coding = Coding(user=data, data_code=d)
-                    new_coding.save()
-            data_query = data_to_code
+                    try:
+                        new_coding.save()
+                    except IntegrityError as e:
+                        pass
+            data_query = data_to_be_coded
+        else:
+            data_query = data_coded_in_other_dimension
 
         #remaining = Tweet.objects.filter(data_source__gt=0).filter(~Q(datacode__data_code_id__gt=0)).count() #Too slow
         remaining = None
@@ -444,13 +463,14 @@ def submit(request):
         return redirect('functions')
 
     elif "export_data" in request.POST:
-        tweets = Tweet.objects.filter(data_source__gte=1)
+        tweets = Tweet.objects.filter(data_source__gt=0)
         i=0
-        for tweet in tweets:
-            i += 1
-            txt = open('data_export/'+str(i)+'.txt','w')
-            txt.write(tweet.text)
-            txt.close()
+        print('Function currently disabled')
+        #for tweet in tweets:
+        #    i += 1
+        #    txt = open('data_export/'+str(i)+'.txt','w+') # TODO: Fix directory use with os.path
+        #    txt.write(tweet.text)
+        #    txt.close()
         return redirect('functions')
 
     elif "twitter_auth" in request.POST:
@@ -501,7 +521,7 @@ def submit(request):
         description = request.POST['description']
         if len(code) > 0:
             d = list(DataCode.objects.values_list('data_code_id', flat=True))
-            data_code_id = min([i for i in list(range(1,10)) if i not in d]) # Smallest ID not already in use
+            data_code_id = min([i for i in list(range(1,100)) if i not in d]) # Smallest ID not already in use, will error if more than 100 codes created.
             active_coding_dimension = request.session.get('active_coding_dimension', None)
             try:
                 dimension = DataCodeDimension.objects.get(id=active_coding_dimension)
@@ -589,17 +609,17 @@ def network_data_API(request):
 
     #All ego nodes, and alters with an in/out degree of X or greater.
     slice_size = 10000 #TODO: Change to a random sample
-    classed_users = User.objects.filter(user_class__gte=1).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
+    classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
 
     # Only show users which have had Tweets coded
-    coded_tweets = Tweet.objects.filter(coding_for_tweet__data_code__data_code_id__gt=0).filter(coding__coding_id=1)
+    coded_tweets = Tweet.objects.filter(coding_for_tweet__data_code__data_code_id__gt=0).filter(coding_for_tweet__coding_id=1)
     #coded_users = User.objects.filter(tweet__in=coded_tweets).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
     coded_users = User.objects.filter(tweet__in=coded_tweets)
 
     relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
     #relevant_users = classed_users | coded_users
 
-    print("Coded Users: {}, Classed Users: {}, Relevant Users: {}".format(coded_users.count(), classed_users.count(), len(relevant_users)))
+    print("Coded Users (by tweet): {}, Classed Users: {}, Relevant Users: {}".format(coded_users.count(), classed_users.count(), len(relevant_users)))
 
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     print("Creating Relo JSON..")
