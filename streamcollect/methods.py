@@ -19,7 +19,7 @@ from django.db.models import Count
 def update_screen_names(users=None):
     print('Updating Screen Names...')
     if users is None:
-        users = User.objects.filter(user_class__gt=0)
+        users = User.objects.filter(user_class__gte=2)
     print('Total users: {}'.format(users.count()))
     i = 0
     c = 0
