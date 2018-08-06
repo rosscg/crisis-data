@@ -9,7 +9,7 @@
       <h3>Total Coding Stats:</h3>
       <table>
         {% for row in total_table %}
-          <tr>
+          <tr class="tr_alternate">
           {% for cell in row %}
               {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
                 {{ cell }}
@@ -23,13 +23,13 @@
     <div class="col-md-6">
       <h3>Disagreement Matrix:</h3>
       <table>
-        <tr>
+        <tr class="tr_alternate">
           <td></td><td></td>
           <td align='center' colspan={{disagree_table.0|length|add:'-3'}}><b>Secondary Coder</b></td>
           <td></td><td></td>
         </tr>
           {% for row in disagree_table %}
-            <tr>
+            <tr class="tr_alternate">
               {% if forloop.first %}
                 <td></td>
               {% elif forloop.counter == 2 %}

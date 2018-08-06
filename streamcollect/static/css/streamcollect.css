@@ -51,9 +51,9 @@ form {
 }
 
 th, td {
-    padding: 8px;
+    padding: 2px;
 }
 
-tr:nth-child(odd) {
+.tr_alternate:nth-child(odd) {
     background-color: #e8e8e8
 }

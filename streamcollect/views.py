@@ -28,8 +28,12 @@ from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY, MAPBOX_PK
 
 
 def monitor_event(request):
-    sample = min(Tweet.objects.filter(data_source__gte=0, coordinates_lat__isnull=False).count(), MAX_MAP_PINS)
-    tweets_list = [ obj.as_dict() for obj in Tweet.objects.filter(data_source__gte=0, coordinates_lat__isnull=False).order_by('?')[:sample] ] # TODO: order_by(?) is slow ?
+    selected_data_sources = request.session.get('active_data_sources', [1,2,3]) # List of data_sources chosen to be displayed
+
+    data_query = Tweet.objects.filter(data_source__in=selected_data_sources, coordinates_lat__isnull=False) #TODO: This is probably slow and unnecessary
+
+    sample = min(data_query.count(), MAX_MAP_PINS)
+    tweets_list = [ obj.as_dict() for obj in data_query.order_by('?')[:sample] ] # TODO: order_by(?) is slow ?
     tweets = json.dumps(tweets_list, cls=DjangoJSONEncoder)
     mid_point = None
     bounding_box = None
@@ -45,7 +49,7 @@ def monitor_event(request):
             mid_point = [geo_1.latitude, geo_1.longitude]
     except:
         event = None
-    return render(request, 'streamcollect/monitor_event.html', {'tweets': tweets, 'mid_point': json.dumps(mid_point), 'bounding_box': json.dumps(bounding_box), 'mapbox_pk': json.dumps(MAPBOX_PK)})
+    return render(request, 'streamcollect/monitor_event.html', {'tweets': tweets, 'mid_point': json.dumps(mid_point), 'bounding_box': json.dumps(bounding_box), 'mapbox_pk': json.dumps(MAPBOX_PK), 'selected_data_sources': selected_data_sources})
 
 
 def list_users(request):
@@ -535,7 +539,8 @@ def submit(request):
         f.write('ACCESS_TOKENS = (\n')
         for t in tokens:
             f.write('\t' + t.__str__() + ',\n')
-        f.write(')')
+        f.write(')\n')
+        f.write('MAPBOX_PK = \'' + MAPBOX_PK + '\'\n')
         f.close
         return redirect('twitter_auth')
 
@@ -620,6 +625,21 @@ def submit(request):
         coder_id = int(request.POST['coder_id'])
         request.session['active_coder'] = coder_id
         return redirect('coding_dash')
+
+    elif "set_active_data_source" in request.POST:
+        if 'data_source_to_activate' in request.POST:
+            active_data_source = request.POST['data_source_to_activate']
+            actives_list = request.session.get('active_data_sources', [])
+            actives_list.append(int(active_data_source))
+        elif 'data_source_to_deactivate' in request.POST:
+            deactive_data_source = request.POST['data_source_to_deactivate']
+            actives_list = request.session.get('active_data_sources', [])
+            try:
+                actives_list.remove(int(deactive_data_source))
+            except:
+                pass
+        request.session['active_data_sources'] = actives_list
+        return redirect('monitor_event')
 
     else:
         print("Unlabelled button pressed")

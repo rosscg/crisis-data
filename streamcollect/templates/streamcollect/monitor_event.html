@@ -9,19 +9,54 @@
 -->
 
 <div class="row">
+  <div class="col-lg-8">
   {% if not mid_point == 'null' and not mapbox_pk == 'null' %}
-  <div id="mapid" style="width: 1000px; height: 600px;"></div> </br>
-</div>
-<div class="row">
-  <b>Data_Source: </br>
-  <img src='static/img/marker-icon-2x-red.png' height='41px'> = 3 (GPS Stream) </br>
-  <img src='static/img/marker-icon-2x-blue.png' height='41px'> = 2 (High-Priority Stream)</br>
-  <img src='static/img/marker-icon-2x-grey.png' height='41px'> = 1 (Low-Priority Stream)</br></b>
-  {% elif not mapbox_pk == 'null' %}
-  <b>No Event Registered.</b>
-  {% else %}
-  <b>Mapbox PK not supplied in config.py, map not shown.</b>
-  {% endif %}
+    <div id="mapid" style="width: 800px; height: 600px;"></div> </br>
+  </div>
+
+  <div class="col-lg-4" align="right">
+    <table>
+      <tr>
+        <td>
+          <b>Data Source:</b>
+        </td>
+      </tr>
+      {% for i in "3210" %} <!-- acting as range(0,4) -->
+      <tr>
+        <td>
+          {% if i|add:"0" in selected_data_sources %}
+          <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+            <input type="hidden" value="{{i}}" name="data_source_to_deactivate">
+            <input type="submit" class="btn btn-success active btn-md" name="set_active_data_source" value="Enabled">
+          </form>
+          {% else %}
+          <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+            <input type="hidden" value="{{i}}" name="data_source_to_activate">
+            <input type="submit" class="btn btn-default btn-md" name="set_active_data_source" value="Disabled">
+          </form>
+          {% endif %}
+        </td>
+        <td>
+          {% if i == '3' %}
+            <img src='static/img/marker-icon-2x-red.png' height='41px'> = 3 (GPS Stream)
+          {% elif i == '2' %}
+            <img src='static/img/marker-icon-2x-blue.png' height='41px'> = 2 (High-Priority Stream)
+          {% elif i == '1' %}
+            <img src='static/img/marker-icon-2x-orange.png' height='41px'> = 1 (Low-Priority Stream)
+          {% else %}
+            <img src='static/img/marker-icon-2x-grey.png' height='41px'> = 0 (Added Tweet)
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+
+    </table>
+    {% elif not mapbox_pk == 'null' %}
+    <b>No Event Registered.</b>
+    {% else %}
+    <b>Mapbox PK not supplied in config.py, map not shown.</b>
+    {% endif %}
+  </div>
 </div>
 
 <div class="row">
@@ -72,6 +107,7 @@
     });
     var greyIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-grey.png'}),
       redIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-red.png'}),
+      orangeIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-orange.png'}),
       blueIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-blue.png'});
 
     //#TODO: Consider hiding PK from source
@@ -88,6 +124,8 @@
         icon = redIcon;
       } else if (js_list[i].data_source == 2) {
         icon = blueIcon;
+      } else if (js_list[i].data_source == 1) {
+        icon = orangeIcon;
       } else {
         icon = greyIcon;
       }
