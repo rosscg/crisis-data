@@ -167,6 +167,16 @@ class Tweet(models.Model):
     def __str__(self):
         return str(self.text)
 
+    def as_dict(self):
+        return dict(
+            text = self.text,
+            author = self.author.screen_name,
+            tweet_id = str(self.tweet_id), # Passed as string due to javascript |safe tag appears to round to nearest 100
+            lat = self.coordinates_lat,
+            lon = self.coordinates_long,
+            data_source = self.data_source
+            )
+
 
 class DataCodeDimension(models.Model):
     name = models.CharField(max_length=20, null=False)
