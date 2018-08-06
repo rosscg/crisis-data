@@ -18,17 +18,18 @@ from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts, update_screen_names_task
 from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
 from .networks import create_gephi_file
-from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES
+from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
 from twdata import userdata
 from twdata.tasks import twitter_stream_task
 # Remove once in production (used by twitter_auth.html). Alternatively, this
 # should load from a file in the parent, in the load_tokens method
 #TODO: Currently causes an error on fresh db builds. Should be fine if Skeleton is renamed.
-from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
+from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY, MAPBOX_PK
 
 
-def monitor_user(request):
-    tweets_list = [ obj.as_dict() for obj in Tweet.objects.filter(coordinates_lat__isnull=False) ]
+def monitor_event(request):
+    sample = min(Tweet.objects.filter(data_source__gte=0, coordinates_lat__isnull=False).count(), MAX_MAP_PINS)
+    tweets_list = [ obj.as_dict() for obj in Tweet.objects.filter(data_source__gte=0, coordinates_lat__isnull=False).order_by('?')[:sample] ] # TODO: order_by(?) is slow ?
     tweets = json.dumps(tweets_list, cls=DjangoJSONEncoder)
     mid_point = None
     bounding_box = None
@@ -44,7 +45,7 @@ def monitor_user(request):
             mid_point = [geo_1.latitude, geo_1.longitude]
     except:
         event = None
-    return render(request, 'streamcollect/monitor_user.html', {'tweets': tweets, 'mid_point': json.dumps(mid_point), 'bounding_box': json.dumps(bounding_box)})
+    return render(request, 'streamcollect/monitor_event.html', {'tweets': tweets, 'mid_point': json.dumps(mid_point), 'bounding_box': json.dumps(bounding_box), 'mapbox_pk': json.dumps(MAPBOX_PK)})
 
 
 def list_users(request):
@@ -93,7 +94,7 @@ def edit_event(request): # Temp, needs validation & better interface.
         form = EventForm(instance=event)
         form2 = GPSForm(instance=geo1, prefix='GeoPoint 1')
         form3 = GPSForm(instance=geo2, prefix='GeoPoint 2')
-        return render(request, 'streamcollect/edit_event.html', {'forms': [form, form2, form3]})
+        return render(request, 'streamcollect/edit_event.html', {'forms': [form, form2, form3], 'mapbox_pk': json.dumps(MAPBOX_PK) })
 
 
 def user_details(request, user_id):
@@ -353,7 +354,7 @@ def callback(request):
         ckey=ConsumerKey.objects.all()[:1].get()
     except ObjectDoesNotExist:
         print('Error! Failed to get Consumer Key from database.')
-        return render(request, 'streamcollect/monitor_user.html')
+        return render(request, 'streamcollect/monitor_event.html')
     verifier = request.GET.get('oauth_verifier')
     auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
     token = request.session.get('request_token', None)
@@ -378,7 +379,7 @@ def submit(request):
         info = request.POST['info']
         if len(info) > 0:
             save_twitter_object_task.delay(user_class=2, screen_name=info)
-        return redirect('monitor_user')
+        return redirect('monitor_event')
 
     elif "add_keyword_low" in request.POST:
         info = request.POST['info']
@@ -388,7 +389,7 @@ def submit(request):
             k.created_at = timezone.now()
             k.priority = 1
             k.save()
-        return redirect('monitor_user')
+        return redirect('monitor_event')
 
     elif "add_keyword_high" in request.POST:
         info = request.POST['info']
@@ -398,7 +399,7 @@ def submit(request):
             k.created_at = timezone.now()
             k.priority = 2
             k.save()
-        return redirect('monitor_user')
+        return redirect('monitor_event')
 
     elif "start_kw_stream" in request.POST:
         try:
@@ -500,14 +501,14 @@ def submit(request):
             ckey=ConsumerKey.objects.all()[:1].get()
         except ObjectDoesNotExist:
             print('Error! Failed to get Consumer Key from database.')
-            return render(request, 'streamcollect/monitor_user.html')
+            return render(request, 'streamcollect/monitor_event.html')
         auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'http://127.0.0.1:8000/callback')
         try:
             redirect_url = auth.get_authorization_url()
             request.session['request_token'] = auth.request_token
         except tweepy.TweepError:
             print('Error! Failed to get request token.')
-            return render(request, 'streamcollect/monitor_user.html')
+            return render(request, 'streamcollect/monitor_event.html')
         return redirect(redirect_url)
     #TODO: Remove after testing?
 
@@ -526,7 +527,7 @@ def submit(request):
             ckey=ConsumerKey.objects.all()[:1].get()
         except ObjectDoesNotExist:
             print('Error! Failed to get Consumer Key from database.')
-            return render(request, 'streamcollect/monitor_user.html')
+            return render(request, 'streamcollect/monitor_event.html')
         tokens = AccessToken.objects.all()
         f = open('tokens_export.py', 'w')
         f.write('CONSUMER_KEY = \'' + ckey.consumer_key + '\'\n')
@@ -622,7 +623,7 @@ def submit(request):
 
     else:
         print("Unlabelled button pressed")
-        return redirect('monitor_user')
+        return redirect('monitor_event')
 
 
 #API returns users above a 'relevant in degree' threshold and the links between them

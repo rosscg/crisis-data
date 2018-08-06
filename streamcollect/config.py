@@ -32,3 +32,6 @@ EXCLUDE_ISOLATED_NODES = False
 
 # Process a proportion of Tweets in the low-priority keyword stream
 STREAM_PROPORTION = 0.06
+
+# Maximum Tweet pins displayed on map (to maintain performance)
+MAX_MAP_PINS = 300
