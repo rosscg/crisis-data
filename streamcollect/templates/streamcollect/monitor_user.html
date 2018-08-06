@@ -1,10 +1,28 @@
 {% extends 'streamcollect/base.html' %}
 
 {% block content %}
-
+<!--
 <div class="jumbotron">
   <h1>StreamCollect</h1>
   <p>Log live Twitter Data</p>
+</div>
+-->
+
+<div class="row">
+  {% if not mid_point == 'null' %}
+  <script src="https://unpkg.com/leaflet@1.3.3/dist/leaflet.js"
+  integrity="sha512-tAGcCfR4Sc5ZP5ZoVz0quoZDYX5aCtEm/eu1KhSLj2c9eFrylXZknQYmxUssFaVJKvvc0dJQixhGjG2yXWiV9Q=="
+  crossorigin=""></script>
+  <div id="mapid" style="width: 1000px; height: 600px;"></div> </br>
+</div>
+<div class="row">
+  <b>Data_Source: </br>
+  <img src='static/img/marker-icon-2x-red.png' height='41px'> = 2 (GPS Stream) </br>
+  <img src='static/img/marker-icon-2x-blue.png' height='41px'> = 1 (High-Priority Stream)</br>
+  <img src='static/img/marker-icon-2x-grey.png' height='41px'> = 0 (Low-Priority Stream)</br></b>
+  {% else %}
+  <b>No Event Registered.</b>
+  {% endif %}
 </div>
 
 <div class="row">
@@ -32,5 +50,62 @@
     </form>
   </div>
 </div>
+
+<script>
+
+  window.onload = function() { createMap() }
+
+  function createMap() {
+    var js_list = {{ tweets|safe }};
+    var bounding_box = {{ bounding_box|safe }};
+    var mid_point = {{ mid_point|safe }};
+    var mymap = L.map('mapid', { worldCopyJump:true }).setView([mid_point[0], mid_point[1]], 7);
+
+    var LeafIcon = L.Icon.extend({
+    options: {
+        shadowUrl: 'static/img/marker-shadow.png',
+      	iconSize: [25, 41],
+      	iconAnchor: [12, 41],
+      	popupAnchor: [1, -34],
+      	shadowSize: [41, 41]
+      }
+    });
+    var greyIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-grey.png'}),
+      redIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-red.png'}),
+      blueIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-blue.png'});
+
+    //#TODO: Move these access tokens into a config file
+  	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+  		maxZoom: 18,
+  		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+  			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+  			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+  		id: 'mapbox.streets'
+  	}).addTo(mymap);
+
+    for (i=0; i < js_list.length; i++) {
+      if ( js_list[i].data_source == 3) {
+        icon = redIcon;
+      } else if (js_list[i].data_source == 2) {
+        icon = blueIcon;
+      } else {
+        icon = greyIcon;
+      }
+
+      L.marker([js_list[i].lat, js_list[i].lon], {icon: icon}).addTo(mymap).bindPopup(js_list[i].text + "<br><a href=\"http://www.twitter.com/" + js_list[i].author + "/status/" + js_list[i].tweet_id + "\" target=\"_blank\">Source</a>");
+    };
+
+    if (bounding_box && bounding_box.length == 4) {
+      alert("Bounding Box exists.");
+      L.polygon([
+        [bounding_box[0], bounding_box[1]],
+        [bounding_box[2], bounding_box[1]],
+        [bounding_box[2], bounding_box[3]],
+        [bounding_box[0], bounding_box[3]]
+      ]).addTo(mymap).bindPopup("Bounding Box for GPS Stream");
+    };
+  }
+
+</script>
 
 {% endblock %}

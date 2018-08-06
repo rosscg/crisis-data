@@ -1,5 +1,7 @@
 from dateutil.parser import *
 import json
+from django.core.serializers.json import DjangoJSONEncoder
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
@@ -26,7 +28,23 @@ from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY
 
 
 def monitor_user(request):
-    return render(request, 'streamcollect/monitor_user.html', {})
+    tweets_list = [ obj.as_dict() for obj in Tweet.objects.filter(coordinates_lat__isnull=False) ]
+    tweets = json.dumps(tweets_list, cls=DjangoJSONEncoder)
+    mid_point = None
+    bounding_box = None
+    try:
+        event = Event.objects.all()[0]
+        if event.geopoint.all().count() == 2:
+            geo_1 = event.geopoint.all()[0]
+            geo_2 = event.geopoint.all()[1]
+            mid_point = [(geo_1.latitude + geo_2.latitude) / 2 , (geo_1.longitude + geo_2.longitude) /2]
+            bounding_box = [geo_1.latitude, geo_1.longitude, geo_2.latitude, geo_2.longitude]
+        elif event.geopoint.all().count() > 0:
+            geo_1 = event.geopoint.all()[0]
+            mid_point = [geo_1.latitude, geo_1.longitude]
+    except:
+        event = None
+    return render(request, 'streamcollect/monitor_user.html', {'tweets': tweets, 'mid_point': json.dumps(mid_point), 'bounding_box': json.dumps(bounding_box)})
 
 
 def list_users(request):
@@ -49,7 +67,7 @@ def view_event(request):
     return render(request, 'streamcollect/view_event.html', {'event': event, 'mid_point': mid_point})
 
 
-def edit_event(request): # Temp
+def edit_event(request): # Temp, needs validation & better interface.
     try:
         event = Event.objects.all()[0]
     except:
