@@ -154,8 +154,8 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     u.followers_count = user_data.followers_count
     u.friends_count = user_data.friends_count
     u.geo_enabled = user_data.geo_enabled
-    u.has_extended_profile = user_data.has_extended_profile
-    u.is_translation_enabled = user_data.is_translation_enabled
+    #u.has_extended_profile = user_data.has_extended_profile      # not returned in user object attached to Tweet, requires API request
+    #u.is_translation_enabled = user_data.is_translation_enabled    # not returned in user object attached to Tweet, requires API request
     u.lang = user_data.lang
     u.listed_count = user_data.listed_count
     u.location = user_data.location
@@ -315,7 +315,7 @@ def save_user_timelines(users):
     return
 
 
-def save_tweet(tweet_data, data_source, save_entities=False):
+def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
     tweet = Tweet()
     # If timezone is an issue:
     tz_aware = timezone.make_aware(tweet_data.created_at, timezone.get_current_timezone())
@@ -357,7 +357,8 @@ def save_tweet(tweet_data, data_source, save_entities=False):
         tweet.author = User.objects.get(user_id=author_id)
     except ObjectDoesNotExist:
         print('Author not in database, adding as new user')
-        add_user(user_id=author_id, data_source=data_source)
+        #add_user(user_id=author_id, data_source=data_source)       # Old method - user data from API rather than using object attached to tweet
+        add_user(user_data=tweet_data.user, data_source=data_source, user_class=user_class)
         tweet.author = User.objects.get(user_id=author_id)
     tweet.save()
 

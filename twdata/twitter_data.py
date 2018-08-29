@@ -43,7 +43,7 @@ class stream_listener(StreamListener):
 
         # Exclude sources from exclusion list.
         for source in IGNORED_SOURCES:
-            if source in tweet.source:
+            if source in status.source:
                 return
 
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
