@@ -15,6 +15,11 @@ class Event(models.Model):
     def save(self, *args, **kwargs):
         if Event.objects.exists() and not self.pk:
             raise ValidationError('There can be only one Event instance')
+
+        if self.time_end and self.time_start and self.time_start >= self.time_end:
+            print('Error, dates not in order')
+            self.time_end = None
+
         return super(Event, self).save(*args, **kwargs)
 
     def __str__(self):
@@ -35,6 +40,13 @@ class GeoPoint(models.Model):
             except:
                 pass
             return
+        if self.longitude is not None:
+            if self.longitude < -180 or self.longitude > 180: # prevents values from 'scrolling around map'
+                return
+        if self.latitude is not None:
+            if self.latitude < -90 or self.latitude > 90: # prevents values from 'scrolling around map'
+                return
+        #TODO: Consider validation of GPS coordinates: Twitter requires bounding box as [SW, NE] pair.
         self.event = Event.objects.all()[0]
         return super(GeoPoint, self).save(*args, **kwargs)
 
@@ -105,7 +117,7 @@ class User(models.Model):
     user_class = models.IntegerField()
     added_at = models.DateTimeField()
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
-    new_screen_name = models.CharField(max_length=200, null=True) # Updated when used is detected to have changed their screen_name
+    new_screen_name = models.CharField(max_length=200, null=True) # Updated when user is detected to have changed their screen_name
 
 
     # These currently represent the degrees to ego accounts and therefore only
@@ -144,7 +156,7 @@ class Tweet(models.Model):
     coordinates_long = models.FloatField(null=True)
     coordinates_type = models.CharField(null=True, max_length=10)
     created_at = models.DateTimeField()
-    favorite_count = models.IntegerField()
+    favorite_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
     #filter_level = models.CharField(max_length=10)
     #This cannot be the primary_key due to errors with Postgres and BigInt
     tweet_id = models.BigIntegerField(null=True, unique=True)
@@ -155,7 +167,7 @@ class Tweet(models.Model):
     #possibly_sensitive = models.NullBooleanField(null=True)
     quoted_status_id = models.BigIntegerField(null=True)
     #quoted_status = models.ForeignKey('self')           // tweet object
-    retweet_count = models.IntegerField()
+    retweet_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
     #retweeted_status        // tweet object
     source = models.CharField(max_length=300)
     text = models.CharField(max_length=300)

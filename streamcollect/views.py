@@ -427,7 +427,9 @@ def submit(request):
         except:
             return redirect('view_event')
         if event.geopoint.all().count() == 2:
-            gps = [event.geopoint.all()[0].longitude, event.geopoint.all()[0].latitude, event.geopoint.all()[1].longitude, event.geopoint.all()[1].latitude]
+            lats = GeoPoint.objects.all().values_list('latitude', flat=True)
+            lons = GeoPoint.objects.all().values_list('longitude', flat=True)
+            gps = [min(lons), min(lats), max(lons), max(lats)]  # Ordering as SW, NE as per Twitter requirements
         elif event.geopoint.all().count() == 1:
             gps = [event.geopoint.all()[0].longitude, event.geopoint.all()[0].latitude]
         else: # No GPS coordinates

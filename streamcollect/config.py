@@ -23,7 +23,7 @@ MENTION_OCCURENCE_THRESHOLD = 0.01
 REFRESH_STREAM = False
 STREAM_REFRESH_RATE = 600 # in seconds
 
-# Parameters of bounding box if single point coordinates are provided
+# Parameters of bounding box for GPS stream if single point coordinates are provided
 BOUNDING_BOX_WIDTH = 1.2
 BOUNDING_BOX_HEIGHT = 0.6
 

@@ -106,7 +106,7 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     if 'screen_name' in kwargs:
         screen_name=kwargs.get('screen_name')
         try:
-            u = User.objects.get(screen_name=screen_name)
+            u = User.objects.get(screen_name=screen_name) #TODO: Also check for new_screen_name here
             if u.user_class >= user_class:
                 print("User {} already exists.".format(u.screen_name))
                 if u.data_source < data_source:

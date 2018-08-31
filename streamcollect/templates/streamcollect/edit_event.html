@@ -4,18 +4,14 @@
 
 <div class="container">
 
-  <div class="page-header">
-    <h1 class="title"><small>{{ event.name }}</small></h1>
-  </div>
-
   <div class="row">
-    <div class="col-sm-8">
+    <div class="col-md-4">
       <div class="event_details">
         <form method="POST" class="post-form">{% csrf_token %}
-          <p>DateTime Format: YYYY-MM-DD 00:00:00, Timezone: UTC</p>
+          <p>DateTime Format: YYYY-MM-DD 00:00:00, TZ: UTC</p>
           {% for f in forms %}
             {% if f.prefix %}
-              <p>{{ f.prefix }}</p>
+              <p><b>{{ f.prefix }}:</b></p>
             {% endif %}
             {{ f.as_p }}
           {% endfor %}
@@ -23,14 +19,14 @@
         </form>
       </div>
     </div>
-  </div>
-
-  <div class="row">
-    {% if not mapbox_pk == 'null' %}
-    <div id="mapid" style="width: 800px; height: 400px;"></div> </br>
-    {% else %}
-    Mapbox PK not supplied in config.py, map not shown.
-    {% endif %}
+    <div class="col-md-8">
+      {% if not mapbox_pk == 'null' %}
+      <b>Check Map Coordinates:</b>
+      <div id="mapid" style="width: 600px; height: 400px;"></div> </br>
+      {% else %}
+      Mapbox PK not supplied in config.py, map not shown.
+      {% endif %}
+    </div>
   </div>
 
 </div>
@@ -57,7 +53,7 @@
     function onMapClick(e) {
     popup
         .setLatLng(e.latlng)
-        .setContent("Clicked at " + e.latlng.toString())
+        .setContent("Lat: <b>" + e.latlng.lat.toFixed(4) + "</b>, Lon: <b>" + e.latlng.lng.toFixed(4))
         .openOn(mymap);
       }
 

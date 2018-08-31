@@ -70,7 +70,7 @@ Additional access tokens can be added via the web interface, requiring a user to
 Streams currently need at least 3 tokens added (one for each stream).
 
 Notes:
-If Redis is running from previous launch (i.e. returns 'bind: Address already in use'):
+If Redis is running from previous launch (i.e. returns 'bind: Address already in use') find the port number (second column) and kill:
 > ```
 > $ ps aux | grep redis
 > $ kill -9 [PORT NUMBER]
@@ -98,7 +98,7 @@ After collection:
   Run trim_spam_accounts.
   Run save_user_timelines.
   Run update_relationship_data after a suitable time period (slow process due to rate limits).
-  Optional: Add codes and code Tweets. System supports up to 9 coders (though 3-9 need to use direct URL as no buttons in place).
+  Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2).
   Export to suitable format for analysis (to be implemented).
 
 Information on dumping the database to a file (for backup) can be found here:

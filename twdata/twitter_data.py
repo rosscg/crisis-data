@@ -46,6 +46,10 @@ class stream_listener(StreamListener):
             if source in status.source:
                 return
 
+        # TODO: Remove or comment out, consider adding IGNORED_USERS to config as above.
+        if status.author.screen_name[0:4] == 'tmj_': # Excluding TMJ spam (USA)
+            return
+
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
         if status.user.friends_count > FRIENDS_THRESHOLD:
@@ -70,13 +74,16 @@ class stream_listener(StreamListener):
             if not any(x in text.lower() for x in keywords_high_priority_global):
                 data_source = 1 # data_source = Low-priority keyword stream
                 if not any(x in text.lower() for x in keywords_low_priority_global):
-                    return
+                    return  # Returns if Tweet is streamed but doesn't match any keywords.
+                            # For example, stream will return Tweets which quote Tweets containing the keyword.
+                            # We are therefore currently discarding these. Could choose to handle.
                 r = random.random()
                 if r > STREAM_PROPORTION:
                     return
         else: # GPS stream
-            data_source = 3# data_source = GPS stream
-            if status.coordinates is None:
+            data_source = 3 # data_source = GPS stream
+            if status.coordinates is None:      # Tweets are sometimes allocated a 'Place' by Twitter which will
+                                                # return in GPS stream (as the place's coords) despite not having specific coords
                 return
 
         # May have to dump from JSON? coords = json.dumps(coords)
@@ -84,9 +91,6 @@ class stream_listener(StreamListener):
             coords = status.coordinates.get('coordinates')
             #print('Coordinates: {}'.format(coords))
             if self.gps_bool:
-                # TODO: Remove or comment out:
-                if status.author.screen_name[0:4] == 'tmj_': # Excluding TMJ spam (USA)
-                    return
                 if not self.data[0] < coords[0] < self.data[2]:
                     #print("ERROR Coordinates outside longitude")
                     return
@@ -95,7 +99,6 @@ class stream_listener(StreamListener):
                     return
 
         print(status.text)
-
         save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source, id=int(status.user.id_str))
         return
 
@@ -131,7 +134,7 @@ def twitter_stream(gps=False, priority=1):
         print("Coords detected.")
         if len(gps) is 4:
             bounding_box = gps
-        elif len(gps) is 2:
+        elif len(gps) is 2: # TODO: Consider putting this into views, always pass 4 values
             bounding_box = [gps[0]-(BOUNDING_BOX_WIDTH/2), gps[1]-(BOUNDING_BOX_HEIGHT/2), gps[0]+(BOUNDING_BOX_WIDTH/2), gps[1]+(BOUNDING_BOX_HEIGHT/2)]
         else:
             print("Error: no gps coordinates passed to gps_stream: {}".format(gps))
