@@ -9,7 +9,7 @@ from django.utils import timezone
 from dateutil.parser import *
 
 from twdata import userdata
-from .models import Event, CeleryTask, User, Relo, Tweet, Hashtag, Url, Mention, Keyword
+from .models import Event, CeleryTask, User, Relo, Tweet, Place, Hashtag, Url, Mention, Keyword
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD
 
 from django.db import transaction
@@ -88,7 +88,7 @@ def update_tracked_tags():
 
 
 def add_users_from_mentions():
-    #If a mention appears in x% of tweets, add as a user_class=2.
+    #If a mention appears in x% of tweets, add as a user_class=2. #TODO: Sould this use a different user_class?
     mentions_with_counts = Mention.objects.all().annotate(tweet_count=Count('tweets__id'))
     tweet_count = len(Tweet.objects.all())
     threshold = (tweet_count*MENTION_OCCURENCE_THRESHOLD)
@@ -112,14 +112,14 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
                 if u.data_source < data_source:
                     u.data_source = data_source
                     u.save()
-                return
+                return u
         except:
             pass
     # Get user_data if not supplied
     if not user_data:
         user_data=userdata.get_user(**kwargs)
     if check_spam_account(user_data):
-        return
+        return False
     try:
         u # exists? i.e. made with screen_name call above.
     except:
@@ -134,7 +134,7 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
         if u.data_source < data_source:
             u.data_source = data_source
             u.save()
-        return
+        return u
 
     # If timezone is an issue:
     u.added_at = timezone.now()
@@ -160,7 +160,7 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     u.listed_count = user_data.listed_count
     u.location = user_data.location
     u.name = user_data.name
-    # u.needs_phone_verification = user_data.needs_phone_verification
+    #u.needs_phone_verification = user_data.needs_phone_verification
     #u.profile_background_color = user_data.profile_background_color
     #u.profile_background_image_url = user_data.profile_background_image_url
     #u.profile_background_image_url_https = user_data.profile_background_image_url_https
@@ -168,7 +168,7 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     #u.profile_image_url = user_data.profile_image_url
     #u.profile_image_url_https = user_data.profile_image_url_https
     #u.profile_link_color = user_data.profile_link_color
-    # u.profile_location = user_data.profile_location
+    #u.profile_location = user_data.profile_location
     #u.profile_sidebar_border_color = user_data.profile_sidebar_border_color
     #u.profile_sidebar_fill_color = user_data.profile_sidebar_fill_color
     #u.profile_text_color = user_data.profile_text_color
@@ -199,7 +199,7 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
         userfollowers = userdata.followers_ids(screen_name=user_data.screen_name)
         for source_user in userfollowers:
             create_relo(u, source_user, outgoing=False)
-    return
+    return u
 
 
 #TODO: Have commented out the updates to the in/out degree rows (to reduce db calls). Decide whether to remove.
@@ -340,7 +340,7 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
 
     try:
         tweet.coordinates_lat = tweet_data.coordinates.get('coordinates')[1] # nullable
-        tweet.coordinates_long = tweet_data.coordinates.get('coordinates')[0] # nullable
+        tweet.coordinates_lon = tweet_data.coordinates.get('coordinates')[0] # nullable
         tweet.coordinates_type = tweet_data.coordinates.get('type') # nullable
     except:
         pass
@@ -358,8 +358,14 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
     except ObjectDoesNotExist:
         print('Author not in database, adding as new user')
         #add_user(user_id=author_id, data_source=data_source)       # Old method - user data from API rather than using object attached to tweet
-        add_user(user_data=tweet_data.user, data_source=data_source, user_class=user_class)
-        tweet.author = User.objects.get(user_id=author_id)
+        user = add_user(user_data=tweet_data.user, data_source=data_source, user_class=user_class)
+        if user:
+            tweet.author = user
+        else:
+            print('ERROR: save_user returned False during save_tweet.') # Probably detected as spam user, shouldn't happen from streamed Tweets.
+    if tweet_data.place is not None:
+        print('Saving place data for tweet: {}'.format(tweet_data.id_str)) # TESTING
+        tweet.place = save_place(tweet_data.place)
     tweet.save()
 
     if save_entities:
@@ -388,11 +394,33 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
     return
 
 
+def save_place(place):
+    place, created = Place.objects.get_or_create(
+        place_id = place.id,
+        url = place.url,
+        place_type = place.place_type,
+        name = place.name,
+        full_name = place.full_name,
+        country_code = place.country_code,
+        country = place.country,
+        lat_1 = place.bounding_box.coordinates[0][0][0],
+        lon_1 = place.bounding_box.coordinates[0][0][1],
+        lat_2 = place.bounding_box.coordinates[0][1][0],
+        lon_2 = place.bounding_box.coordinates[0][1][1],
+        lat_3 = place.bounding_box.coordinates[0][2][0],
+        lon_3 = place.bounding_box.coordinates[0][2][1],
+        lat_4 = place.bounding_box.coordinates[0][3][0],
+        lon_4 = place.bounding_box.coordinates[0][3][1]
+        )
+    print('Saving place: {}'.format(place.name))
+    return place
+
+
 def save_hashtag(hashtag_text, tweet_object):
     hashtag_text = hashtag_text.lower()
     hashtag, created = Hashtag.objects.get_or_create(hashtag=hashtag_text)
     if created:
-        hashtag.save()
+        hashtag.save()      # TODO: Is this save necessary? Should be part of get_or_create
     hashtag.tweets.add(tweet_object)
     return
 

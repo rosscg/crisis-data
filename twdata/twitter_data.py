@@ -10,7 +10,7 @@ from streamcollect.models import Keyword, AccessToken, ConsumerKey
 from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, STREAM_PROPORTION, IGNORED_KWS, IGNORED_SOURCES, IGNORE_RTS
 
 from streamcollect.tasks import save_twitter_object_task
-from streamcollect.methods import kill_celery_task, save_tweet
+from streamcollect.methods import kill_celery_task
 
 keywords_high_priority_global = None
 keywords_low_priority_global = None
@@ -50,6 +50,7 @@ class stream_listener(StreamListener):
         if status.author.screen_name[0:4] == 'tmj_': # Excluding TMJ spam (USA)
             return
 
+        # These values are checked here and at the user_save function.
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
         if status.user.friends_count > FRIENDS_THRESHOLD:
@@ -76,27 +77,26 @@ class stream_listener(StreamListener):
                 if not any(x in text.lower() for x in keywords_low_priority_global):
                     return  # Returns if Tweet is streamed but doesn't match any keywords.
                             # For example, stream will return Tweets which quote Tweets containing the keyword.
-                            # We are therefore currently discarding these. Could choose to handle.
+                            # We are therefore currently discarding these. TODO: Could choose to handle.
                 r = random.random()
                 if r > STREAM_PROPORTION:
                     return
         else: # GPS stream
             data_source = 3 # data_source = GPS stream
             if status.coordinates is None:      # Tweets are sometimes allocated a 'Place' by Twitter which will
-                                                # return in GPS stream (as the place's coords) despite not having specific coords
-                return
-
-        # May have to dump from JSON? coords = json.dumps(coords)
-        if status.coordinates is not None:
-            coords = status.coordinates.get('coordinates')
-            #print('Coordinates: {}'.format(coords))
-            if self.gps_bool:
-                if not self.data[0] < coords[0] < self.data[2]:
-                    #print("ERROR Coordinates outside longitude")
-                    return
-                if not self.data[1] < coords[1] < self.data[3]:
-                    #print("ERROR Coordinates outside latitude")
-                    return
+                                                # return in GPS stream (as the place's coords) despite not having specific coordsself.
+                data_source = 4
+                #return
+            else:   #TODO: This shouldn't happen if bounding box is working correctly
+                coords = status.coordinates.get('coordinates')
+                print('Coordinates: {}'.format(coords))
+                if self.gps_bool:
+                    if not self.data[0] < coords[0] < self.data[2]:
+                        print("ERROR Coordinates outside longitude")
+                        return
+                    if not self.data[1] < coords[1] < self.data[3]:
+                        print("ERROR Coordinates outside latitude")
+                        return
 
         print(status.text)
         save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source, id=int(status.user.id_str))
@@ -155,7 +155,7 @@ def twitter_stream(gps=False, priority=1):
 
     if gps:
         twitterStream.filter(locations=data, async=False)
-    elif REFRESH_STREAM:
+    elif REFRESH_STREAM:            # Refresh stream to read in new keywords
         #TODO: Currently returns replies where the original message included the phrase. Decide whether to keep. Also quoted tweets.
         #EG: https://twitter.com/HalfStrungHarp/status/887335974539317249
         while True:

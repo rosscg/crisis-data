@@ -130,11 +130,11 @@ for i in range(4):
 # Checking if tweet is within GPS bounding box and updating data_source accordingly (for old databases without data_source column)
 
 gps = [-99.9590682, 26.5486063, -93.9790001, 30.3893434] # Long, lat, long, lat
-ts = Tweet.objects.filter(coordinates_long__isnull=False)
+ts = Tweet.objects.filter(coordinates_lon__isnull=False)
 
 for t in ts:
     if t.coordinates_lat > gps[1] and t.coordinates_lat < gps[3]:
-          if t.coordinates_long > gps[0] and t.coordinates_long < gps[2]:
+          if t.coordinates_lon > gps[0] and t.coordinates_lon < gps[2]:
               t.data_source = 3
               t.save()
               u = t.author

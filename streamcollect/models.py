@@ -46,7 +46,6 @@ class GeoPoint(models.Model):
         if self.latitude is not None:
             if self.latitude < -90 or self.latitude > 90: # prevents values from 'scrolling around map'
                 return
-        #TODO: Consider validation of GPS coordinates: Twitter requires bounding box as [SW, NE] pair.
         self.event = Event.objects.all()[0]
         return super(GeoPoint, self).save(*args, **kwargs)
 
@@ -70,6 +69,34 @@ class Keyword(models.Model):
 
     def __str__(self):
         return str(self.keyword)
+
+
+
+class Place(models.Model):
+    id = models.AutoField(primary_key=True)
+    place_id = models.CharField(max_length=20, null=False)
+    url = models.CharField(max_length=200, null=True)
+    place_type = models.CharField(max_length=100, null=False)
+    name = models.CharField(max_length=100, null=False)
+    full_name = models.CharField(max_length=100, null=False)
+    country_code = models.CharField(max_length=5, null=False)
+    country = models.CharField(max_length=100, null=False)
+
+    #TODO: Consider making these Geepoint objects and fix GeoPoint spec.
+    #TODO: Check if boxes are ever non-rectangle (and therefore need all 4 points)
+    lat_1 = models.FloatField(null=True)
+    lon_1 = models.FloatField(null=True)
+    lat_2 = models.FloatField(null=True)
+    lon_2 = models.FloatField(null=True)
+    lat_3 = models.FloatField(null=True)
+    lon_3 = models.FloatField(null=True)
+    lat_4 = models.FloatField(null=True)
+    lon_4 = models.FloatField(null=True)
+
+    def __str__(self):
+        lon = (self.lon_1 + self.lon_2 + self.lon_3 + self.lon_4)/4
+        lat = (self.lat_1 + self.lat_2 + self.lat_3 + self.lat_4)/4
+        return "Place: {}, middle coords lat: {}, lon: {}".format(self.full_name, lat, lon)
 
 
 class User(models.Model):
@@ -153,7 +180,7 @@ class User(models.Model):
 class Tweet(models.Model):
     id = models.AutoField(primary_key=True)
     coordinates_lat = models.FloatField(null=True)
-    coordinates_long = models.FloatField(null=True)
+    coordinates_lon = models.FloatField(null=True)
     coordinates_type = models.CharField(null=True, max_length=10)
     created_at = models.DateTimeField()
     favorite_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
@@ -174,6 +201,7 @@ class Tweet(models.Model):
     #user_data               // user object
 
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
+    place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
 
     def __str__(self):
@@ -185,7 +213,7 @@ class Tweet(models.Model):
             author = self.author.screen_name,
             tweet_id = str(self.tweet_id), # Passed as string due to javascript |safe tag appears to round to nearest 100
             lat = self.coordinates_lat,
-            lon = self.coordinates_long,
+            lon = self.coordinates_lon,
             data_source = self.data_source
             )
 
