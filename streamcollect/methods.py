@@ -28,9 +28,10 @@ def update_screen_names(users=None):
         if i % 100 == 0:
             print('Processing user {} of {}'.format(i, users.count()))
         live_u = userdata.get_user(user_id=u.user_id)
-        if live_u != False and live_u.screen_name != u.screen_name and live_u.screen_name != u.new_screen_name:
+        if live_u != False and live_u.screen_name != u.screen_name:
             print('New screen name for user: {} - {}.'.format(u.screen_name, live_u.screen_name))
-            u.new_screen_name = live_u.screen_name
+            u.old_screen_name = u.screen_name
+            u.screen_name = live_u.screen_name
             u.save()
             c += 1
     print('{} users changed names out of {} total.'.format(c, users.count()))
@@ -39,7 +40,7 @@ def update_screen_names(users=None):
 
 def kill_celery_task(task_name):
     for t in CeleryTask.objects.filter(task_name=task_name):
-        print("Killing task {}: {}".format(task_name, t.celery_task_id))
+        print('Killing task {}: {}'.format(task_name, t.celery_task_id))
         revoke(t.celery_task_id, terminate=True)
         t.delete()
 
@@ -106,9 +107,9 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     if 'screen_name' in kwargs:
         screen_name=kwargs.get('screen_name')
         try:
-            u = User.objects.get(screen_name=screen_name) #TODO: Also check for new_screen_name here
+            u = User.objects.get(screen_name=screen_name)
             if u.user_class >= user_class:
-                print("User {} already exists.".format(u.screen_name))
+                print('User {} already exists.'.format(u.screen_name))
                 if u.data_source < data_source:
                     u.data_source = data_source
                     u.save()
@@ -130,7 +131,7 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     # Check if user already exists class level. None is true if the user hasn't
     # been saved yet (i.e. created in this function)
     if not u.user_class == None and u.user_class >= user_class:
-        print("User {} already exists.".format(u.screen_name))
+        print('User {} already exists.'.format(u.screen_name))
         if u.data_source < data_source:
             u.data_source = data_source
             u.save()
