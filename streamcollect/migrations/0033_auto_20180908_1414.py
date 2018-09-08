@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tweet',
             name='is_deleted',
-            field=models.BooleanField(default=False),
+            field=models.NullBooleanField(),
         ),
         migrations.AddField(
             model_name='tweet',
@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='is_deleted',
-            field=models.BooleanField(default=False),
+            field=models.NullBooleanField(),
         ),
         migrations.AddField(
             model_name='user',
