@@ -144,7 +144,7 @@ class User(models.Model):
     added_at = models.DateTimeField()
     data_source = models.IntegerField(default=0) # 0=Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
     old_screen_name = models.CharField(max_length=200, null=True) # Originally observed screen_name if since-changed.
-    is_deleted = models.BooleanField(default=False) # True where profile is detected as deleted (or protected? TODO: check) in update method.
+    is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
 
 
@@ -204,7 +204,7 @@ class Tweet(models.Model):
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
-    is_deleted = models.BooleanField(default=False) # True where profile is detected as deleted (or protected? TODO: check) in update method.
+    is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
 
     def __str__(self):
