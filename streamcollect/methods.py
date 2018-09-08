@@ -18,23 +18,88 @@ from django.db.models import Count
 
 def update_screen_names(users=None):
     print('Updating Screen Names...')
+
     if users is None:
-        users = User.objects.filter(user_class__gte=2)
-    print('Total users: {}'.format(users.count()))
-    i = 0
-    c = 0
-    for u in users:
-        i += 1
-        if i % 100 == 0:
-            print('Processing user {} of {}'.format(i, users.count()))
-        live_u = userdata.get_user(user_id=u.user_id)
-        if live_u != False and live_u.screen_name != u.screen_name:
-            print('New screen name for user: {} - {}.'.format(u.screen_name, live_u.screen_name))
-            u.old_screen_name = u.screen_name
-            u.screen_name = live_u.screen_name
+        users = list(User.objects.filter(user_class__gte=2).values_list('user_id', flat=True))
+    length = len(users)
+    chunk_size = 100 # Max of 100
+    index = 0
+    c = 0 # total changed
+    deleted_users = list(users)
+
+    # Requesting User objects in batches to minimise API limits
+    while index < length:
+        if length - index <= chunk_size:
+            end = length
+        else:
+            end = index + chunk_size
+        chunk = users[index:end]
+        print("Length: {}, Chunk: {}:{}".format(length, index, end))
+        #process chunk
+        user_list = userdata.lookup_users(user_ids=chunk)
+        if not user_list:
+            # False returned if only dead users in list
+            index += chunk_size
+            continue
+        for live_u in user_list:
+            deleted_users.remove(int(live_u.id_str))
+            u = User.objects.get(user_id=int(live_u.id_str))
+            if live_u.screen_name != u.screen_name:
+                print('New screen name for user: {} - {}.'.format(u.screen_name, live_u.screen_name))
+                u.old_screen_name = u.screen_name
+                u.screen_name = live_u.screen_name
+                u.save()
+                c += 1
+        index += chunk_size
+
+    for deleted_id in deleted_users:
+        u = User.objects.get(user_id=deleted_id)
+        if u.is_deleted == False:
+            u.is_deleted = True
+            u.is_deleted_observed = timezone.now()
             u.save()
-            c += 1
-    print('{} users changed names out of {} total.'.format(c, users.count()))
+
+    print('{} users changed names out of {} total.'.format(c, len(users)))
+    print('{} deleted or suspended users.'.format(len(deleted_users)))
+    return
+
+
+def check_deleted_tweets(id_list=None):
+    print('Checking existing Tweets for deletion...')
+
+    if id_list is None:
+        id_list = list(Tweet.objects.filter(data_source__gte=1).values_list('tweet_id', flat=True))
+
+    length = len(id_list)
+    chunk_size = 100 # Max of 100
+    index = 0
+    deleted_tweets = list(id_list)
+
+    # Requesting Tweet objects in batches to minimise API limits
+    while index < length:
+        if length - index <= chunk_size:
+            end = length
+        else:
+            end = index + chunk_size
+        chunk = id_list[index:end]
+        print("Length: {}, Chunk: {}:{}".format(length, index, end))
+        #process chunk
+        tweet_list = userdata.statuses_lookup(chunk)
+        if not tweet_list:
+            index += chunk_size
+            continue
+        for live_t in tweet_list:
+            deleted_tweets.remove(int(live_t.id_str))
+        index += chunk_size
+
+    for deleted_id in deleted_tweets:
+        t = Tweet.objects.get(tweet_id=deleted_id)
+        if t.is_deleted == False:
+            t.is_deleted = True
+            t.is_deleted_observed = timezone.now()
+            t.save()
+
+    print('{} deleted or hidden Tweets of total: {}.'.format(len(deleted_tweets), length))
     return
 
 
@@ -192,13 +257,13 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     # Add relationship data if the user_class is 2 or higher
     if user_class >= 2:
         # Get users followed by account & create relationship objects
-        userfollowing = userdata.friends_ids(screen_name=user_data.screen_name)
-        for target_user in userfollowing:
+        user_following = userdata.friends_ids(screen_name=user_data.screen_name)
+        for target_user in user_following:
             create_relo(u, target_user, outgoing=True)
 
         # Get followers & create relationship objects
-        userfollowers = userdata.followers_ids(screen_name=user_data.screen_name)
-        for source_user in userfollowers:
+        user_followers = userdata.followers_ids(screen_name=user_data.screen_name)
+        for source_user in user_followers:
             create_relo(u, source_user, outgoing=False)
     return u
 

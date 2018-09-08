@@ -136,8 +136,7 @@ class User(models.Model):
     time_zone = models.CharField(max_length=200, null=True)
     translator_type = models.CharField(max_length=200, null=True)
     url = models.CharField(max_length=200, null=True)
-    #This cannot be the primary_key due to errors with Postgres and BigInt
-    user_id = models.BigIntegerField(unique=True)
+    user_id = models.BigIntegerField(unique=True) # This cannot be the primary_key due to errors with Postgres and BigInt
     utc_offset = models.CharField(max_length=200, null=True)
     verified = models.NullBooleanField(null=True)
 
@@ -145,6 +144,8 @@ class User(models.Model):
     added_at = models.DateTimeField()
     data_source = models.IntegerField(default=0) # 0=Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
     old_screen_name = models.CharField(max_length=200, null=True) # Originally observed screen_name if since-changed.
+    is_deleted = models.BooleanField(default=False) # True where profile is detected as deleted (or protected? TODO: check) in update method.
+    is_deleted_observed = models.DateTimeField(null=True)
 
 
     # These currently represent the degrees to ego accounts and therefore only
@@ -203,6 +204,8 @@ class Tweet(models.Model):
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
+    is_deleted = models.BooleanField(default=False) # True where profile is detected as deleted (or protected? TODO: check) in update method.
+    is_deleted_observed = models.DateTimeField(null=True)
 
     def __str__(self):
         return str(self.text)

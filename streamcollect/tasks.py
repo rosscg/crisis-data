@@ -8,7 +8,7 @@ from django.db.models import Q
 from twdata import userdata
 from .models import User, Relo, CeleryTask
 
-from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names
+from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names, check_deleted_tweets
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #Uncomment the decorators here to allow tasks to run periodically. Requires a running Celery Beat (see Readme)
@@ -65,8 +65,7 @@ def trim_spam_accounts(self):
         chunk = users[index:end]
         print("Length: {}, Chunk: {}:{}".format(length, index, end))
         #process chunk
-        user_ids = chunk
-        user_list = userdata.lookup_users(user_ids=user_ids)
+        user_list = userdata.lookup_users(user_ids=chunk)
 
         if not user_list:
             # False returned if only dead users in list
@@ -131,13 +130,14 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
     return
 
 @shared_task(bind=True)
-def update_screen_names_task(self):
+def compare_live_data_task(self):
     # Remove existing task and save new task to DB
     kill_celery_task('update_screen_names')
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_screen_names')
     task_object.save()
 
     update_screen_names()
+    check_deleted_tweets()
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
