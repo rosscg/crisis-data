@@ -14,6 +14,9 @@ IGNORED_SOURCES = ['Paper.li', 'TweetMyJOBS']
 # Ignore Re-Tweets:
 IGNORE_RTS = True
 
+# Choose whether to download media from Tweets to hard drive. Saves photos, videos and gifs from Twitter and Instagram posts
+DOWNLOAD_MEDIA = True
+
 # Threshold proportion for a hashtag to appear before it is added to tracked tags
 TAG_OCCURENCE_THRESHOLD = 0.02
 # Threshold proportion for a mentioned user to appear before it is added as user_class=2

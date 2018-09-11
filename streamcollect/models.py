@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.contrib.postgres.fields import ArrayField
 
 
 class Event(models.Model):
@@ -19,6 +20,8 @@ class Event(models.Model):
         if self.time_end and self.time_start and self.time_start >= self.time_end:
             print('Error, dates not in order')
             self.time_end = None
+
+        self.name = self.name.replace(' ', '-')
 
         return super(Event, self).save(*args, **kwargs)
 
@@ -206,6 +209,8 @@ class Tweet(models.Model):
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
     is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
+    media_files = ArrayField(models.CharField(max_length=200), null=True)
+    media_files_type = models.CharField(max_length=200, null=True) # describes the media_files field: image, video or gif
 
     def __str__(self):
         return str(self.text)
@@ -270,7 +275,7 @@ class Coding(models.Model):
 
 class Hashtag(models.Model):
     hashtag = models.CharField(max_length=200, unique=True)
-    tweets = models.ManyToManyField(Tweet)
+    tweets = models.ManyToManyField(Tweet, related_name='hashtags')
 
     def __str__(self):
         return str(self.hashtag)
@@ -278,7 +283,7 @@ class Hashtag(models.Model):
 
 class Url(models.Model):
     url = models.CharField(max_length=400, unique=True)
-    tweets = models.ManyToManyField(Tweet)
+    tweets = models.ManyToManyField(Tweet, related_name='urls')
 
     def __str__(self):
         return str(self.url)
@@ -286,7 +291,7 @@ class Url(models.Model):
 
 class Mention(models.Model):
     mention = models.CharField(max_length=200, unique=True)
-    tweets = models.ManyToManyField(Tweet)
+    tweets = models.ManyToManyField(Tweet, related_name='mentions')
 
     def __str__(self):
         return str(self.mention)

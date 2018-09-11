@@ -1,4 +1,5 @@
 amqp==2.1.4
+beautifulsoup4==4.6.3
 billiard==3.5.0.2
 celery==4.0.2
 certifi==2017.4.17

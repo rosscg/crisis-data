@@ -10,11 +10,16 @@ from dateutil.parser import *
 
 from twdata import userdata
 from .models import Event, CeleryTask, User, Relo, Tweet, Place, Hashtag, Url, Mention, Keyword
-from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD
+from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD, DOWNLOAD_MEDIA
 
 from django.db import transaction
 from django.db.models import Count
 
+# For downloading media:
+from urllib.request import urlretrieve, urlopen
+import urllib.parse as urlparse
+from bs4 import BeautifulSoup
+import os
 
 def update_screen_names(users=None):
     print('Updating Screen Names...')
@@ -432,6 +437,12 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
     if tweet_data.place is not None:
         print('Saving place data for tweet: {}'.format(tweet_data.id_str)) # TESTING
         tweet.place = save_place(tweet_data.place)
+    if DOWNLOAD_MEDIA and save_entities:
+        filenames, type = download_media(tweet_data)
+        # TODO: Decide how to link to tweet object - use a relation or three fields (base_name, type, count)
+        if len(filenames) > 0:
+            tweet.media_files = filenames
+            tweet.media_files_type = type
     tweet.save()
 
     if save_entities:
@@ -446,7 +457,7 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
             # Cleanup URL
             url = re.sub('(http://|https://|#.*|&.*)', '', url)
             # Exclude twitter URLs, which are added if media is attached - therefore
-            # not relevant to the analysis, but look at capturing in tweet data?
+            # not relevant to the analysis. TODO: Check whether this is working as intended.
             if url[0:11] != 'twitter.com':
                 save_url(url, tweet)
 
@@ -458,6 +469,110 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
         # TODO: save other entities?: media, user_mentions, symbols, extended_entities
         # https://dev.twitter.com/overview/api/entities-in-twitter-objects
     return
+
+
+def download_media(tweet_data):
+    event = Event.objects.all()[0].name
+    media_type = ''
+    media_url = []
+
+    if tweet_data.source == 'Instagram':
+        try:
+            urls = tweet_data.extended_tweet.get('entities').get('urls')
+            last_index = 0
+            for u in urls: # URLs posted in comments are returned in entities. Finding last occuring (i.e. source).
+                if u.get('indices')[0] >= last_index:
+                    last_index = u.get('indices')[0]
+                    insta_url = u.get('expanded_url')   # Works for Extended data from stream
+        except:
+            urls = tweet_data.entities.get('urls')
+            last_index = 0
+            for u in urls:
+                if u.get('indices')[0] >= last_index:
+                    last_index = u.get('indices')[0]
+                    insta_url = u.get('expanded_url')    # Works for Extended data from REST (to test)
+        insta_url = 'https://www.instagram.com/p/' + insta_url.split('/')[4]
+        try:
+            response = urlopen(insta_url)
+        except:
+            print('Error with Instagram media: {}, likely deleted.'.format(insta_url))
+            return([], '')
+        try:
+            page_source = response.read()
+        except Exception as e:
+            print(e)
+            return([], '')
+            #raise   #TODO: Handle connection reset here
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        insta_image = soup.find_all("meta", property="og:image")
+        insta_vid = soup.find_all("meta", property="og:video")
+        if insta_vid:
+            media_type = 'video'
+            media_url.append(insta_vid[0]["content"])
+        else:
+            media_type = 'image'
+            media_url.append(insta_image[0]["content"])
+        path = urlparse.urlparse(media_url[0]).path
+        ext = path[len(path)-4:] # Remove trailing queries etc
+
+    else:   # Tweet media
+        try:
+            media_type = tweet_data.extended_entities.get('media')[0].get('type')
+        except:
+            return([], '') #TODO: Test these don't have media
+
+        if media_type == 'video': # Twitter Video:
+            highest_bitrate = 0
+            variants = tweet_data.extended_entities.get('media')[0].get('video_info').get('variants')
+            for v in variants:
+                if v.get('bitrate') is not None and v.get('bitrate') >= highest_bitrate:
+                    highest_bitrate = v.get('bitrate')
+                    highest_url = v.get('url')
+            media_url.append(highest_url)
+            path = urlparse.urlparse(media_url[0]).path
+            ext = path[len(path)-4:] # Remove trailing queries etc
+
+            if highest_bitrate == 0:
+                media_type = 'gif'
+
+        elif media_type == 'photo':
+            media_items = tweet_data.extended_entities.get('media')
+            for m in media_items:
+                media_url.append(m.get('media_url'))
+            media_type = 'image'
+            path = urlparse.urlparse(media_items[0].get('media_url')).path
+            ext = path[len(path)-4:] # Remove trailing queries etc
+
+        elif media_type == 'animated_gif':
+            variants = tweet_data.extended_entities.get('media')[0].get('video_info').get('variants')[0].get('url')
+            media_type = 'gif'
+            media_url.append(variants)
+            path = urlparse.urlparse(media_url[0]).path
+            ext = path[len(path)-4:] # Remove trailing queries etc
+
+        else:
+            if tweet_data.extended_entities.get('media') is not None:
+                print('Unhandled Twitter media type: {}'.format(tweet_data.extended_entities.get('media')[0].get('type')))
+                print(tweet_data)
+            return([], '')
+
+    directory = './' + event + '_media/' + media_type + '/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    base_filename = tweet_data.author.id_str + '_' + tweet_data.id_str
+    saved_files = []
+    if len(media_url) > 0:
+        i=0
+        for m in media_url:
+            filename = base_filename
+            if len(media_url) > 1:
+                filename = base_filename + '_' + str(i)
+            urlretrieve(m, directory + filename  + str(ext))
+            saved_files.append(filename + str(ext))
+            i += 1
+    return(saved_files, media_type)
 
 
 def save_place(place):

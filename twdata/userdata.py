@@ -1,4 +1,3 @@
-import json
 from django.core.exceptions import ObjectDoesNotExist
 
 from tweepy import API, Cursor, OAuthHandler, RateLimitHandler

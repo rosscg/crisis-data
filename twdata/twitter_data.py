@@ -89,7 +89,7 @@ class stream_listener(StreamListener):
                 #return
             else:   #TODO: This shouldn't happen if bounding box is working correctly
                 coords = status.coordinates.get('coordinates')
-                print('Coordinates: {}'.format(coords))
+                ##print('Coordinates: {}'.format(coords))
                 if self.gps_bool:
                     if not self.data[0] < coords[0] < self.data[2]:
                         print("ERROR Coordinates outside longitude")
@@ -151,7 +151,8 @@ def twitter_stream(gps=False, priority=1):
             elif priority == 1:
                 kill_celery_task('stream_kw_low')
             return
-    twitterStream = Stream(auth, stream_listener(gps, data))
+    #twitterStream = Stream(auth, stream_listener(gps, data))
+    twitterStream = Stream(auth, stream_listener(gps, data), tweet_mode='extended') #TODO: Test, Adjust on both lines. Test for retweets. Adjust how RTs are hard-coded to handle for IGNORE_RTS
 
     if gps:
         twitterStream.filter(locations=data, async=False)
@@ -169,7 +170,8 @@ def twitter_stream(gps=False, priority=1):
                     print("Error: no keywords found.")
                     kill_celery_task('stream_kw')
                     return
-                twitterStream = Stream(auth, stream_listener(False, data))
+                #twitterStream = Stream(auth, stream_listener(False, data))
+                twitterStream = Stream(auth, stream_listener(False, data), tweet_mode='extended')
             print("Running new stream (with refresh)...")
             twitterStream.filter(track=data, async=False)
             time.sleep(STREAM_REFRESH_RATE)
