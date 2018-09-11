@@ -63,6 +63,9 @@ class Keyword(models.Model):
     priority = models.IntegerField(default=0)
 
     def save(self, *args, **kwargs):
+
+        self.keyword = self.keyword.replace(' ', '') # Twitter expects single keywords
+
         try:
             self.event = Event.objects.all()[0]
         except:
