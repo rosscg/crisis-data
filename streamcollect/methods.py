@@ -272,12 +272,12 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
 
 #TODO: Have commented out the updates to the in/out degree rows (to reduce db calls). Decide whether to remove.
 def create_relo(existing_user, new_user_id, outgoing):
-    #if outgoing:
-    #    if Relo.objects.filter(source_user=existing_user).filter(target_user__user_id=new_user_id).filter(end_observed_at=None).exists():
-    #        return
-    #else: # Incoming relationship
-    #    if Relo.objects.filter(source_user__user_id=new_user_id).filter(target_user=existing_user).filter(end_observed_at=None).exists():
-    #        return
+    if outgoing:
+        if Relo.objects.filter(source_user=existing_user).filter(target_user__user_id=new_user_id).filter(end_observed_at=None).exists():
+            return
+    else: # Incoming relationship
+        if Relo.objects.filter(source_user__user_id=new_user_id).filter(target_user=existing_user).filter(end_observed_at=None).exists():
+            return
     r = Relo()
     r.observed_at = timezone.now()
     if outgoing:
