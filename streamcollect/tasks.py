@@ -147,6 +147,8 @@ def compare_live_data_task(self):
 #TODO: Currently appears buggy. Lists too long shortly after adding user, should be near-0
 @shared_task(bind=True)
 def update_user_relos_task(self):
+    print('Update Relo function currently not implemented due to DB structure changes')
+    return
     # Remove existing task and save new task to DB
     kill_celery_task('update_user_relos')
     task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
@@ -228,3 +230,20 @@ def update_user_relos_task(self):
 
     CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
+
+
+@shared_task(bind=True)
+def create_relo_network(self):
+    #TODO: To be finished. Added to functions view.
+    users = User.objects.filter(user_class__gte=2)
+    for u in users:
+
+        user_following = u.user_following
+        for target_user in user_following:
+            create_relo(u, target_user, outgoing=True)
+
+        user_followers = u.user_followers
+        for source_user in user_followers:
+            create_relo(u, source_user, outgoing=False)
+
+        #TODO: remove id from array once added as a relo.

@@ -255,18 +255,22 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
 
     u.user_class = user_class
     u.data_source = data_source
-    u.save()
+    #u.save()
 
     # Add relationship data if the user_class is 2 or higher
-    if user_class >= 2:
+    if user_class >= 2:     # TODO: Storing in DB rather than creating objects to reduce DB load, can create later. Affects observing new/dead relationships.
         # Get users followed by account & create relationship objects
         user_following = userdata.friends_ids(screen_name=user_data.screen_name)
-        for target_user in user_following:
-            create_relo(u, target_user, outgoing=True)
+        u.user_following = user_following
+
+        #for target_user in user_following:
+        #    create_relo(u, target_user, outgoing=True)
         # Get followers & create relationship objects
         user_followers = userdata.followers_ids(screen_name=user_data.screen_name)
-        for source_user in user_followers:
-            create_relo(u, source_user, outgoing=False)
+        u.user_followers = user_followers
+        #for source_user in user_followers:
+        #    create_relo(u, source_user, outgoing=False)
+    u.save()
     return u
 
 
@@ -428,8 +432,9 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply
         try:
             qt = tweet_data.quoted_status
         except:
-            print('tweet has quoted_status_id_str but not quoted_status') #TODO: Test. I beleive this is due to a 'nested' quote, the second quote won't be contained in the packet.
-            print(tweet_data)
+            #print('tweet has quoted_status_id_str but not quoted_status') #TODO: Test. I beleive this is due to a 'nested' quote, the second quote won't be contained in the packet.
+            #print(tweet_data)
+            pass
     except:
         pass
     try: # Saving quoted Tweet

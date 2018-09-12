@@ -156,6 +156,8 @@ class User(models.Model):
     is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
 
+    user_following = ArrayField(models.BigIntegerField(), null=True) #   Testing temporarily storing as list rather than creating relo objects.
+    user_followers = ArrayField(models.BigIntegerField(), null=True) #   Testing
 
     # These currently represent the degrees to ego accounts and therefore only
     # relevant to alter objects, or egos with relationships with other egos.
@@ -204,7 +206,7 @@ class Tweet(models.Model):
     retweet_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
     #retweeted_status        // tweet object
     source = models.CharField(max_length=300)
-    text = models.CharField(max_length=300)
+    text = models.CharField(max_length=500)
 
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
