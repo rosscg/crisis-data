@@ -15,6 +15,7 @@ from streamcollect.methods import kill_celery_task
 keywords_high_priority_global = None
 keywords_low_priority_global = None
 
+
 class stream_listener(StreamListener):
 
     def __init__(self, gps_bool, data):
@@ -24,9 +25,6 @@ class stream_listener(StreamListener):
 
     def on_status(self, status):
 
-        # Check that keywords exist (Twitter doesn't handle phrases with spaces)
-        #TODO: This currently excludes replies/links if the tag is in the external
-        # entity. Decide whether to handle.
         # Status.truncated doesn't appear to be True when user reposts from Instagram or Facebook
         if status.truncated:
             text=status.extended_tweet.get('full_text')
@@ -46,11 +44,9 @@ class stream_listener(StreamListener):
             if source in status.source:
                 return
 
-        # TODO: Remove or comment out, consider adding IGNORED_USERS to config as above.
-        if status.author.screen_name[0:4] == 'tmj_': # Excluding TMJ spam (USA)
-            return
-
         # These values are checked here and at the user_save function.
+        #if check_spam_account(status): # TODO: Consider this implementation (add import)
+        #    return
         if status.user.followers_count > FOLLOWERS_THRESHOLD:
             return
         if status.user.friends_count > FRIENDS_THRESHOLD:
@@ -67,6 +63,9 @@ class stream_listener(StreamListener):
             else:
                 return
 
+        # Check that keywords exist.
+        #TODO: This currently excludes replies/links if the tag is in the external
+        # entity. Decide whether to handle.
         if not self.gps_bool:
             data_source = 2 # data_source = High-priority keyword stream
             global keywords_high_priority_global
@@ -76,7 +75,7 @@ class stream_listener(StreamListener):
                 data_source = 1 # data_source = Low-priority keyword stream
                 if not any(x in text.lower() for x in keywords_low_priority_global):
                     return  # Returns if Tweet is streamed but doesn't match any keywords.
-                            # For example, stream will return Tweets which quote Tweets containing the keyword.
+                            # For example, stream will return Tweets which quote/reply Tweets containing the keyword.
                             # We are therefore currently discarding these. TODO: Could choose to handle.
                 r = random.random()
                 if r > STREAM_PROPORTION:
@@ -99,7 +98,8 @@ class stream_listener(StreamListener):
                         return
 
         print(status.text)
-        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source, id=int(status.user.id_str))
+        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source)
+
         return
 
     def on_error(self, status):
@@ -107,6 +107,7 @@ class stream_listener(StreamListener):
 
     def on_timeout(self):
         print("Connection timed out, ")
+
 
 def twitter_stream(gps=False, priority=1):
 
@@ -134,7 +135,7 @@ def twitter_stream(gps=False, priority=1):
         print("Coords detected.")
         if len(gps) is 4:
             bounding_box = gps
-        elif len(gps) is 2: # TODO: Consider putting this into views, always pass 4 values
+        elif len(gps) is 2: # TODO: Consider putting this into views, and always pass 4 values
             bounding_box = [gps[0]-(BOUNDING_BOX_WIDTH/2), gps[1]-(BOUNDING_BOX_HEIGHT/2), gps[0]+(BOUNDING_BOX_WIDTH/2), gps[1]+(BOUNDING_BOX_HEIGHT/2)]
         else:
             print("Error: no gps coordinates passed to gps_stream: {}".format(gps))
@@ -151,16 +152,13 @@ def twitter_stream(gps=False, priority=1):
             elif priority == 1:
                 kill_celery_task('stream_kw_low')
             return
-    #twitterStream = Stream(auth, stream_listener(gps, data))
+
     twitterStream = Stream(auth, stream_listener(gps, data), tweet_mode='extended') #TODO: Test, Adjust on both lines. Test for retweets. Adjust how RTs are hard-coded to handle for IGNORE_RTS
 
     if gps:
         twitterStream.filter(locations=data, async=False)
     elif REFRESH_STREAM:            # Refresh stream to read in new keywords
-        #TODO: Currently returns replies where the original message included the phrase. Decide whether to keep. Also quoted tweets.
-        #EG: https://twitter.com/HalfStrungHarp/status/887335974539317249
         while True:
-            #Periodically re-run stream to get updated set of keywords.
             if twitterStream.running:
                 twitterStream.disconnect()
                 print("Deleting old stream...")
@@ -170,7 +168,6 @@ def twitter_stream(gps=False, priority=1):
                     print("Error: no keywords found.")
                     kill_celery_task('stream_kw')
                     return
-                #twitterStream = Stream(auth, stream_listener(False, data))
                 twitterStream = Stream(auth, stream_listener(False, data), tweet_mode='extended')
             print("Running new stream (with refresh)...")
             twitterStream.filter(track=data, async=False)

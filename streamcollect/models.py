@@ -80,13 +80,13 @@ class Keyword(models.Model):
 
 class Place(models.Model):
     id = models.AutoField(primary_key=True)
-    place_id = models.CharField(max_length=20, null=False)
-    url = models.CharField(max_length=200, null=True)
-    place_type = models.CharField(max_length=100, null=False)
-    name = models.CharField(max_length=100, null=False)
-    full_name = models.CharField(max_length=100, null=False)
-    country_code = models.CharField(max_length=5, null=False)
-    country = models.CharField(max_length=100, null=False)
+    place_id = models.CharField(max_length=20, null=False, unique=True)
+    url = models.CharField(max_length=200, null=True)   # TODO: These fields are only null to make get_or_create faster, which may have no effect.
+    place_type = models.CharField(max_length=100, null=True)
+    name = models.CharField(max_length=100, null=True)
+    full_name = models.CharField(max_length=100, null=True)
+    country_code = models.CharField(max_length=5, null=True)
+    country = models.CharField(max_length=100, null=True)
 
     #TODO: Consider making these Geepoint objects and fix GeoPoint spec.
     #TODO: Check if boxes are ever non-rectangle (and therefore need all 4 points)
@@ -100,9 +100,12 @@ class Place(models.Model):
     lon_4 = models.FloatField(null=True)
 
     def __str__(self):
-        lon = (self.lon_1 + self.lon_2 + self.lon_3 + self.lon_4)/4
-        lat = (self.lat_1 + self.lat_2 + self.lat_3 + self.lat_4)/4
-        return "Place: {}, middle coords lat: {}, lon: {}".format(self.full_name, lat, lon)
+        try:
+            lon = (self.lon_1 + self.lon_2 + self.lon_3 + self.lon_4)/4
+            lat = (self.lat_1 + self.lat_2 + self.lat_3 + self.lat_4)/4
+            return "Place: {}, middle coords lat: {}, lon: {}".format(self.full_name, lat, lon)
+        except:
+            return "Place id: {}".format(self.place_id)
 
 
 class User(models.Model):
@@ -192,20 +195,16 @@ class Tweet(models.Model):
     created_at = models.DateTimeField()
     favorite_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
     #filter_level = models.CharField(max_length=10)
-    #This cannot be the primary_key due to errors with Postgres and BigInt
-    tweet_id = models.BigIntegerField(null=True, unique=True)
+    tweet_id = models.BigIntegerField(null=True, unique=True)   #This cannot be the primary_key due to errors with Postgres and BigInt
     in_reply_to_status_id = models.BigIntegerField(null=True)
     in_reply_to_user_id = models.BigIntegerField(null=True)
     lang = models.CharField(max_length=10, null=True)
-    #place                   // see object type, TO BE IMPLEMENTED
     #possibly_sensitive = models.NullBooleanField(null=True)
-    quoted_status_id = models.BigIntegerField(null=True)
-    #quoted_status = models.ForeignKey('self')           // tweet object
+    quoted_status_id_int = models.BigIntegerField(null=True)
     retweet_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
     #retweeted_status        // tweet object
     source = models.CharField(max_length=300)
     text = models.CharField(max_length=300)
-    #user_data               // user object
 
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
@@ -214,6 +213,9 @@ class Tweet(models.Model):
     is_deleted_observed = models.DateTimeField(null=True)
     media_files = ArrayField(models.CharField(max_length=200), null=True)
     media_files_type = models.CharField(max_length=200, null=True) # describes the media_files field: image, video or gif
+
+    replied_to_status = models.ForeignKey('self', related_name='replied_by', on_delete=models.SET_NULL, null=True)
+    quoted_status = models.ForeignKey('self', related_name='quoted_by', on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return str(self.text)

@@ -111,10 +111,10 @@ def user_timeline(**kwargs):
     return statuses
 
 
-def statuses_lookup(id_list):
+def statuses_lookup(id_list, trim_user=True):
     api = get_api()
     try:
-        statuses = api.statuses_lookup(id_list, trim_user=True)
+        statuses = api.statuses_lookup(id_list, trim_user=trim_user)
     except:
         print('Error with statuses_lookup')
         return False

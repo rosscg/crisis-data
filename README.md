@@ -53,7 +53,7 @@ Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate term
 
 > ```
 > $ redis-4.0.1/src/redis-server
-> $ celery -A homesite worker  --concurrency=10 -l info
+> $ celery -A homesite worker --concurrency=10 -l info
 > $ celery -A homesite beat -l info -S django
 > ```
 
@@ -89,8 +89,9 @@ Edit config.py details as needed.
 Decide on periodic tasks in tasks.py (uncomment the decorators to run, requires the celery beat running).
   update_user_relos_periodic is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
   update_data_periodic allows new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. REFRESH_STREAM should be set to true, to add the new tags periodically.
-Add keywords and/or coordinates. Coordinates currently must be hard-coded into views.py
-High-priority keywords run as normal, low-priority return a proportion of the tweets as set in config.py. Use this to reduce load.
+Create the event object - at the least it needs a name. Optionally add coordinates for the geo stream.
+Add keywords. Keywords cannot include spaces.
+High-priority keywords run as normal, low-priority return a proportion of the Tweets as set in config.py. Use this to reduce load.
 Run streams, disable OS auto-sleep.
 
 After collection:
@@ -98,7 +99,7 @@ After collection:
   Run trim_spam_accounts.
   Run save_user_timelines.
   Run update_relationship_data after a suitable time period (slow process due to rate limits).
-  Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2).
+  Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2). See section below.
   Export to suitable format for analysis (to be implemented).
 
 Information on dumping the database to a file (for backup) can be found here:
@@ -110,7 +111,7 @@ https://www.postgresql.org/docs/9.1/static/backup-dump.html
 > $ psql dbname2 < infile
 > ```
 
-To flush Redis DB:
+To flush Redis DB (to clear queue of tasks):
 > ```
 > $ redis-4.0.1/src/redis-cli flushdb
 > $ celery purge

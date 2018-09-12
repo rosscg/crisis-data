@@ -10,7 +10,7 @@ from dateutil.parser import *
 
 from twdata import userdata
 from .models import Event, CeleryTask, User, Relo, Tweet, Place, Hashtag, Url, Mention, Keyword
-from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD, DOWNLOAD_MEDIA
+from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD, DOWNLOAD_MEDIA, MAX_REPLY_DEPTH
 
 from django.db import transaction
 from django.db.models import Count
@@ -206,7 +206,6 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
             u.data_source = data_source
             u.save()
         return u
-
     # If timezone is an issue:
     u.added_at = timezone.now()
     try:
@@ -220,7 +219,6 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     u.default_profile = user_data.default_profile
     u.default_profile_image = user_data.default_profile_image
     u.description = user_data.description
-    # u.entities = NOT IMPLEMENTED
     u.favourites_count = user_data.favourites_count
     u.followers_count = user_data.followers_count
     u.friends_count = user_data.friends_count
@@ -265,7 +263,6 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
         user_following = userdata.friends_ids(screen_name=user_data.screen_name)
         for target_user in user_following:
             create_relo(u, target_user, outgoing=True)
-
         # Get followers & create relationship objects
         user_followers = userdata.followers_ids(screen_name=user_data.screen_name)
         for source_user in user_followers:
@@ -275,22 +272,18 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
 
 #TODO: Have commented out the updates to the in/out degree rows (to reduce db calls). Decide whether to remove.
 def create_relo(existing_user, new_user_id, outgoing):
-
-    if outgoing:
-        if Relo.objects.filter(source_user=existing_user).filter(target_user__user_id=new_user_id).filter(end_observed_at=None).exists():
-            return
-    else: # Incoming relationship
-        if Relo.objects.filter(source_user__user_id=new_user_id).filter(target_user=existing_user).filter(end_observed_at=None).exists():
-            return
-
+    #if outgoing:
+    #    if Relo.objects.filter(source_user=existing_user).filter(target_user__user_id=new_user_id).filter(end_observed_at=None).exists():
+    #        return
+    #else: # Incoming relationship
+    #    if Relo.objects.filter(source_user__user_id=new_user_id).filter(target_user=existing_user).filter(end_observed_at=None).exists():
+    #        return
     r = Relo()
     r.observed_at = timezone.now()
-
     if outgoing:
         #existing_user.out_degree += 1
         #existing_user.save()
         r.source_user = existing_user
-
         # Create new users for targets if not already in DB
         try:
             tuser = User.objects.get(user_id=new_user_id)
@@ -302,12 +295,10 @@ def create_relo(existing_user, new_user_id, outgoing):
         tuser.in_degree += 1
         tuser.save()
         r.target_user = tuser
-
     else: # Incoming relationship
             #existing_user.in_degree += 1
             #existing_user.save()
             r.target_user = existing_user
-
             # Create new users for targets if not already in DB
             try:
                 suser = User.objects.get(user_id=new_user_id)
@@ -319,7 +310,6 @@ def create_relo(existing_user, new_user_id, outgoing):
             suser.out_degree += 1
             suser.save()
             r.source_user = suser
-
     r.save()
     return
 
@@ -336,32 +326,25 @@ def save_user_timelines(users):
 
     for user in users:
         print('Saving timeline for user: {}'.format(user.screen_name))
-
         timeline_old_enough = False # received timeline encompasses start_time
         max_id = False
-
         if progress_count % 10 == 0:
             print('Progress: {} of {}'.format(progress_count, user_count))
         progress_count += 1
-
         while timeline_old_enough is False:
-
             if max_id is False:
                 statuses = userdata.user_timeline(id=user.user_id)
             else:
                 statuses = userdata.user_timeline(id=user.user_id, max_id=max_id)
-
             if statuses is False:
                 print('Timeline error with user: {}'.format(user.screen_name))
                 timeline_old_enough = True
                 break
-
             #Save to DB here
             for status in statuses:
                 if int(status.id_str) < max_id or max_id is False:
                     max_id = int(status.id_str)
                 tz_aware = timezone.make_aware(status.created_at, timezone=pytz.utc)
-
                 if tz_aware > start_time:
                     if tz_aware < end_time:
                         try:
@@ -369,9 +352,9 @@ def save_user_timelines(users):
                                 text=status.extended_tweet.get('full_text')
                             else:
                                 try:
-                                    text=status.text # TODO: Swap with full_text in exception?
+                                    text=status.full_text
                                 except:
-                                    text=status.full_text #TODO: Should try full_text before text?
+                                    text=status.text
                             save_tweet(status, data_source=0)
                         except:
                             pass
@@ -386,7 +369,17 @@ def save_user_timelines(users):
     return
 
 
-def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
+def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply_depth=0):
+
+    if data_source == 0 or user_class == 0: # ie. Tweet not from original stream
+        try:
+            tweet = Tweet.objects.get(tweet_id=int(tweet_data.id_str))
+        except ObjectDoesNotExist:
+            pass
+        else:
+            print('Tweet already exists')
+            return tweet
+
     tweet = Tweet()
     # If timezone is an issue:
     tz_aware = timezone.make_aware(tweet_data.created_at, timezone.get_current_timezone())
@@ -400,15 +393,14 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
     tweet.source = tweet_data.source
     tweet.data_source = data_source
 
-    if tweet_data.truncated:
-        tweet.text=tweet_data.extended_tweet.get('full_text')
-    else:
+    try:
+        tweet.text = tweet_data.extended_tweet.get('full_text') # Truncated Tweets from replies or quotes don't return extended_tweet
+    except:
         # Try block to handle current issue with REST calls and extended_tweet
         try:
-            tweet.text=tweet_data.text
-        except:
             tweet.text=tweet_data.full_text
-
+        except:
+            tweet.text=tweet_data.text
     try:
         tweet.coordinates_lat = tweet_data.coordinates.get('coordinates')[1] # nullable
         tweet.coordinates_lon = tweet_data.coordinates.get('coordinates')[0] # nullable
@@ -417,27 +409,52 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
         pass
     if tweet_data.in_reply_to_status_id_str:
         tweet.in_reply_to_status_id = int(tweet_data.in_reply_to_status_id_str) # nullable
-    if tweet_data.in_reply_to_user_id_str:
         tweet.in_reply_to_user_id = int(tweet_data.in_reply_to_user_id_str) # nullable
+
+        if reply_depth <= MAX_REPLY_DEPTH:   # Save replies to depth set in config.
+            reply_depth += 1
+            reply_status = userdata.statuses_lookup([int(tweet_data.in_reply_to_status_id_str)], trim_user=False)
+            if len(reply_status) > 0: # If replied_to is returned (ie. not deleted)
+                reply_status = reply_status[0]
+                #print('Saving reply at depth = {}'.format(reply_depth))
+                replied_to_status = save_tweet(reply_status, user_class=0, save_entities=save_entities, data_source=data_source, reply_depth=reply_depth)
+                if replied_to_status:
+                    tweet.replied_to_status = replied_to_status
+            else:
+                print('error with tweet reply: {}'.format(tweet_data.in_reply_to_status_id_str)) #TODO: testing, remove
+
     try:
-        tweet.quoted_status_id = int(tweet_data.quoted_status_id_str) # Only appears when relevant
+        tweet.quoted_status_id_int = int(tweet_data.quoted_status_id_str) # Only appears when relevant
+        try:
+            qt = tweet_data.quoted_status
+        except:
+            print('tweet has quoted_status_id_str but not quoted_status') #TODO: Test. I beleive this is due to a 'nested' quote, the second quote won't be contained in the packet.
+            print(tweet_data)
     except:
         pass
+    try: # Saving quoted Tweet
+        quoted = tweet_data.quoted_status
+    except:
+        pass
+    else:
+        quoted_status = save_tweet(quoted, user_class=0, save_entities=save_entities, data_source=data_source)
+        if quoted_status:
+            tweet.quoted_status = quoted_status
+
     author_id = int(tweet_data.user.id_str)
     try:
         tweet.author = User.objects.get(user_id=author_id)
     except ObjectDoesNotExist:
-        print('Author not in database, adding as new user')
-        #add_user(user_id=author_id, data_source=data_source)       # Old method - user data from API rather than using object attached to tweet
+        #print('Author not in database, adding as new user')
         user = add_user(user_data=tweet_data.user, data_source=data_source, user_class=user_class)
         if user:
             tweet.author = user
         else:
-            print('ERROR: save_user returned False during save_tweet.') # Probably detected as spam user, shouldn't happen from streamed Tweets.
+            # User is detected as a spam account, therefore Tweet not saved. If pursuing a reply chain, it is halted.
+            return
     if tweet_data.place is not None:
-        print('Saving place data for tweet: {}'.format(tweet_data.id_str)) # TESTING
         tweet.place = save_place(tweet_data.place)
-    if DOWNLOAD_MEDIA and save_entities:
+    if DOWNLOAD_MEDIA and save_entities:    # TODO: This should check tweet doesn't already exist first, otherwise waste of resources.
         filenames, type = download_media(tweet_data)
         # TODO: Decide how to link to tweet object - use a relation or three fields (base_name, type, count)
         if len(filenames) > 0:
@@ -466,9 +483,7 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False):
             save_mention(user.get('screen_name'), tweet)
             # TODO: Implement something here to add these users based on authors class?
             pass
-        # TODO: save other entities?: media, user_mentions, symbols, extended_entities
-        # https://dev.twitter.com/overview/api/entities-in-twitter-objects
-    return
+    return tweet
 
 
 def download_media(tweet_data):
@@ -478,19 +493,19 @@ def download_media(tweet_data):
 
     if tweet_data.source == 'Instagram':
         try:
-            urls = tweet_data.extended_tweet.get('entities').get('urls')
+            urls = tweet_data.extended_tweet.get('entities').get('urls')   # Works for Extended data from stream
             last_index = 0
             for u in urls: # URLs posted in comments are returned in entities. Finding last occuring (i.e. source).
                 if u.get('indices')[0] >= last_index:
                     last_index = u.get('indices')[0]
-                    insta_url = u.get('expanded_url')   # Works for Extended data from stream
+                    insta_url = u.get('expanded_url')
         except:
-            urls = tweet_data.entities.get('urls')
+            urls = tweet_data.entities.get('urls')    # Works for Extended data from REST (to test)
             last_index = 0
             for u in urls:
                 if u.get('indices')[0] >= last_index:
                     last_index = u.get('indices')[0]
-                    insta_url = u.get('expanded_url')    # Works for Extended data from REST (to test)
+                    insta_url = u.get('expanded_url') #TODO: move these 5 lines outside of block, as they are repeated. May have to check they don't throw errors too.
         insta_url = 'https://www.instagram.com/p/' + insta_url.split('/')[4]
         try:
             response = urlopen(insta_url)
@@ -575,25 +590,29 @@ def download_media(tweet_data):
     return(saved_files, media_type)
 
 
-def save_place(place):
+def save_place(place_data):
     place, created = Place.objects.get_or_create(
-        place_id = place.id,
-        url = place.url,
-        place_type = place.place_type,
-        name = place.name,
-        full_name = place.full_name,
-        country_code = place.country_code,
-        country = place.country,
-        lat_1 = place.bounding_box.coordinates[0][0][0],
-        lon_1 = place.bounding_box.coordinates[0][0][1],
-        lat_2 = place.bounding_box.coordinates[0][1][0],
-        lon_2 = place.bounding_box.coordinates[0][1][1],
-        lat_3 = place.bounding_box.coordinates[0][2][0],
-        lon_3 = place.bounding_box.coordinates[0][2][1],
-        lat_4 = place.bounding_box.coordinates[0][3][0],
-        lon_4 = place.bounding_box.coordinates[0][3][1]
+        place_id = place_data.id
         )
-    print('Saving place: {}'.format(place.name))
+
+    if created:     #TODO: Test. Moved outside of get_or_create to attempt to improve speed. Required setting these as null=true in model.
+        place.url = place_data.url
+        place.place_type = place_data.place_type
+        place.name = place_data.name
+        place.full_name = place_data.full_name
+        place.country_code = place_data.country_code
+        place.country = place_data.country
+        place.lat_1 = place_data.bounding_box.coordinates[0][0][0]
+        place.lon_1 = place_data.bounding_box.coordinates[0][0][1]
+        place.lat_2 = place_data.bounding_box.coordinates[0][1][0]
+        place.lon_2 = place_data.bounding_box.coordinates[0][1][1]
+        place.lat_3 = place_data.bounding_box.coordinates[0][2][0]
+        place.lon_3 = place_data.bounding_box.coordinates[0][2][1]
+        place.lat_4 = place_data.bounding_box.coordinates[0][3][0]
+        place.lon_4 = place_data.bounding_box.coordinates[0][3][1]
+        place.save()
+        print('Saving place: {}'.format(place.name))
+
     return place
 
 
