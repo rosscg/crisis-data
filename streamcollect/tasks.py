@@ -116,7 +116,7 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
             save_tweet(tweet, data_source, user_class, save_entities)
         except Exception as e:
             print('Error saving tweet {}: {}'.format(tweet.id_str, e))
-            print(tweet) #TODO: Test or remove.
+            #print(tweet) #TODO: Test or remove.
             pass
     else: # Saving user
         try:

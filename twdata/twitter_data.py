@@ -66,7 +66,6 @@ class stream_listener(StreamListener):
             else:
                 return
 
-
         reserved_tasks = len(inspect(['celery@object_worker']).reserved().get('celery@object_worker'))
 
         # Check that keywords exist.

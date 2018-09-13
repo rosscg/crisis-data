@@ -1,3 +1,11 @@
+# Temporary for testing.
+*media/
+gephi_network_data.gexf
+ignored_tw_urls_log.txt
+users_rejected_as_spam.txt
+homesite/settings.py
+
+
 *.pyc
 *~
 __pycache__

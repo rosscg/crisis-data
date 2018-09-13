@@ -122,13 +122,18 @@ def check_spam_account(user_data):
         return
     # Reject users with high metrics - spam/celebrity/news accounts
     if user_data.followers_count > FOLLOWERS_THRESHOLD:
-        return True
+        pass
     if user_data.friends_count > FRIENDS_THRESHOLD:
-        return True
+        pass
     if user_data.statuses_count > STATUSES_THRESHOLD:
-        return True
+        pass
     else:
         return False
+
+    #TODO: Testing users for validity of this setting choice:
+    with open('users_rejected_as_spam.txt', 'a') as f:
+        print('{}, {}, {}, {}, {}'.format(user_data.screen_name, user_data.id_str, user_data.followers_count, user_data.friends_count, user_data.statuses_count), file=f)
+    return True
 
 
 def update_tracked_tags():
@@ -193,8 +198,8 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     # Get user_data if not supplied
     if not user_data:
         user_data=userdata.get_user(**kwargs)
-    if check_spam_account(user_data):
-        return False
+    #if check_spam_account(user_data): #TODO: Excluded for testing, only possible while Relos aren't created automatically.
+    #    return False
     try:
         u # exists? i.e. made with screen_name call above.
     except:
@@ -628,8 +633,8 @@ def save_hashtag(hashtag_text, tweet_object):
 
 
 def save_url(url_text, tweet_object):
-
-    if re.sub('(http://|https://|#.*|&.*)', '', url_text)[0:11] == 'twitter.com':
+    stripped = re.sub('(http://|https://|#.*|&.*)', '', url_text)
+    if stripped[:11] == 'twitter.com' and stripped[:25] is not 'twitter.com/i/web/status/':
         with open('ignored_tw_urls_log.txt', 'a') as f:
             print('Pre-unwound: {}'.format(url_text), file=f)
         return
@@ -645,6 +650,7 @@ def save_url(url_text, tweet_object):
     if unwound[0:11] == 'twitter.com':  # TODO: Should be able to remove this check, as it is done earlier
         with open('ignored_tw_urls_log.txt', 'a') as f:
             print(unwound, file=f)
+            print('Original: {}'.format(stripped), file=f)
         return
     url, created = Url.objects.get_or_create(url=unwound)
     #if created:

@@ -17,7 +17,7 @@ import random
 from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention#, CeleryTask
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
-from .methods import update_tracked_tags, add_users_from_mentions, check_spam_account
+from .methods import update_tracked_tags, add_users_from_mentions#, check_spam_account
 from .networks import create_gephi_file
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
 from twdata import userdata #TODO: Is this used?

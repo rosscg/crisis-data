@@ -73,7 +73,7 @@
 
   <div class="row">
     {% if tasks %}
-      <h1 class="title"><small>Tasks Running:</small></h1>
+      <h1 class="title"><small>{{ tasks|length }} Tasks Running:</small></h1>
       {% for task in tasks %}
       <p>{{ task }}</p>
       {% endfor %}
