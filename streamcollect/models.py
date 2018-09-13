@@ -156,8 +156,8 @@ class User(models.Model):
     is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
 
-    user_following = ArrayField(models.BigIntegerField(), null=True) #   Testing temporarily storing as list rather than creating relo objects.
-    user_followers = ArrayField(models.BigIntegerField(), null=True) #   Testing
+    user_following = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily storing as list rather than creating relo objects.
+    user_followers = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
 
     # These currently represent the degrees to ego accounts and therefore only
     # relevant to alter objects, or egos with relationships with other egos.

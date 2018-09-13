@@ -116,6 +116,8 @@ def kill_celery_task(task_name):
 
 
 def check_spam_account(user_data):
+    if user_data == False:
+        return
     # Reject users with high metrics - spam/celebrity/news accounts
     if user_data.followers_count > FOLLOWERS_THRESHOLD:
         return True

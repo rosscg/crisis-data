@@ -6,20 +6,20 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db import IntegrityError
 
 from celery.task.control import revoke
 import tweepy
 import random
 
-from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint
+from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
-from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions
+from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions, check_spam_account
 from .networks import create_gephi_file
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
-from twdata import userdata
+from twdata import userdata #TODO: Is this used?
 from twdata.tasks import twitter_stream_task
 # Remove once in production (used by twitter_auth.html). Alternatively, this
 # should load from a file in the parent, in the load_tokens method
@@ -348,6 +348,16 @@ def coding_disagreement(request, coder1code, coder2code):
     return render(request, 'streamcollect/coding_disagreement.html', {'tweets': tweets})
 
 
+def view_entities(request):
+    max_items = 50
+    keywords = Keyword.objects.all().values_list('keyword', flat=True) #TODO: Keywords may have hashtags, whereas Hashtag objects don't.
+    hashtags_with_counts = Hashtag.objects.exclude(hashtag__in=keywords).annotate(tweet_count=Count('tweets__id')).order_by('-tweet_count')[:max_items/2]
+    urls_with_counts = Url.objects.all().annotate(tweet_count=Count('tweets__id')).order_by('-tweet_count')[:max_items]
+    mentions_with_counts = Mention.objects.all().annotate(tweet_count=Count('tweets__id')).order_by('-tweet_count')[:max_items]
+
+    return render(request, 'streamcollect/view_entities.html', {'hashtags': hashtags_with_counts, 'urls': urls_with_counts,  'mentions': mentions_with_counts})
+
+
 def twitter_auth(request):
     tokens = AccessToken.objects.all()
     return render(request, 'streamcollect/twitter_auth.html', {'tokens': tokens})
@@ -387,13 +397,14 @@ def submit(request):
 
     elif "add_keyword_low" in request.POST:
         info = request.POST['info']
+        redirect_to = request.POST['redirect_to']
         if len(info) > 0:
             k = Keyword()
             k.keyword = info.lower()
             k.created_at = timezone.now()
             k.priority = 1
             k.save()
-        return redirect('monitor_event')
+        return redirect(redirect_to)
 
     elif "add_keyword_high" in request.POST:
         info = request.POST['info']
@@ -502,7 +513,7 @@ def submit(request):
         #    txt.close()
         return redirect('functions')
 
-    elif "twitter_auth" in request.POST:
+    elif "twitter_auth" in request.POST: #TODO: No longer working?
         try:
             ckey=ConsumerKey.objects.all()[:1].get()
         except ObjectDoesNotExist:
@@ -516,7 +527,6 @@ def submit(request):
             print('Error! Failed to get request token.')
             return render(request, 'streamcollect/monitor_event.html')
         return redirect(redirect_url)
-    #TODO: Remove after testing?
 
     elif "load_tokens" in request.POST:
         if not ConsumerKey.objects.filter(consumer_key=CONSUMER_KEY).exists():

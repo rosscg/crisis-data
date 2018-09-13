@@ -34,11 +34,32 @@
         {% endfor %} </p>
 
         <a class="btn btn-default" href="{% url 'edit_event' %}"><span class="glyphicon glyphicon-pencil"></span></a>
-
       </div>
     </div>
-
-
   </div>
+
+  <div class="row">
+    <div class="col-sm-3">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <label>Add Low-Priority Keyword:</label>
+          <input type="text" class="form-control" name="info">
+          <input type="hidden" value='view_event' name="redirect_to">
+          <input type="submit" class="btn btn-primary btn-md" name="add_keyword_low" value="Submit">
+        </div>
+      </form>
+    </div>
+    <div class="col-sm-3">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <label>Add Priority Keyword:</label>
+          <input type="text" class="form-control" name="info">
+          <input type="hidden" value='view_event' name="redirect_to">
+          <input type="submit" class="btn btn-primary btn-md" name="add_keyword_high" value="Submit">
+        </div>
+      </form>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

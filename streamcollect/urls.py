@@ -17,6 +17,7 @@ urlpatterns = [
     url(r'^coding_dash$', views.coding_dash, name='coding_dash'),
     url(r'^coding_results$', views.coding_results, name='coding_results'),
     url(r'^coding_disagreement/(?P<coder1code>\d+)/(?P<coder2code>\d+)/$', views.coding_disagreement, name='coding_disagreement'),
+    url(r'^view_entities$', views.view_entities, name='view_entities'),
 
     url(r'^callback$', views.callback, name='callback'),
     url(r'^twitter_auth$', views.twitter_auth, name='twitter_auth'),

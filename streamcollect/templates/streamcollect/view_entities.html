@@ -1,0 +1,62 @@
+{% extends 'streamcollect/base.html' %}
+
+{% block content %}
+
+<div class="container">
+
+  <div class="col-md-4">
+    <h3>Cooccuring Tags</h3>
+    <table>
+
+      <tr class="tr_alternate">
+        <th>Hashtag:</th><th>Count:</th><th>Add to Stream:</th>
+      </tr>
+      {% for hashtag in hashtags %}
+      <tr class="tr_alternate">
+        <td><b><a href="https://twitter.com/hashtag/{{ hashtag.hashtag }}" target="_blank">{{ hashtag.hashtag }}</a></td><td>{{ hashtag.tweet_count }}</b></td>
+        <td>
+          <form action="submit" method="POST" class="form-inline">{% csrf_token %}
+            <div class="form-group">
+              <input type="submit" class="btn btn-primary btn-xs" name="add_keyword_low" value="Low">
+              <input type="submit" class="btn btn-primary btn-xs" name="add_keyword_high" value="High">
+              <input type="hidden" value={{ hashtag.hashtag }} name="info">
+              <input type="hidden" value='view_entities' name="redirect_to">
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="col-md-3">
+    <h3>Mentions</h3>
+    <table>
+      <tr class="tr_alternate">
+        <th>User:</th><th>Count:</th>
+      </tr>
+      {% for mention in mentions %}
+      <tr class="tr_alternate">
+        <td><b><a href="https://twitter.com/{{ mention.mention }}" target="_blank">{{ mention.mention }}</a></td><td>{{ mention.tweet_count }}</b></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="col-md-4">
+    <h3>URLs</h3>
+    <table>
+      <tr class="tr_alternate">
+        <th>URL:</th><th>Count:</th>
+      </tr>
+      {% for url in urls %}
+      <tr class="tr_alternate">
+        <td><b><a href="http://{{ url.url }}" target="_blank">{{ url.url }}</a></td><td>{{ url.tweet_count }}</b></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}
