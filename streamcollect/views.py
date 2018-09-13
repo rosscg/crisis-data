@@ -10,13 +10,14 @@ from django.db.models import Q, Count
 from django.db import IntegrityError
 
 from celery.task.control import revoke
+from celery.task.control import inspect
 import tweepy
 import random
 
-from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, CeleryTask, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
+from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention#, CeleryTask
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
-from .methods import kill_celery_task, update_tracked_tags, add_users_from_mentions, check_spam_account
+from .methods import update_tracked_tags, add_users_from_mentions, check_spam_account
 from .networks import create_gephi_file
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
 from twdata import userdata #TODO: Is this used?
@@ -116,19 +117,25 @@ def user_feed(request, user_id):
 
 def stream_status(request):
     keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
-    if not CeleryTask.objects.filter(task_name='stream_kw_high'):
-        kw_stream_status = False
-    else:
-        kw_stream_status = True
-    if not CeleryTask.objects.filter(task_name='stream_gps'):
-        gps_stream_status = False
-    else:
-        gps_stream_status = True
+
+    kw_stream_status = False
+    gps_stream_status = False
+
+    ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker')
+    for t in ts:
+        task_id = t.get('id')
+        if 'priority' in t['kwargs']:
+            kw_stream_status = True
+        elif 'priority' not in t['kwargs']:
+            gps_stream_status = True
+
+
     return render(request, 'streamcollect/stream_status.html', {'kw_stream_status': kw_stream_status, 'gps_stream_status': gps_stream_status, 'keywords': keywords})
 
 
 def functions(request):
-    tasks = CeleryTask.objects.all().values_list('task_name', flat=True)
+    tasks = inspect(['celery@stream_worker']).active().get('celery@stream_worker') + inspect(['celery@object_worker']).active().get('celery@object_worker') + inspect(['celery@object_worker']).reserved().get('celery@object_worker')
+    tasks = [d['name'] for d in tasks]
     return render(request, 'streamcollect/functions.html', {'tasks': tasks})
 
 
@@ -428,10 +435,10 @@ def submit(request):
             event.save()
         task_low = twitter_stream_task.delay(priority=1)
         task_high = twitter_stream_task.delay(priority=2)
-        task_object = CeleryTask(celery_task_id = task_low.task_id, task_name='stream_kw_low')
-        task_object.save()
-        task_object = CeleryTask(celery_task_id = task_high.task_id, task_name='stream_kw_high')
-        task_object.save()
+        #task_object = CeleryTask(celery_task_id = task_low.task_id, task_name='stream_kw_low')
+        #task_object.save()
+        #task_object = CeleryTask(celery_task_id = task_high.task_id, task_name='stream_kw_high')
+        #task_object.save()
         return redirect('stream_status')
 
     elif "start_gps_stream" in request.POST:
@@ -446,31 +453,31 @@ def submit(request):
         elif event.geopoint.all().count() == 1:
             gps = [event.geopoint.all()[0].longitude, event.geopoint.all()[0].latitude]
         else: # No GPS coordinates
-            return redirect('view_event')
+            return redirect('stream_status')
         if event.gps_stream_start is None or event.gps_stream_start > timezone.now():
             event.gps_stream_start = timezone.now()
             event.save()
         task = twitter_stream_task.delay(gps)
-        task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_gps')
-        task_object.save()
+        #task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_gps')
+        #task_object.save()
         return redirect('stream_status')
 
-    elif "stop_kw_stream" in request.POST:
-        kill_celery_task('stream_kw_high')
-        kill_celery_task('stream_kw_low')
+    elif "stop_kw_stream" in request.POST or "stop_gps_stream" in request.POST:
+        ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker')
         event = Event.objects.all()[0]
-        if event.kw_stream_end is None or event.kw_stream_end < timezone.now():
-            event.kw_stream_end = timezone.now()
-            event.save()
+        for t in ts:
+            task_id = t.get('id')
+            if 'stop_kw_stream' in request.POST and 'priority' in t['kwargs']:
+                revoke(task_id, terminate=True)
+                if event.kw_stream_end is None or event.kw_stream_end < timezone.now():
+                    event.kw_stream_end = timezone.now()
+            elif 'stop_gps_stream' in request.POST and 'priority' not in t['kwargs']:
+                revoke(task_id, terminate=True)
+                if event.gps_stream_end is None or event.gps_stream_end < timezone.now():
+                    event.gps_stream_end = timezone.now()
+        event.save()
         return redirect('stream_status')
 
-    elif "stop_gps_stream" in request.POST:
-        kill_celery_task('stream_gps')
-        event = Event.objects.all()[0]
-        if event.gps_stream_end is None or event.gps_stream_end < timezone.now():
-            event.gps_stream_end = timezone.now()
-            event.save()
-        return redirect('stream_status')
 
     elif "trim_spam_accounts" in request.POST:
         task = trim_spam_accounts.delay()
@@ -485,9 +492,12 @@ def submit(request):
         return redirect('functions')
 
     elif "terminate_tasks" in request.POST:
-        for t in CeleryTask.objects.all():
-            revoke(t.celery_task_id, terminate=True)
-            t.delete()
+        ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker') + inspect(['celery@object_worker']).active().get('celery@object_worker') + inspect(['celery@object_worker']).reserved().get('celery@object_worker')
+        for t in ts:
+            revoke(t.get('id'), terminate=True)
+        #for t in CeleryTask.objects.all():
+        #    revoke(t.celery_task_id, terminate=True)
+        #    t.delete()
         return redirect('functions')
 
     elif "user_timeline" in request.POST:

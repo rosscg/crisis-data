@@ -5,15 +5,18 @@ from django.core.exceptions import ObjectDoesNotExist
 from tweepy import Stream, OAuthHandler
 from tweepy.streaming import StreamListener
 
-from streamcollect.models import Keyword, AccessToken, ConsumerKey, CeleryTask
+from streamcollect.models import Keyword, AccessToken, ConsumerKey#, CeleryTask
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
 from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, IGNORED_KWS, IGNORED_SOURCES, IGNORE_RTS, CONCURRENT_TASKS
 
 from streamcollect.tasks import save_twitter_object_task
-from streamcollect.methods import kill_celery_task
+#from streamcollect.methods import kill_celery_task
 
 keywords_high_priority_global = None
 keywords_low_priority_global = None
+
+from celery.task.control import inspect # gets current tasks for low priority decision
+
 
 
 class stream_listener(StreamListener):
@@ -63,6 +66,9 @@ class stream_listener(StreamListener):
             else:
                 return
 
+
+        reserved_tasks = len(inspect(['celery@object_worker']).reserved().get('celery@object_worker'))
+
         # Check that keywords exist.
         #TODO: This currently excludes replies/links if the tag is in the external
         # entity. Decide whether to handle.
@@ -78,8 +84,8 @@ class stream_listener(StreamListener):
                             # For example, stream will return Tweets which quote/reply Tweets containing the keyword.
                             # We are therefore currently discarding these. TODO: Could choose to handle.
 
-                current_tasks = CeleryTask.objects.all().count()
-                if current_tasks >= CONCURRENT_TASKS:
+                #reserved_tasks = CeleryTask.objects.all().count() # TODO: Do this with celery q instead
+                if reserved_tasks > CONCURRENT_TASKS*4*.75: #4 is the default worker_prefetch_multiplier multiplied by concurrency. Low priority only adds when a proportion slots are free.
                     #print('too many tasks, discarding job')
                     return
                 #r = random.random()
@@ -108,8 +114,9 @@ class stream_listener(StreamListener):
                         print(status.place)
                         return
 
-        print(status.text)
-        save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source)
+        if reserved_tasks < CONCURRENT_TASKS*4: #4 is the default worker_prefetch_multiplier multiplied by concurrency.
+            print(status.text)
+            save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source)
 
         return
 
@@ -150,7 +157,7 @@ def twitter_stream(gps=False, priority=1):
             bounding_box = [gps[0]-(BOUNDING_BOX_WIDTH/2), gps[1]-(BOUNDING_BOX_HEIGHT/2), gps[0]+(BOUNDING_BOX_WIDTH/2), gps[1]+(BOUNDING_BOX_HEIGHT/2)]
         else:
             print("Error: no gps coordinates passed to gps_stream: {}".format(gps))
-            kill_celery_task('stream_gps')
+            #kill_celery_task('stream_gps')
             return
         print("Using bounding box: {}".format(bounding_box))
         data = bounding_box
@@ -158,10 +165,10 @@ def twitter_stream(gps=False, priority=1):
         data = get_keywords(priority)
         if len(data) == 0:
             print("Error: no keywords found.")
-            if priority == 2:
-                kill_celery_task('stream_kw_high')
-            elif priority == 1:
-                kill_celery_task('stream_kw_low')
+            #if priority == 2:
+                #kill_celery_task('stream_kw_high')
+            #elif priority == 1:
+                #kill_celery_task('stream_kw_low')
             return
 
     twitterStream = Stream(auth, stream_listener(gps, data), tweet_mode='extended') #TODO: Test, Adjust on both lines. Test for retweets. Adjust how RTs are hard-coded to handle for IGNORE_RTS
@@ -177,7 +184,7 @@ def twitter_stream(gps=False, priority=1):
                 data = get_keywords(priority)
                 if len(data) == 0:
                     print("Error: no keywords found.")
-                    kill_celery_task('stream_kw')
+                    #kill_celery_task('stream_kw')
                     return
                 twitterStream = Stream(auth, stream_listener(False, data), tweet_mode='extended')
             print("Running new stream (with refresh)...")

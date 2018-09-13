@@ -1,4 +1,5 @@
 from celery import shared_task
+from celery.exceptions import SoftTimeLimitExceeded # Unused atm
 from celery.task import periodic_task
 from datetime import timedelta
 import pytz
@@ -6,9 +7,9 @@ from django.utils import timezone
 from django.db.models import Q
 
 from twdata import userdata
-from .models import User, Relo, CeleryTask
+from .models import User, Relo#, CeleryTask
 
-from .methods import kill_celery_task, check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names, check_deleted_tweets
+from .methods import check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names, check_deleted_tweets#, kill_celery_task
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
 
 #Uncomment the decorators here to allow tasks to run periodically. Requires a running Celery Beat (see Readme)
@@ -23,30 +24,28 @@ def trim_spam_accounts_periodic(self):
 #@periodic_task(run_every=timedelta(minutes=30), bind=True)
 def update_data_periodic(self):
     update_tracked_tags()   #Requires config.py: REFRESH_STREAM=True
-    add_users_from_mentions()
+    #add_users_from_mentions()
     return
 
+#TODO: Consider adding processing tasks to a new, third queue. Add in all the Views inspect lists
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='tasks.save_user_timelines', queue='save_object_q')
 def save_user_timelines_task(self, users):
     # Remove existing task and save new task to DB
-    kill_celery_task('save_user_timelines')
-    task_object = CeleryTask(celery_task_id=self.request.id, task_name='save_user_timelines')
-    task_object.save()
-
+    #kill_celery_task('save_user_timelines')
+    #task_object = CeleryTask(celery_task_id=self.request.id, task_name='save_user_timelines')
+    #task_object.save()
     save_user_timelines(users)
-
-    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='tasks.trim_spam_accounts', queue='save_object_q')
 def trim_spam_accounts(self):
     # Remove existing task and save new task to DB
-    kill_celery_task('trim_spam_accounts')
-    task_object = CeleryTask(celery_task_id=self.request.id, task_name='trim_spam_accounts')
-    task_object.save()
-
+    #kill_celery_task('trim_spam_accounts')
+    #task_object = CeleryTask(celery_task_id=self.request.id, task_name='trim_spam_accounts')
+    #task_object.save()
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
     users = list(User.objects.filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE)).values_list('user_id', flat=True))
 
@@ -102,15 +101,15 @@ def trim_spam_accounts(self):
                 print("Error saving user: {}".format(user_data.screen_name))
         index += chunk_size
 
-    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, soft_time_limit=20, name='tasks.save_object', queue='save_object_q') #TODO: Handle this with rate limiting?
 def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, data_source=0, **kwargs):
     #Save task to DB
-    task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
-    task_object.save()
+    #task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
+    #task_object.save()
 
     if tweet:
         try:
@@ -127,32 +126,32 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
             print('Error adding user {}: {}'.format(user_data.id_str, e))
             pass
 
-    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='tasks.compare_live_data_task', queue='save_object_q')
 def compare_live_data_task(self):
     # Remove existing task and save new task to DB
-    kill_celery_task('update_screen_names')
-    task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_screen_names')
-    task_object.save()
+    #kill_celery_task('update_screen_names')
+    #task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_screen_names')
+    #task_object.save()
 
     update_screen_names()
     check_deleted_tweets()
 
-    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 #TODO: Move to methods and import?
 #TODO: Currently appears buggy. Lists too long shortly after adding user, should be near-0
-@shared_task(bind=True)
+@shared_task(bind=True, name='tasks.update_user_relos_task', queue='save_object_q')
 def update_user_relos_task(self):
     print('Update Relo function currently not implemented due to DB structure changes')
     return
     # Remove existing task and save new task to DB
-    kill_celery_task('update_user_relos')
-    task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
-    task_object.save()
+    #kill_celery_task('update_user_relos')
+    #task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
+    #task_object.save()
 
     users = User.objects.filter(user_class__gte=2).order_by('added_at')
     print('Updating relo information for {} users.'.format(len(users)))
@@ -228,11 +227,11 @@ def update_user_relos_task(self):
 
     print('Updating relationship data complete.')
 
-    CeleryTask.objects.get(celery_task_id=self.request.id).delete()
+    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, name='tasks.create_relo_network', queue='save_object_q')
 def create_relo_network(self):
     #TODO: To be finished. Added to functions view.
     users = User.objects.filter(user_class__gte=2)

@@ -50,10 +50,13 @@ Default username is the system user name, default password is none.
 Re-name streamcollect/tokensSKELETON.py to tokens.py and add (at least) CONSUMER_KEY and CONSUMER_SECRET (generated from https://apps.twitter.com/).
 
 Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate terminal windows:
+Note: --concurrency=4 should be the number of cores in the system, can remove to default to this value, but need to update CONCURRENT_TASKS to the same value.
 
 > ```
 > $ redis-4.0.1/src/redis-server
 > $ celery -A homesite worker -l info
+> $ celery -A homesite worker --concurrency=4 -l info -n object_worker -Q save_object_q
+> $ celery -A homesite worker --concurrency=4 -l info -n stream_worker -Q stream_q
 > $ celery -A homesite beat -l info -S django
 > ```
 

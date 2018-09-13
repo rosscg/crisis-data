@@ -87,3 +87,4 @@ Consumer key and secret used for data collection.
 
 CeleryTask
 Stores Celery task object IDs, used to track and terminate running tasks.
+CURRENTLY BEING DEPRECATED

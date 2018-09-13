@@ -356,7 +356,7 @@ class ConsumerKey(models.Model):
         return "(\'{}\', \'{}\')".format(self.consumer_key, self.consumer_secret)
 
 
-class CeleryTask(models.Model):
-    celery_task_id = models.CharField(max_length = 40, unique=True)
+#class CeleryTask(models.Model):
+#    celery_task_id = models.CharField(max_length = 40, unique=True)
     # Use: stream_kw_high, stream_kw_low, stream_gps, stream_gps, update_user_relos, trim_spam_accounts, save_twitter_obect
-    task_name = models.CharField(max_length=40)
+#    task_name = models.CharField(max_length=40)

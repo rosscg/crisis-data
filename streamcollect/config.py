@@ -25,8 +25,8 @@ IGNORE_RTS = True
 MAX_REPLY_DEPTH = 1
 
 # Seconds between each keyword stream reset to get fresh keyword list.
-REFRESH_STREAM = False
-STREAM_REFRESH_RATE = 600 # in seconds
+REFRESH_STREAM = False #TODO: No longer needed, remove in twdata
+STREAM_REFRESH_RATE = None # in seconds
 
 # Parameters of bounding box for GPS stream if single point coordinates are provided.
 BOUNDING_BOX_WIDTH = 1.2
@@ -37,8 +37,8 @@ TAG_OCCURENCE_THRESHOLD = 0.02
 # Threshold proportion for a mentioned user to appear before it is added as user_class=2
 MENTION_OCCURENCE_THRESHOLD = 0.01
 
-# Number of tasks to run during data collection (up to three for streams, rest for saving Tweet data), should be set to number of cores on machine. If a different number is used, celery should run with the same value for --concurrency (> $ celery -A homesite worker --concurrency=4 -l info)
-CONCURRENT_TASKS = 6
+# Number of tasks to run during data collection (up to three for streams, rest for saving Tweet data), should be set to number of cores on machine. If a different number is used, celery should run with the same value for --concurrency (> $ celery -A homesite worker --concurrency=4 -l info -Ofair)
+CONCURRENT_TASKS = 4
 
 
 ### Processing ###

@@ -1,4 +1,4 @@
-from celery.task.control import revoke
+#from celery.task.control import revoke
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
@@ -9,7 +9,7 @@ from django.utils import timezone
 from dateutil.parser import *
 
 from twdata import userdata
-from .models import Event, CeleryTask, User, Relo, Tweet, Place, Hashtag, Url, Mention, Keyword
+from .models import Event, User, Relo, Tweet, Place, Hashtag, Url, Mention, Keyword#, CeleryTask
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD, DOWNLOAD_MEDIA, MAX_REPLY_DEPTH
 
 from django.db import transaction
@@ -110,11 +110,11 @@ def check_deleted_tweets(id_list=None):
     return
 
 
-def kill_celery_task(task_name):
-    for t in CeleryTask.objects.filter(task_name=task_name):
-        print('Killing task {}: {}'.format(task_name, t.celery_task_id))
-        revoke(t.celery_task_id, terminate=True)
-        t.delete()
+#def kill_celery_task(task_name):
+#    for t in CeleryTask.objects.filter(task_name=task_name):
+#        print('Killing task {}: {}'.format(task_name, t.celery_task_id))
+#        revoke(t.celery_task_id, terminate=True)
+#        t.delete()
 
 
 def check_spam_account(user_data):
