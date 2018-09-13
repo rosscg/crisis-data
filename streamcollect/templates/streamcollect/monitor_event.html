@@ -21,7 +21,7 @@
           <b>Data Source:</b>
         </td>
       </tr>
-      {% for i in "3210" %} <!-- acting as range(0,4) -->
+      {% for i in "43210" %} <!-- acting as range(0,4) -->
       <tr>
         <td>
           {% if i|add:"0" in selected_data_sources %}
@@ -38,7 +38,9 @@
         </td>
         <td>
           {% if i == '3' %}
-            <img src='static/img/marker-icon-2x-red.png' height='41px'> = 3 (GPS Stream)
+            <img src='static/img/marker-icon-2x-red.png' height='41px'> = 3 (Geo Stream)
+          {% elif i == '4' %}
+            <img src='static/img/marker-icon-2x-grey.png' height='41px'> = 4 (Geo Stream - Place)
           {% elif i == '2' %}
             <img src='static/img/marker-icon-2x-blue.png' height='41px'> = 2 (High-Priority Stream)
           {% elif i == '1' %}
@@ -94,7 +96,9 @@
   	}).addTo(mymap);
 
     for (i=0; i < js_list.length; i++) {
-      if ( js_list[i].data_source == 3) {
+      if ( js_list[i].data_source == 4) {
+        icon = greyIcon;
+      } else if (js_list[i].data_source == 3) {
         icon = redIcon;
       } else if (js_list[i].data_source == 2) {
         icon = blueIcon;
@@ -104,7 +108,9 @@
         icon = greyIcon;
       }
 
-      L.marker([js_list[i].lat, js_list[i].lon], {icon: icon}).addTo(mymap).bindPopup(js_list[i].text + "<br><a href=\"http://www.twitter.com/" + js_list[i].author + "/status/" + js_list[i].tweet_id + "\" target=\"_blank\">Source</a>");
+      if( js_list[i].lat != null ) { //#TODO: Check why some coordinates are returning here as null, should be fixed and can remove.
+        L.marker([js_list[i].lat, js_list[i].lon], {icon: icon}).addTo(mymap).bindPopup(js_list[i].text + "<br><a href=\"http://www.twitter.com/" + js_list[i].author + "/status/" + js_list[i].tweet_id + "\" target=\"_blank\">Source</a>");
+      }
     };
 
     if (bounding_box && bounding_box.length == 4) {

@@ -28,9 +28,10 @@ from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY, MAPBOX_PK
 
 
 def monitor_event(request):
-    selected_data_sources = request.session.get('active_data_sources', [1,2,3]) # List of data_sources chosen to be displayed
-
-    data_query = Tweet.objects.filter(data_source__in=selected_data_sources, coordinates_lat__isnull=False) #TODO: This is probably slow and unnecessary
+    selected_data_sources = request.session.get('active_data_sources', [1,2,3,4]) # List of data_sources chosen to be displayed
+    print('selected_data_sources: {}'.format(selected_data_sources))
+    #data_query = Tweet.objects.filter(data_source__in=selected_data_sources, coordinates_lat__isnull=False) #TODO: This is probably slow and unnecessary
+    data_query = Tweet.objects.filter(data_source__in=selected_data_sources).filter( Q(coordinates_lat__isnull=False) | Q(data_source=4)).filter(Q(quoted_by__isnull=True) & Q(replied_by__isnull=True)) #TODO: Data_source=4 not yet implemented as it has no coordinates but can infer these from place.
 
     sample = min(data_query.count(), MAX_MAP_PINS)
     tweets_list = [ obj.as_dict() for obj in data_query.order_by('?')[:sample] ] # TODO: order_by(?) is slow ?
@@ -408,13 +409,14 @@ def submit(request):
 
     elif "add_keyword_high" in request.POST:
         info = request.POST['info']
+        redirect_to = request.POST['redirect_to']
         if len(info) > 0:
             k = Keyword()
             k.keyword = info.lower()
             k.created_at = timezone.now()
             k.priority = 2
             k.save()
-        return redirect('monitor_event')
+        return redirect(redirect_to)
 
     elif "start_kw_stream" in request.POST:
         try:

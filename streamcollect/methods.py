@@ -14,12 +14,14 @@ from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, 
 
 from django.db import transaction
 from django.db.models import Count
+from urllib.request import urlopen # To unwind URLs
 
 # For downloading media:
 from urllib.request import urlretrieve, urlopen
 import urllib.parse as urlparse
 from bs4 import BeautifulSoup
 import os
+
 
 def update_screen_names(users=None):
     print('Updating Screen Names...')
@@ -263,13 +265,15 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     if user_class >= 2:     # TODO: Storing in DB rather than creating objects to reduce DB load, can create later. Affects observing new/dead relationships.
         # Get users followed by account & create relationship objects
         user_following = userdata.friends_ids(screen_name=user_data.screen_name)
-        u.user_following = user_following
+        if user_following:
+            u.user_following = user_following
 
         #for target_user in user_following:
         #    create_relo(u, target_user, outgoing=True)
         # Get followers & create relationship objects
         user_followers = userdata.followers_ids(screen_name=user_data.screen_name)
-        u.user_followers = user_followers
+        if user_followers:
+            u.user_followers = user_followers
         #for source_user in user_followers:
         #    create_relo(u, source_user, outgoing=False)
     u.save()
@@ -423,7 +427,7 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply
             if len(reply_status) > 0: # If replied_to is returned (ie. not deleted)
                 reply_status = reply_status[0]
                 #print('Saving reply at depth = {}'.format(reply_depth))
-                replied_to_status = save_tweet(reply_status, user_class=0, save_entities=save_entities, data_source=data_source, reply_depth=reply_depth)
+                replied_to_status = save_tweet(reply_status, user_class=0, save_entities=save_entities, data_source=0, reply_depth=reply_depth)
                 if replied_to_status:
                     tweet.replied_to_status = replied_to_status
             else:
@@ -444,7 +448,7 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply
     except:
         pass
     else:
-        quoted_status = save_tweet(quoted, user_class=0, save_entities=save_entities, data_source=data_source)
+        quoted_status = save_tweet(quoted, user_class=0, save_entities=save_entities, data_source=0)
         if quoted_status:
             tweet.quoted_status = quoted_status
 
@@ -473,18 +477,11 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply
         tags = tweet_data.entities.get('hashtags')
         for tag in tags:
             save_hashtag(tag.get('text'), tweet)
-
         urls = tweet_data.entities.get('urls')
         for u in urls:
             # TODO: Test url cleanup, decide whether to exlude twitter urls (save elsewhere?)
             url = u.get('expanded_url')
-            # Cleanup URL
-            url = re.sub('(http://|https://|#.*|&.*)', '', url)
-            # Exclude twitter URLs, which are added if media is attached - therefore
-            # not relevant to the analysis. TODO: Check whether this is working as intended.
-            if url[0:11] != 'twitter.com':
-                save_url(url, tweet)
-
+            save_url(url, tweet)
         user_mentions = tweet_data.entities.get('user_mentions')
         for user in user_mentions:
             save_mention(user.get('screen_name'), tweet)
@@ -601,7 +598,6 @@ def save_place(place_data):
     place, created = Place.objects.get_or_create(
         place_id = place_data.id
         )
-
     if created:     #TODO: Test. Moved outside of get_or_create to attempt to improve speed. Required setting these as null=true in model.
         place.url = place_data.url
         place.place_type = place_data.place_type
@@ -609,33 +605,50 @@ def save_place(place_data):
         place.full_name = place_data.full_name
         place.country_code = place_data.country_code
         place.country = place_data.country
-        place.lat_1 = place_data.bounding_box.coordinates[0][0][0]
-        place.lon_1 = place_data.bounding_box.coordinates[0][0][1]
-        place.lat_2 = place_data.bounding_box.coordinates[0][1][0]
-        place.lon_2 = place_data.bounding_box.coordinates[0][1][1]
-        place.lat_3 = place_data.bounding_box.coordinates[0][2][0]
-        place.lon_3 = place_data.bounding_box.coordinates[0][2][1]
-        place.lat_4 = place_data.bounding_box.coordinates[0][3][0]
-        place.lon_4 = place_data.bounding_box.coordinates[0][3][1]
+        place.lon_1 = place_data.bounding_box.coordinates[0][0][0]
+        place.lat_1 = place_data.bounding_box.coordinates[0][0][1]
+        place.lon_2 = place_data.bounding_box.coordinates[0][1][0]
+        place.lat_2 = place_data.bounding_box.coordinates[0][1][1]
+        place.lon_3 = place_data.bounding_box.coordinates[0][2][0]
+        place.lat_3 = place_data.bounding_box.coordinates[0][2][1]
+        place.lon_4 = place_data.bounding_box.coordinates[0][3][0]
+        place.lat_4 = place_data.bounding_box.coordinates[0][3][1]
         place.save()
         print('Saving place: {}'.format(place.name))
-
     return place
 
 
 def save_hashtag(hashtag_text, tweet_object):
     hashtag_text = hashtag_text.lower()
     hashtag, created = Hashtag.objects.get_or_create(hashtag=hashtag_text)
-    if created:
-        hashtag.save()      # TODO: Is this save necessary? Should be part of get_or_create
+    #if created:
+    #    hashtag.save()      # TODO: Is this save necessary? Should be part of get_or_create
     hashtag.tweets.add(tweet_object)
     return
 
 
 def save_url(url_text, tweet_object):
-    url, created = Url.objects.get_or_create(url=url_text)
-    if created:
-        url.save()
+
+    if re.sub('(http://|https://|#.*|&.*)', '', url_text)[0:11] == 'twitter.com':
+        with open('ignored_tw_urls_log.txt', 'a') as f:
+            print('Pre-unwound: {}'.format(url_text), file=f)
+        return
+
+    try:
+        resp = urlopen(url_text)
+        unwound = resp.url
+    except:
+        unwound = url_text
+    unwound = re.sub('(http://|https://|#.*|&.*)', '', unwound)
+    # Exclude twitter URLs, which are added if media is attached - therefore
+    # not relevant to the analysis. TODO: Check whether this is working as intended.
+    if unwound[0:11] == 'twitter.com':  # TODO: Should be able to remove this check, as it is done earlier
+        with open('ignored_tw_urls_log.txt', 'a') as f:
+            print(unwound, file=f)
+        return
+    url, created = Url.objects.get_or_create(url=unwound)
+    #if created:
+    #    url.save()
     url.tweets.add(tweet_object)
     return
 
@@ -643,7 +656,7 @@ def save_url(url_text, tweet_object):
 def save_mention(mention_text, tweet_object):
     mention_text = mention_text.lower()
     mention, created = Mention.objects.get_or_create(mention=mention_text)
-    if created:
-        mention.save()
+    #if created:
+    #    mention.save()
     mention.tweets.add(tweet_object)
     return

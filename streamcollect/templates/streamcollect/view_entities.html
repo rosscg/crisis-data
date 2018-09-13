@@ -13,7 +13,7 @@
       </tr>
       {% for hashtag in hashtags %}
       <tr class="tr_alternate">
-        <td><b><a href="https://twitter.com/hashtag/{{ hashtag.hashtag }}" target="_blank">{{ hashtag.hashtag }}</a></td><td>{{ hashtag.tweet_count }}</b></td>
+        <td><b><a href="https://twitter.com/hashtag/{{ hashtag.hashtag }}" target="_blank">{{ hashtag.hashtag|truncatechars:25 }}</a></td><td>{{ hashtag.tweet_count }}</b></td>
         <td>
           <form action="submit" method="POST" class="form-inline">{% csrf_token %}
             <div class="form-group">
@@ -51,7 +51,7 @@
       </tr>
       {% for url in urls %}
       <tr class="tr_alternate">
-        <td><b><a href="http://{{ url.url }}" target="_blank">{{ url.url }}</a></td><td>{{ url.tweet_count }}</b></td>
+        <td><b><a href="http://{{ url.url }}" target="_blank">{{ url.url|truncatechars:50 }}</a></td><td>{{ url.tweet_count }}</b></td>
       </tr>
       {% endfor %}
     </table>

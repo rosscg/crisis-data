@@ -53,7 +53,7 @@ Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate term
 
 > ```
 > $ redis-4.0.1/src/redis-server
-> $ celery -A homesite worker --concurrency=10 -l info
+> $ celery -A homesite worker -l info
 > $ celery -A homesite beat -l info -S django
 > ```
 

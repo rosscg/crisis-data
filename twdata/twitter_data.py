@@ -1,13 +1,13 @@
-import random
+#import random
 import time
 from django.core.exceptions import ObjectDoesNotExist
 
 from tweepy import Stream, OAuthHandler
 from tweepy.streaming import StreamListener
 
-from streamcollect.models import Keyword, AccessToken, ConsumerKey
+from streamcollect.models import Keyword, AccessToken, ConsumerKey, CeleryTask
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
-from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, STREAM_PROPORTION, IGNORED_KWS, IGNORED_SOURCES, IGNORE_RTS
+from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, IGNORED_KWS, IGNORED_SOURCES, IGNORE_RTS, CONCURRENT_TASKS
 
 from streamcollect.tasks import save_twitter_object_task
 from streamcollect.methods import kill_celery_task
@@ -77,24 +77,35 @@ class stream_listener(StreamListener):
                     return  # Returns if Tweet is streamed but doesn't match any keywords.
                             # For example, stream will return Tweets which quote/reply Tweets containing the keyword.
                             # We are therefore currently discarding these. TODO: Could choose to handle.
-                r = random.random()
-                if r > STREAM_PROPORTION:
+
+                current_tasks = CeleryTask.objects.all().count()
+                if current_tasks >= CONCURRENT_TASKS:
+                    #print('too many tasks, discarding job')
                     return
+                #r = random.random()
+                #if r > STREAM_PROPORTION:
+                #    return
         else: # GPS stream
             data_source = 3 # data_source = GPS stream
             if status.coordinates is None:      # Tweets are sometimes allocated a 'Place' by Twitter which will
-                                                # return in GPS stream (as the place's coords) despite not having specific coordsself.
+                                                # return in GPS stream (as the place's coords) despite not having specific coords itself.
+                if status.place is None:        #TODO: Check whether this happens
+                    print('Error: Geo stream returned Tweet without coordinates or place:')
+                    print(status)
+                    return
                 data_source = 4
                 #return
-            else:   #TODO: This shouldn't happen if bounding box is working correctly
+            else:   #TODO: This shouldn't happen if bounding box is working correctly (unless 'place' overlap)
                 coords = status.coordinates.get('coordinates')
                 ##print('Coordinates: {}'.format(coords))
                 if self.gps_bool:
                     if not self.data[0] < coords[0] < self.data[2]:
                         print("ERROR Coordinates outside longitude")
+                        print(status.place)
                         return
                     if not self.data[1] < coords[1] < self.data[3]:
                         print("ERROR Coordinates outside latitude")
+                        print(status.place)
                         return
 
         print(status.text)

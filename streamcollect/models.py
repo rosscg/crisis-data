@@ -99,11 +99,16 @@ class Place(models.Model):
     lat_4 = models.FloatField(null=True)
     lon_4 = models.FloatField(null=True)
 
+    def get_midpoint(self):
+        lat = round((self.lat_1 + self.lat_2 + self.lat_3 + self.lat_4)/4, 5)
+        lon = round((self.lon_1 + self.lon_2 + self.lon_3 + self.lon_4)/4, 5)
+        return [lat, lon]
+
+
     def __str__(self):
         try:
-            lon = (self.lon_1 + self.lon_2 + self.lon_3 + self.lon_4)/4
-            lat = (self.lat_1 + self.lat_2 + self.lat_3 + self.lat_4)/4
-            return "Place: {}, middle coords lat: {}, lon: {}".format(self.full_name, lat, lon)
+            c = self.get_midpoint()
+            return "Place: {}, middle coords lat: {}, lon: {}".format(self.full_name, c[0], c[1])
         except:
             return "Place id: {}".format(self.place_id)
 
@@ -223,12 +228,20 @@ class Tweet(models.Model):
         return str(self.text)
 
     def as_dict(self):
+        if self.coordinates_lat is None and self.place is not None:
+            midpoint = self.place.get_midpoint()
+            lat = midpoint[0]
+            lon = midpoint[1]
+        else:
+            lat = self.coordinates_lat
+            lon = self.coordinates_lon
+
         return dict(
             text = self.text,
             author = self.author.screen_name,
             tweet_id = str(self.tweet_id), # Passed as string due to javascript |safe tag appears to round to nearest 100
-            lat = self.coordinates_lat,
-            lon = self.coordinates_lon,
+            lat = lat,
+            lon = lon,
             data_source = self.data_source
             )
 
