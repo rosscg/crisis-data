@@ -2,6 +2,8 @@
 *media/
 gephi_network_data.gexf
 ignored_tw_urls_log.txt
+ignored_tw_kws_log.txt
+ignored_tw_sources_log.txt
 users_rejected_as_spam.txt
 homesite/settings.py
 
