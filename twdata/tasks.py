@@ -9,8 +9,8 @@ from streamcollect.config import STREAM_REFRESH_RATE
 def twitter_stream_task(self, gps=False, priority=1):
     try:
         twitter_stream(gps, priority)
-    except:
-        self.retry(countdown=1) # This is the easier way to restart the stream with new KWs.
+    except Exception as e:
+        print('Error with stream: {}, retrying'.format(e))
+        self.retry(countdown=5) # This is the easier way to restart the stream with new KWs.
         pass
-    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return

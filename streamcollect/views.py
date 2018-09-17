@@ -14,7 +14,7 @@ from celery.task.control import inspect
 import tweepy
 import random
 
-from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention#, CeleryTask
+from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
 from .methods import update_tracked_tags, add_users_from_mentions#, check_spam_account
@@ -31,8 +31,7 @@ from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY, MAPBOX_PK
 def monitor_event(request):
     selected_data_sources = request.session.get('active_data_sources', [1,2,3,4]) # List of data_sources chosen to be displayed
     print('selected_data_sources: {}'.format(selected_data_sources))
-    #data_query = Tweet.objects.filter(data_source__in=selected_data_sources, coordinates_lat__isnull=False) #TODO: This is probably slow and unnecessary
-    data_query = Tweet.objects.filter(data_source__in=selected_data_sources).filter( Q(coordinates_lat__isnull=False) | Q(data_source=4)).filter(Q(quoted_by__isnull=True) & Q(replied_by__isnull=True)) #TODO: Data_source=4 not yet implemented as it has no coordinates but can infer these from place.
+    data_query = Tweet.objects.filter(data_source__in=selected_data_sources).filter( Q(coordinates_lat__isnull=False) | Q(data_source=4)).filter(Q(quoted_by__isnull=True) & Q(replied_by__isnull=True)) # Tweet with coordinates, or associated Place coordinates (for data_source=4)
 
     sample = min(data_query.count(), MAX_MAP_PINS)
     tweets_list = [ obj.as_dict() for obj in data_query.order_by('?')[:sample] ] # TODO: order_by(?) is slow ?
@@ -121,6 +120,7 @@ def stream_status(request):
     kw_stream_status = False
     gps_stream_status = False
 
+    #TODO: catch exception here for when workers aren't running (also in functions tab)
     ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker')
     for t in ts:
         task_id = t.get('id')
@@ -414,7 +414,7 @@ def submit(request):
             k.save()
         return redirect(redirect_to)
 
-    elif "add_keyword_high" in request.POST:
+    elif "add_keyword_high" in request.POST: # TODO: fold into above method, add priority as hidden value
         info = request.POST['info']
         redirect_to = request.POST['redirect_to']
         if len(info) > 0:
@@ -435,10 +435,6 @@ def submit(request):
             event.save()
         task_low = twitter_stream_task.delay(priority=1)
         task_high = twitter_stream_task.delay(priority=2)
-        #task_object = CeleryTask(celery_task_id = task_low.task_id, task_name='stream_kw_low')
-        #task_object.save()
-        #task_object = CeleryTask(celery_task_id = task_high.task_id, task_name='stream_kw_high')
-        #task_object.save()
         return redirect('stream_status')
 
     elif "start_gps_stream" in request.POST:
@@ -458,8 +454,6 @@ def submit(request):
             event.gps_stream_start = timezone.now()
             event.save()
         task = twitter_stream_task.delay(gps)
-        #task_object = CeleryTask(celery_task_id = task.task_id, task_name='stream_gps')
-        #task_object.save()
         return redirect('stream_status')
 
     elif "stop_kw_stream" in request.POST or "stop_gps_stream" in request.POST:
@@ -478,7 +472,6 @@ def submit(request):
         event.save()
         return redirect('stream_status')
 
-
     elif "trim_spam_accounts" in request.POST:
         task = trim_spam_accounts.delay()
         return redirect('functions')
@@ -492,12 +485,9 @@ def submit(request):
         return redirect('functions')
 
     elif "terminate_tasks" in request.POST:
-        ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker') + inspect(['celery@object_worker']).active().get('celery@object_worker') + inspect(['celery@object_worker']).reserved().get('celery@object_worker')
+        ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker') + inspect(['celery@object_worker']).active().get('celery@object_worker') + inspect(['celery@object_worker']).reserved().get('celery@object_worker') + inspect(['celery@media_worker']).active().get('celery@media_worker') + inspect(['celery@media_worker']).reserved().get('celery@media_worker')
         for t in ts:
             revoke(t.get('id'), terminate=True)
-        #for t in CeleryTask.objects.all():
-        #    revoke(t.celery_task_id, terminate=True)
-        #    t.delete()
         return redirect('functions')
 
     elif "user_timeline" in request.POST:
@@ -655,7 +645,7 @@ def submit(request):
             active_data_source = request.POST['data_source_to_activate']
             actives_list = request.session.get('active_data_sources', [])
             actives_list.append(int(active_data_source))
-        elif 'data_source_to_deactivate' in request.POST:
+        elif 'data_source_to_deactivate' in request.POST: # TODO: on first load, this appears to deactivate all sources.
             deactive_data_source = request.POST['data_source_to_deactivate']
             actives_list = request.session.get('active_data_sources', [])
             try:

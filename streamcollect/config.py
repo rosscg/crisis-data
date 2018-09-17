@@ -37,7 +37,7 @@ TAG_OCCURENCE_THRESHOLD = 0.02
 # Threshold proportion for a mentioned user to appear before it is added as user_class=2
 MENTION_OCCURENCE_THRESHOLD = 0.01
 
-# Number of tasks to run during data collection (up to three for streams, rest for saving Tweet data), should be set to number of cores on machine. If a different number is used, celery should run with the same value for --concurrency (> $ celery -A homesite worker --concurrency=4 -l info -Ofair)
+# Number of tasks to run during data collection (up to three for streams, rest for saving Tweet data), should be set to number of cores on machine. If a different number is used, celery should run with the same value for --concurrency
 CONCURRENT_TASKS = 4
 
 

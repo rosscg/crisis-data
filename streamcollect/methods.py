@@ -9,7 +9,8 @@ from django.utils import timezone
 from dateutil.parser import *
 
 from twdata import userdata
-from .models import Event, User, Relo, Tweet, Place, Hashtag, Url, Mention, Keyword#, CeleryTask
+#from .tasks import save_media_task
+from .models import Event, User, Relo, Tweet, Place, Hashtag, Url, Mention, Keyword
 from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, TAG_OCCURENCE_THRESHOLD, MENTION_OCCURENCE_THRESHOLD, DOWNLOAD_MEDIA, MAX_REPLY_DEPTH
 
 from django.db import transaction
@@ -269,14 +270,20 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     # Add relationship data if the user_class is 2 or higher
     if user_class >= 2:     # TODO: Storing in DB rather than creating objects to reduce DB load, can create later. Affects observing new/dead relationships.
         # Get users followed by account & create relationship objects
-        user_following = userdata.friends_ids(screen_name=user_data.screen_name)
+        try:
+            user_following = userdata.friends_ids(screen_name=user_data.screen_name)
+        except:
+            return False
         if user_following:
             u.user_following = user_following
 
         #for target_user in user_following:
         #    create_relo(u, target_user, outgoing=True)
         # Get followers & create relationship objects
-        user_followers = userdata.followers_ids(screen_name=user_data.screen_name)
+        try:
+            user_followers = userdata.followers_ids(screen_name=user_data.screen_name)
+        except:
+            return False
         if user_followers:
             u.user_followers = user_followers
         #for source_user in user_followers:
@@ -470,12 +477,6 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply
             return
     if tweet_data.place is not None:
         tweet.place = save_place(tweet_data.place)
-    if DOWNLOAD_MEDIA and save_entities:    # TODO: This should check tweet doesn't already exist first, otherwise waste of resources.
-        filenames, type = download_media(tweet_data)
-        # TODO: Decide how to link to tweet object - use a relation or three fields (base_name, type, count)
-        if len(filenames) > 0:
-            tweet.media_files = filenames
-            tweet.media_files_type = type
     tweet.save()
 
     if save_entities:
@@ -492,13 +493,25 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply
             save_mention(user.get('screen_name'), tweet)
             # TODO: Implement something here to add these users based on authors class?
             pass
+
+    #if DOWNLOAD_MEDIA and save_entities:    # TODO: This should check tweet doesn't already exist first, otherwise waste of resources.
+        #save_media_task.delay(tweet, tweet_data)
+        #filenames, type = download_media(tweet_data)
+        # TODO: Decide how to link to tweet object - use a relation or three fields (base_name, type, count)
+        #if len(filenames) > 0:
+        #    tweet.media_files = filenames
+        #    tweet.media_files_type = type
+        #tweet.save()
+
     return tweet
 
-
+#This is currently unused (replicated in tasks.py)
 def download_media(tweet_data):
     event = Event.objects.all()[0].name
     media_type = ''
     media_url = []
+
+    print('Saving data from source: {}'.format(tweet_data.source))
 
     if tweet_data.source == 'Instagram':
         try:
@@ -641,13 +654,13 @@ def save_url(url_text, tweet_object):
 
     try:
         resp = urlopen(url_text)
-        unwound = resp.url
+        unwound = resp.url  # TODO: need to unwind more than once? 
     except:
         unwound = url_text
     unwound = re.sub('(http://|https://|#.*|&.*)', '', unwound)
     # Exclude twitter URLs, which are added if media is attached - therefore
     # not relevant to the analysis. TODO: Check whether this is working as intended.
-    if unwound[0:11] == 'twitter.com':  # TODO: Should be able to remove this check, as it is done earlier
+    if unwound[0:11] == 'twitter.com' and unwound[:25] is not 'twitter.com/i/web/status/':  # TODO: Should be able to remove this check, as it is done earlier
         with open('ignored_tw_urls_log.txt', 'a') as f:
             print(unwound, file=f)
             print('Original: {}'.format(stripped), file=f)

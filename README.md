@@ -32,6 +32,7 @@ Install Redis from https://redis.io/ or brew, and build:
 > $ src/redis-server
 > ```
 
+You may need to install SSL certificates if using python 3.6, simply run /Applications/Python 3.6/Install Certificates.command as explained here: https://bugs.python.org/issue28150
 Clone this project and open directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually. The pip command below avoids using cache due to pip bug:
 
 > ```
@@ -54,9 +55,9 @@ Note: --concurrency=4 should be the number of cores in the system, can remove to
 
 > ```
 > $ redis-4.0.1/src/redis-server
-> $ celery -A homesite worker -l info
 > $ celery -A homesite worker --concurrency=4 -l info -n object_worker -Q save_object_q
 > $ celery -A homesite worker --concurrency=4 -l info -n stream_worker -Q stream_q
+> $ celery -A homesite worker --concurrency=4 -l info -n media_worker -Q save_media_q
 > $ celery -A homesite beat -l info -S django
 > ```
 

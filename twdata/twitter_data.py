@@ -28,35 +28,6 @@ class stream_listener(StreamListener):
 
     def on_status(self, status):
 
-        # Status.truncated doesn't appear to be True when user reposts from Instagram or Facebook
-        if status.truncated:
-            text=status.extended_tweet.get('full_text')
-        else:
-            text=status.text
-
-        # Exclude tweets with phrases from exclusion list.
-        for kw in IGNORED_KWS:
-            if kw in status.text.lower():
-                return
-            for tag in status.entities.get('hashtags'):
-                if kw in tag.get('text'):
-                    return
-
-        # Exclude sources from exclusion list.
-        for source in IGNORED_SOURCES:
-            if source in status.source:
-                return
-
-        # These values are checked here and at the user_save function.
-        #if check_spam_account(status): # TODO: Consider this implementation (add import)
-        #    return
-        if status.user.followers_count > FOLLOWERS_THRESHOLD:
-            return
-        if status.user.friends_count > FRIENDS_THRESHOLD:
-            return
-        if status.user.statuses_count > STATUSES_THRESHOLD:
-            return
-
         # Ignore if retweet.
         if IGNORE_RTS:
             try:
@@ -65,6 +36,43 @@ class stream_listener(StreamListener):
                 pass
             else:
                 return
+
+        # Status.truncated doesn't appear to be True when user reposts from Instagram or Facebook
+        if status.truncated:
+            text=status.extended_tweet.get('full_text')
+        else:
+            text=status.text
+
+        # Exclude tweets with phrases from exclusion list.
+        ignore=False
+        for kw in IGNORED_KWS:
+            if kw in status.text.lower():
+                ignore = True
+            for tag in status.entities.get('hashtags'):
+                if kw in tag.get('text'):
+                    ignore = True
+            if ignore:
+                with open('ignored_tw_kws_log.txt', 'a') as f:
+                    print('{}, {}, \'{}\', {}'.format(kw, status.id_str, text, status.user.screen_name ), file=f)
+                return
+
+        # Exclude sources from exclusion list.
+        for source in IGNORED_SOURCES:
+            if source in status.source:
+                with open('ignored_tw_sources_log.txt', 'a') as f:
+                    print('{}, {}, \'{}\', {}'.format(status.source, status.id_str, text, status.user.screen_name ), file=f)
+                return
+
+        # TODO: Check how flow is affected by commenting this out, is it sustainable when relos are back?
+        # These values are checked here and at the user_save function.
+        #if check_spam_account(status): # TODO: Consider this implementation (add import)
+        #    return
+        #if status.user.followers_count > FOLLOWERS_THRESHOLD:
+        #    return
+        #if status.user.friends_count > FRIENDS_THRESHOLD:
+        #    return
+        #if status.user.statuses_count > STATUSES_THRESHOLD:
+        #    return
 
         reserved_tasks = len(inspect(['celery@object_worker']).reserved().get('celery@object_worker'))
 
@@ -84,7 +92,7 @@ class stream_listener(StreamListener):
                             # We are therefore currently discarding these. TODO: Could choose to handle.
 
                 #reserved_tasks = CeleryTask.objects.all().count() # TODO: Do this with celery q instead
-                if reserved_tasks > CONCURRENT_TASKS*4*.75: #4 is the default worker_prefetch_multiplier multiplied by concurrency. Low priority only adds when a proportion slots are free.
+                if reserved_tasks > CONCURRENT_TASKS*4*.5: # 4 is the default worker_prefetch_multiplier multiplied by concurrency. Low priority only adds when a proportion slots are free.
                     #print('too many tasks, discarding job')
                     return
                 #r = random.random()
@@ -106,14 +114,14 @@ class stream_listener(StreamListener):
                 if self.gps_bool:
                     if not self.data[0] < coords[0] < self.data[2]:
                         print("ERROR Coordinates outside longitude")
-                        print(status.place)
+                        #print(status.place)
                         return
                     if not self.data[1] < coords[1] < self.data[3]:
                         print("ERROR Coordinates outside latitude")
-                        print(status.place)
+                        #print(status.place)
                         return
 
-        if reserved_tasks < CONCURRENT_TASKS*4: #4 is the default worker_prefetch_multiplier multiplied by concurrency.
+        if reserved_tasks < CONCURRENT_TASKS*4 or data_source == 3: # 4 is the default worker_prefetch_multiplier multiplied by concurrency. Currently forces saving all geo-tweets.
             print(status.text)
             save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source)
 

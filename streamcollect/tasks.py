@@ -1,5 +1,4 @@
 from celery import shared_task
-from celery.exceptions import SoftTimeLimitExceeded # Unused atm
 from celery.task import periodic_task
 from datetime import timedelta
 import pytz
@@ -7,10 +6,17 @@ from django.utils import timezone
 from django.db.models import Q
 
 from twdata import userdata
-from .models import User, Relo#, CeleryTask
+from .models import User, Relo, Event
 
-from .methods import check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names, check_deleted_tweets#, kill_celery_task
-from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE
+from .methods import check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names, check_deleted_tweets#, download_media
+from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, DOWNLOAD_MEDIA
+
+# For downloading media:
+from urllib.request import urlretrieve, urlopen
+import urllib.parse as urlparse
+from bs4 import BeautifulSoup
+import os
+
 
 #Uncomment the decorators here to allow tasks to run periodically. Requires a running Celery Beat (see Readme)
 #@periodic_task(run_every=timedelta(hours=24), bind=True)
@@ -31,30 +37,18 @@ def update_data_periodic(self):
 
 @shared_task(bind=True, name='tasks.save_user_timelines', queue='save_object_q')
 def save_user_timelines_task(self, users):
-    # Remove existing task and save new task to DB
-    #kill_celery_task('save_user_timelines')
-    #task_object = CeleryTask(celery_task_id=self.request.id, task_name='save_user_timelines')
-    #task_object.save()
     save_user_timelines(users)
-    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 
 @shared_task(bind=True, name='tasks.trim_spam_accounts', queue='save_object_q')
 def trim_spam_accounts(self):
-    # Remove existing task and save new task to DB
-    #kill_celery_task('trim_spam_accounts')
-    #task_object = CeleryTask(celery_task_id=self.request.id, task_name='trim_spam_accounts')
-    #task_object.save()
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
     users = list(User.objects.filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE)).values_list('user_id', flat=True))
-
     length = len(users)
     print("Length of class-0 users to sort: {}".format(length))
-
     chunk_size = 100 # Max of 100
     index = 0
-
     # Requesting User objects in batches to minimise API limits
     while index < length:
         if length - index <= chunk_size:
@@ -65,7 +59,6 @@ def trim_spam_accounts(self):
         print("Length: {}, Chunk: {}:{}".format(length, index, end))
         #process chunk
         user_list = userdata.lookup_users(user_ids=chunk)
-
         if not user_list:
             # False returned if only dead users in list
             print('Error with users: {}'.format(user_ids))
@@ -73,7 +66,6 @@ def trim_spam_accounts(self):
             continue
         for user_data in user_list:
             u = User.objects.get(user_id=int(user_data.id_str))
-
             #Class the user as spam or 'alter'
             if check_spam_account(user_data):
                 u.user_class = -1
@@ -100,23 +92,18 @@ def trim_spam_accounts(self):
             except:
                 print("Error saving user: {}".format(user_data.screen_name))
         index += chunk_size
-
-    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 
-@shared_task(bind=True, soft_time_limit=20, name='tasks.save_object', queue='save_object_q') #TODO: Handle this with rate limiting?
+@shared_task(bind=True, soft_time_limit=20, time_limit=40, name='tasks.save_object', queue='save_object_q') #TODO: Handle this with rate limiting?
 def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False, data_source=0, **kwargs):
-    #Save task to DB
-    #task_object = CeleryTask(celery_task_id = self.request.id, task_name='save_twitter_object')
-    #task_object.save()
-
     if tweet:
         try:
-            save_tweet(tweet, data_source, user_class, save_entities)
+            tweet_obj = save_tweet(tweet, data_source, user_class, save_entities)
+            if save_entities and DOWNLOAD_MEDIA and tweet_obj is not None:
+                save_media_task.delay(tweet_obj, tweet)
         except Exception as e:
             print('Error saving tweet {}: {}'.format(tweet.id_str, e))
-            #print(tweet) #TODO: Test or remove.
             pass
     else: # Saving user
         try:
@@ -125,21 +112,127 @@ def save_twitter_object_task(self, tweet=None, user_class=0, save_entities=False
         except Exception as e:
             print('Error adding user {}: {}'.format(user_data.id_str, e))
             pass
-
-    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
+
+#TODO: Move this back into methods, as issue has been fixed? Or refactor.
+def download_media(tweet_data): # TODO: Fold into task ?
+    event = Event.objects.all()[0].name
+    media_type = ''
+    media_url = []
+    if tweet_data.source == 'Instagram':
+        print('Saving data from source: {}'.format(tweet_data.source))
+        try:
+            urls = tweet_data.extended_tweet.get('entities').get('urls')   # Works for Extended data from stream
+            last_index = 0
+            for u in urls: # URLs posted in comments are returned in entities. Finding last occuring (i.e. source).
+                if u.get('indices')[0] >= last_index:
+                    last_index = u.get('indices')[0]
+                    insta_url = u.get('expanded_url')
+        except:
+            urls = tweet_data.entities.get('urls')    # Works for Extended data from REST (to test)
+            last_index = 0
+            for u in urls:
+                if u.get('indices')[0] >= last_index:
+                    last_index = u.get('indices')[0]
+                    insta_url = u.get('expanded_url') #TODO: move these 5 lines outside of block, as they are repeated. May have to check they don't throw errors too.
+        insta_url = 'https://www.instagram.com/p/' + insta_url.split('/')[4]
+        try:
+            response = urlopen(insta_url)
+        except:
+            print('Error with Instagram media: {}, likely deleted.'.format(insta_url))
+            return([], '')
+        try:
+            page_source = response.read()
+        except Exception as e:
+            print(e)
+            return([], '')
+            #raise   #TODO: Handle connection reset here
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        insta_image = soup.find_all("meta", property="og:image")
+        insta_vid = soup.find_all("meta", property="og:video")
+        if insta_vid:
+            media_type = 'video'
+            media_url.append(insta_vid[0]["content"])
+        else:
+            media_type = 'image'
+            media_url.append(insta_image[0]["content"])
+        path = urlparse.urlparse(media_url[0]).path
+        ext = path[len(path)-4:] # Remove trailing queries etc
+
+    else:   # Tweet media
+        try:
+            media_type = tweet_data.extended_entities.get('media')[0].get('type')
+        except:
+            return([], '') #TODO: Test these don't have media
+        print('Saving data from source: {}'.format(tweet_data.source))
+        if media_type == 'video': # Twitter Video:
+            highest_bitrate = 0
+            variants = tweet_data.extended_entities.get('media')[0].get('video_info').get('variants')
+            for v in variants:
+                if v.get('bitrate') is not None and v.get('bitrate') >= highest_bitrate:
+                    highest_bitrate = v.get('bitrate')
+                    highest_url = v.get('url')
+            media_url.append(highest_url)
+            path = urlparse.urlparse(media_url[0]).path
+            ext = path[len(path)-4:] # Remove trailing queries etc
+
+            if highest_bitrate == 0:
+                media_type = 'gif'
+
+        elif media_type == 'photo':
+            media_items = tweet_data.extended_entities.get('media')
+            for m in media_items:
+                media_url.append(m.get('media_url'))
+            media_type = 'image'
+            path = urlparse.urlparse(media_items[0].get('media_url')).path
+            ext = path[len(path)-4:] # Remove trailing queries etc
+
+        elif media_type == 'animated_gif':
+            variants = tweet_data.extended_entities.get('media')[0].get('video_info').get('variants')[0].get('url')
+            media_type = 'gif'
+            media_url.append(variants)
+            path = urlparse.urlparse(media_url[0]).path
+            ext = path[len(path)-4:] # Remove trailing queries etc
+
+        else:
+            if tweet_data.extended_entities.get('media') is not None:
+                print('Unhandled Twitter media type: {}'.format(tweet_data.extended_entities.get('media')[0].get('type')))
+                print(tweet_data)
+            return([], '')
+
+    directory = './' + event + '_media/' + media_type + '/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    base_filename = tweet_data.author.id_str + '_' + tweet_data.id_str
+    saved_files = []
+    if len(media_url) > 0:
+        i=0
+        for m in media_url:
+            filename = base_filename
+            if len(media_url) > 1:
+                filename = base_filename + '_' + str(i)
+            urlretrieve(m, directory + filename  + str(ext)) #TODO: Appears this is causing delay and not performing?
+            saved_files.append(filename + str(ext))
+            i += 1
+    return(saved_files, media_type)
+
+@shared_task(bind=True, soft_time_limit=300, time_limit=300, name='tasks.save_media', queue='save_media_q')
+def save_media_task(self, tweet, tweet_data):
+    filenames, type = download_media(tweet_data)
+    # TODO: Decide how to link to tweet object - use a relation or three fields (base_name, type, count)
+    if len(filenames) > 0:
+        tweet.media_files = filenames
+        tweet.media_files_type = type
+        tweet.save()
+    return
+
 
 @shared_task(bind=True, name='tasks.compare_live_data_task', queue='save_object_q')
 def compare_live_data_task(self):
-    # Remove existing task and save new task to DB
-    #kill_celery_task('update_screen_names')
-    #task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_screen_names')
-    #task_object.save()
-
     update_screen_names()
     check_deleted_tweets()
-
-    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 #TODO: Move to methods and import?
@@ -148,10 +241,6 @@ def compare_live_data_task(self):
 def update_user_relos_task(self):
     print('Update Relo function currently not implemented due to DB structure changes')
     return
-    # Remove existing task and save new task to DB
-    #kill_celery_task('update_user_relos')
-    #task_object = CeleryTask(celery_task_id = self.request.id, task_name='update_user_relos')
-    #task_object.save()
 
     users = User.objects.filter(user_class__gte=2).order_by('added_at')
     print('Updating relo information for {} users.'.format(len(users)))
@@ -226,14 +315,16 @@ def update_user_relos_task(self):
             create_relo(user, source_user, outgoing=False)
 
     print('Updating relationship data complete.')
-
-    #CeleryTask.objects.get(celery_task_id=self.request.id).delete()
     return
 
 
 @shared_task(bind=True, name='tasks.create_relo_network', queue='save_object_q')
 def create_relo_network(self):
     #TODO: To be finished. Added to functions view.
+    print('Create Network not yet implemented')
+    return
+
+    # Add to query - only return users with a follower/friend list array, and set to null afterward.
     users = User.objects.filter(user_class__gte=2)
     for u in users:
 

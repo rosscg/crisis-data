@@ -28,9 +28,9 @@
           <p><a href="https://www.google.co.uk/maps/@{{ event.geopoint.all.0.latitude }},{{ event.geopoint.all.0.longitude }},7z" target="_blank">Google Maps</a></p>
         {% endif %}
 
-        <p> Keywords:
+        <p> Keywords: <br/>
         {% for keyword in event.keyword.all %}
-          {{ keyword.keyword }}
+          <a href="https://twitter.com/hashtag/{{ keyword.keyword }}" target="_blank">{{ keyword.keyword }}</a><br/>
         {% endfor %} </p>
 
         <a class="btn btn-default" href="{% url 'edit_event' %}"><span class="glyphicon glyphicon-pencil"></span></a>

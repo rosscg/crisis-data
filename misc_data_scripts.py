@@ -1,5 +1,29 @@
 # Don't run this as a script - paste code as needed.
 
+
+#These snippets are used to track data during capture:
+
+import time
+from streamcollect.models import Tweet
+c = Tweet.objects.all().count()
+fifteen_min = Tweet.objects.all().count()
+f_counter = 0
+while True:
+  if f_counter%900 == 0: # slightly more than 15min due to other processes in loop.
+    #print('Saved in last window: {}'.format(Tweet.objects.all().count()-fifteen_min))
+    print('{} {} {} {} | +{}'.format(Tweet.objects.filter(data_source=1).count(), Tweet.objects.filter(data_source=2).count(), Tweet.objects.filter(data_source=3).count(), Tweet.objects.filter(data_source=4).count(), Tweet.objects.all().count()-c))
+    c = Tweet.objects.all().count()
+    fifteen_min = Tweet.objects.all().count()
+  time.sleep(10)
+  f_counter += 10
+  
+
+import time
+from celery.task.control import inspect
+len(inspect(['celery@media_worker']).reserved().get('celery@media_worker'))
+len(inspect(['celery@stream_worker']).active().get('celery@stream_worker'))
+
+
 # These snippets are primarily used to remove Tweets which are unwanted.
 # Original use was to remove tweets with 'pray' and their associated users/entities.
 
