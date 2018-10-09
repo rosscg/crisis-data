@@ -111,13 +111,6 @@ def check_deleted_tweets(id_list=None):
     return
 
 
-#def kill_celery_task(task_name):
-#    for t in CeleryTask.objects.filter(task_name=task_name):
-#        print('Killing task {}: {}'.format(task_name, t.celery_task_id))
-#        revoke(t.celery_task_id, terminate=True)
-#        t.delete()
-
-
 def check_spam_account(user_data):
     if user_data == False:
         return
@@ -654,7 +647,7 @@ def save_url(url_text, tweet_object):
 
     try:
         resp = urlopen(url_text)
-        unwound = resp.url  # TODO: need to unwind more than once? 
+        unwound = resp.url  # TODO: need to unwind more than once?
     except:
         unwound = url_text
     unwound = re.sub('(http://|https://|#.*|&.*)', '', unwound)

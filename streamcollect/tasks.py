@@ -239,7 +239,32 @@ def compare_live_data_task(self):
 #TODO: Currently appears buggy. Lists too long shortly after adding user, should be near-0
 @shared_task(bind=True, name='tasks.update_user_relos_task', queue='save_object_q')
 def update_user_relos_task(self):
-    print('Update Relo function currently not implemented due to DB structure changes')
+
+    #TODO: Temporary Implementation:
+    users = User.objects.filter(user_class__gte=2).order_by('added_at')
+    print('Updating relo information for {} users.'.format(len(users)))
+
+    c = 0
+    for user in users:
+        try:
+            user_following_update = userdata.friends_ids(screen_name=user.screen_name)
+        except:
+            return False
+        if user_following:
+            user.user_following_update = user_following_update
+        try:
+            user_followers_update = userdata.followers_ids(screen_name=user.screen_name)
+        except:
+            return False
+        if user_followers_update:
+            user.user_followers_update = user_followers_update
+        user.user_network_update_observed_at = timezone.now()
+        user.save()
+
+        c += 1
+        if c % 100 == 0:
+            print('User {} of {}'.format(c, len(users)))
+
     return
 
     users = User.objects.filter(user_class__gte=2).order_by('added_at')

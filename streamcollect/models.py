@@ -164,6 +164,10 @@ class User(models.Model):
     user_following = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily storing as list rather than creating relo objects.
     user_followers = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
 
+    user_following_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily
+    user_followers_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
+    user_network_update_observed_at = models.DateTimeField(null=True) #   TODO: Testing
+
     # These currently represent the degrees to ego accounts and therefore only
     # relevant to alter objects, or egos with relationships with other egos.
     in_degree = models.IntegerField(default=0)
