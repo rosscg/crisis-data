@@ -36,15 +36,16 @@ def update_data_periodic(self):
 #TODO: Consider adding processing tasks to a new, third queue. Add in all the Views inspect lists
 
 @shared_task(bind=True, name='tasks.save_user_timelines', queue='save_object_q')
-def save_user_timelines_task(self, users):
-    save_user_timelines(users)
+def save_user_timelines_task(self):
+    save_user_timelines()
     return
 
 
 @shared_task(bind=True, name='tasks.trim_spam_accounts', queue='save_object_q')
 def trim_spam_accounts(self):
     # Get unsorted users (alters with user_class = 0) with the requisite in/out degree
-    users = list(User.objects.filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE)).values_list('user_id', flat=True))
+    #users = list(User.objects.filter(user_class=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE)).values_list('user_id', flat=True))
+    users = list(User.objects.filter(user_class=0).values_list('user_id', flat=True)) # TODO: Temporary while relos aren't created.
     length = len(users)
     print("Length of class-0 users to sort: {}".format(length))
     chunk_size = 100 # Max of 100
@@ -239,36 +240,44 @@ def compare_live_data_task(self):
 #TODO: Currently appears buggy. Lists too long shortly after adding user, should be near-0
 @shared_task(bind=True, name='tasks.update_user_relos_task', queue='save_object_q')
 def update_user_relos_task(self):
-
+    print('Runnning: Update Relo Task')
+    print('WARNING: Running temporary (incomplete) implemention.')
     #TODO: Temporary Implementation:
-    users = User.objects.filter(user_class__gte=2).order_by('added_at')
-    print('Updating relo information for {} users.'.format(len(users)))
+    b = Event.objects.all()[0].kw_stream_start
+    first_round = b + timedelta(days=3) # Focus on users from first 3 days of collection to manage volume
+    #second_round = b + timedelta(days=7)
+    users = User.objects.filter(user_class__gte=2, added_at__lt=first_round)
+    #users = User.objects.filter(user_class__gte=2, added_at__gte=first_round, added_at__lt=second_round)
+
+    print('Updating relo information for {} users.'.format(users.count()))
 
     c = 0
     for user in users:
+
+        if c % 100 == 0:
+            print('User {} of {}'.format(c, users.count()))
+            #print('User ID: {}'.format(user.user_id))
+        c += 1
+
         try:
             user_following_update = userdata.friends_ids(screen_name=user.screen_name)
         except:
-            return False
-        if user_following:
+            user_following_update = None
+        if user_following_update:
             user.user_following_update = user_following_update
         try:
             user_followers_update = userdata.followers_ids(screen_name=user.screen_name)
         except:
-            return False
+            user_followers_update = None
         if user_followers_update:
             user.user_followers_update = user_followers_update
         user.user_network_update_observed_at = timezone.now()
         user.save()
 
-        c += 1
-        if c % 100 == 0:
-            print('User {} of {}'.format(c, len(users)))
-
     return
 
     users = User.objects.filter(user_class__gte=2).order_by('added_at')
-    print('Updating relo information for {} users.'.format(len(users)))
+    print('Updating relo information for {} users.'.format(users.count()))
 
     for user in users:
         #TODO: Possible add check: is new/dead links are over threshold, mark account as spam.

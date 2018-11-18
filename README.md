@@ -95,7 +95,7 @@ Decide on periodic tasks in tasks.py (uncomment the decorators to run, requires 
   update_data_periodic allows new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. REFRESH_STREAM should be set to true, to add the new tags periodically.
 Create the event object - at the least it needs a name. Optionally add coordinates for the geo stream.
 Add keywords. Keywords cannot include spaces.
-High-priority keywords run as normal, low-priority return a proportion of the Tweets as set in config.py. Use this to reduce load.
+High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
 Run streams, disable OS auto-sleep.
 
 After collection:

@@ -329,13 +329,19 @@ def create_relo(existing_user, new_user_id, outgoing):
     return
 
 
-def save_user_timelines(users):
+def save_user_timelines():
+
     try:
         event = Event.objects.all()[0]
     except:
         return
     start_time = event.time_start
     end_time = event.time_end
+    if start_time == None or end_time == None:
+        print("No start/end time detected, add to event manually.")
+        return
+
+    users = User.objects.filter(user_class__gte=2)[4210:] # TODO: temp slice
     user_count = users.count()
     progress_count = 0
 
@@ -370,7 +376,7 @@ def save_user_timelines(users):
                                     text=status.full_text
                                 except:
                                     text=status.text
-                            save_tweet(status, data_source=0)
+                            save_tweet(status, data_source=0, reply_depth=99) # Don't save any replied to statuses
                         except:
                             pass
                     else:
@@ -388,7 +394,7 @@ def save_tweet(tweet_data, data_source, user_class=0, save_entities=False, reply
 
     if data_source == 0 or user_class == 0: # ie. Tweet not from original stream
         try:
-            tweet = Tweet.objects.get(tweet_id=int(tweet_data.id_str))
+            tweet = Tweet.objects.get(tweet_id=int(tweet_data.id_str)) # TODO: This may be too slow, faster to just try and save Tweet, catch duplicate exception ?
         except ObjectDoesNotExist:
             pass
         else:

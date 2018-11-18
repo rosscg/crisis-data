@@ -20,7 +20,7 @@ def get_api():
 
     auth = RateLimitHandler(ckey.consumer_key, ckey.consumer_secret)
 
-    # Reserve first token for streams
+    # Reserve first token for streams #TODO: either reserve first three, or none.
     for t in access_tokens[1:]:
         try:
             auth.add_access_token(t.access_key, t.access_secret)

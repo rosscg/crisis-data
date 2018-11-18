@@ -121,7 +121,10 @@ def stream_status(request):
     gps_stream_status = False
 
     #TODO: catch exception here for when workers aren't running (also in functions tab)
-    ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker')
+    try:
+        ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker')
+    except:
+        ts = []
     for t in ts:
         task_id = t.get('id')
         if 'priority' in t['kwargs']:
@@ -134,7 +137,10 @@ def stream_status(request):
 
 
 def functions(request):
-    tasks = inspect(['celery@stream_worker']).active().get('celery@stream_worker') + inspect(['celery@object_worker']).active().get('celery@object_worker') + inspect(['celery@object_worker']).reserved().get('celery@object_worker')
+    try:
+        tasks = inspect(['celery@stream_worker']).active().get('celery@stream_worker') + inspect(['celery@object_worker']).active().get('celery@object_worker') + inspect(['celery@object_worker']).reserved().get('celery@object_worker')
+    except:
+        tasks = []
     tasks = [d['name'] for d in tasks]
     return render(request, 'streamcollect/functions.html', {'tasks': tasks})
 
@@ -491,8 +497,8 @@ def submit(request):
         return redirect('functions')
 
     elif "user_timeline" in request.POST:
-        users = User.objects.filter(user_class__gte=2)
-        save_user_timelines_task.delay(users)
+        print("User Timeline Function...")
+        save_user_timelines_task.delay()
         return redirect('functions')
 
     elif "update_data" in request.POST:

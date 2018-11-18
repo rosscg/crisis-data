@@ -1,16 +1,14 @@
-#import random
 import time
 from django.core.exceptions import ObjectDoesNotExist
 
 from tweepy import Stream, OAuthHandler
 from tweepy.streaming import StreamListener
 
-from streamcollect.models import Keyword, AccessToken, ConsumerKey#, CeleryTask
+from streamcollect.models import Keyword, AccessToken, ConsumerKey
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
 from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, IGNORED_KWS, IGNORED_SOURCES, IGNORE_RTS, CONCURRENT_TASKS
 
 from streamcollect.tasks import save_twitter_object_task
-#from streamcollect.methods import kill_celery_task
 
 keywords_high_priority_global = None
 keywords_low_priority_global = None
@@ -38,6 +36,18 @@ class stream_listener(StreamListener):
                 return
 
         # Status.truncated doesn't appear to be True when user reposts from Instagram or Facebook
+        # TODO: Therefore makes more sense to just use a try/except for get('full_text')? Test this.
+#        print('Source: {}, truncated: {}'.format(status.source, status.truncated))
+#        try:
+#            text=status.extended_tweet.get('full_text')
+#            print('got full_text: {}'.format{text})
+#            if status.truncated is False:
+#                print('full_text available for non-truncated status:')
+#                print(status)
+#        except:
+#            print('no full_text')
+#            text=status.text
+#        return ### Testing
         if status.truncated:
             text=status.extended_tweet.get('full_text')
         else:
@@ -95,9 +105,6 @@ class stream_listener(StreamListener):
                 if reserved_tasks > CONCURRENT_TASKS*4*.5: # 4 is the default worker_prefetch_multiplier multiplied by concurrency. Low priority only adds when a proportion slots are free.
                     #print('too many tasks, discarding job')
                     return
-                #r = random.random()
-                #if r > STREAM_PROPORTION:
-                #    return
         else: # GPS stream
             data_source = 3 # data_source = GPS stream
             if status.coordinates is None:      # Tweets are sometimes allocated a 'Place' by Twitter which will
