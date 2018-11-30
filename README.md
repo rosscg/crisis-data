@@ -102,7 +102,7 @@ After collection:
   Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until it's termination is processed.
   Run trim_spam_accounts.
   Run save_user_timelines.
-  Run update_relationship_data after a suitable time period (slow process due to rate limits).
+  Run update_relationship_data after a suitable time period (slow process due to rate limits). This currently only supports running once. Running again will damage the data.
   Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2). See section below.
   Export to suitable format for analysis (to be implemented).
 

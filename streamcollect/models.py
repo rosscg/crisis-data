@@ -163,7 +163,6 @@ class User(models.Model):
 
     user_following = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily storing as list rather than creating relo objects.
     user_followers = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
-
     user_following_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily
     user_followers_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
     user_network_update_observed_at = models.DateTimeField(null=True) #   TODO: Testing
@@ -358,9 +357,3 @@ class ConsumerKey(models.Model):
 
     def __str__(self):
         return "(\'{}\', \'{}\')".format(self.consumer_key, self.consumer_secret)
-
-
-#class CeleryTask(models.Model):
-#    celery_task_id = models.CharField(max_length = 40, unique=True)
-    # Use: stream_kw_high, stream_kw_low, stream_gps, stream_gps, update_user_relos, trim_spam_accounts, save_twitter_obect
-#    task_name = models.CharField(max_length=40)

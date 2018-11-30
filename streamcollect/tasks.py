@@ -8,7 +8,7 @@ from django.db.models import Q
 from twdata import userdata
 from .models import User, Relo, Event
 
-from .methods import check_spam_account, add_user, create_relo, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names, check_deleted_tweets#, download_media
+from .methods import check_spam_account, add_user, create_relo, create_relos_from_list, save_tweet, update_tracked_tags, save_user_timelines, update_screen_names, check_deleted_tweets#, download_media
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, DOWNLOAD_MEDIA
 
 # For downloading media:
@@ -219,6 +219,7 @@ def download_media(tweet_data): # TODO: Fold into task ?
             i += 1
     return(saved_files, media_type)
 
+
 @shared_task(bind=True, soft_time_limit=300, time_limit=300, name='tasks.save_media', queue='save_media_q')
 def save_media_task(self, tweet, tweet_data):
     filenames, type = download_media(tweet_data)
@@ -235,6 +236,13 @@ def compare_live_data_task(self):
     update_screen_names()
     check_deleted_tweets()
     return
+
+
+@shared_task(bind=True, name='tasks.create_relos_from_list_task', queue='save_object_q')
+def create_relos_from_list_task(self):
+    create_relos_from_list()
+    return
+
 
 #TODO: Move to methods and import?
 #TODO: Currently appears buggy. Lists too long shortly after adding user, should be near-0

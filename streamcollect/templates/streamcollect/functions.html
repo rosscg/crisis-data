@@ -23,6 +23,14 @@
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-3">
+          <input type="submit" class="btn btn-primary btn-md" name="create_relos_from_list_task" value="Create Relationship Objects from List">
+        </div>
+      </div>
+    </form>
+
+    <form action="submit" method="POST">{% csrf_token %}
+      <div class="form-group">
+        <div class="col-xs-3">
           <input type="submit" class="btn btn-primary btn-md" name="delete_keywords" value="Delete Keywords">
         </div>
       </div>
