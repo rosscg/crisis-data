@@ -16,7 +16,7 @@ while True:
     fifteen_min = Tweet.objects.all().count()
   time.sleep(10)
   f_counter += 10
-  
+
 
 import time
 from celery.task.control import inspect
@@ -136,6 +136,12 @@ for i in range(4):
     print("Earliest for {}: {}".format(i, early))
     print("Latest for {}: {}".format(i, late))
 
+#-----------------#
+# Find users added in the last 12 hours (ie. added by creating relationships)
+from datetime import timedelta, datetime, timezone
+window = datetime.now() - timedelta(hours=12)
+window = window.replace(tzinfo=timezone.utc) # Make TZ aware
+new_users = User.objects.filter(added_at>window)
 
 #-----------------#
 #Dealing with old Databases

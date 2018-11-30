@@ -62,7 +62,7 @@ def trim_spam_accounts(self):
         user_list = userdata.lookup_users(user_ids=chunk)
         if not user_list:
             # False returned if only dead users in list
-            print('Error with users: {}'.format(user_ids))
+            print('Error with users: {}, likely deleted.'.format(chunk))
             index += chunk_size
             continue
         for user_data in user_list:

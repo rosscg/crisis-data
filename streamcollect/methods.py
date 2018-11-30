@@ -2,10 +2,11 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 import re
 import pytz
 
-from django.utils import timezone
+from datetime import timedelta
 from dateutil.parser import *
 
 from twdata import userdata
@@ -24,6 +25,28 @@ from bs4 import BeautifulSoup
 import os
 
 
+# TODO: move this?
+def batch_qs(qs, batch_size=10):
+"""
+Returns a (start, end, total, queryset) tuple for each batch in the given
+queryset.
+
+Usage:
+    # Must order queryset
+    article_qs = Article.objects.order_by('id')
+    for start, end, total, qs in batch_qs(article_qs):
+        print("Now processing {}-{} of {}".format(start + 1, end, total))
+        for article in qs:
+            print(article.body)
+"""
+total = qs.count()
+for start in range(0, total, batch_size):
+    end = min(start + batch_size, total)
+    yield (start, end, total, qs[start:end])
+
+
+# Check for users who have updated their Twitter screen names, or have been
+# deleted/suspended since the first observation.
 def update_screen_names(users=None):
     print('Updating Screen Names...')
 
@@ -130,6 +153,9 @@ def check_spam_account(user_data):
     return True
 
 
+# Automatically add new tags to the tracking list based on whether they meet the TAG_OCCURENCE_THRESHOLD
+# Requires stream to be periodically restarted.
+# Currently adds as low-priority, may need to reconsider.
 def update_tracked_tags():
     print('updating tracked tags')
     #If a hashtag appears in x% of tweets, add as a keyword to track.
@@ -149,6 +175,7 @@ def update_tracked_tags():
                 k = Keyword()
                 k.keyword = hashtag.lower()
                 k.created_at = timezone.now()
+                k.priority = 1
                 k.save()
                 print('Adding new hashtag to keyword list: {}'.format(hashtag))
             except:
@@ -286,7 +313,8 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
 
 
 #TODO: Have commented out the updates to the in/out degree rows (to reduce db calls). Decide whether to remove.
-def create_relo(existing_user, new_user_id, observed=timezone.now(), outgoing):
+def create_relo(existing_user, new_user_id, outgoing, observed=timezone.now()):
+    # TODO: may be able to remove these checks by using unique_together in the Relo model and a try/except clause when saving the Relo here.
     if outgoing: # existing_user is following new_user_id
         if Relo.objects.filter(source_user=existing_user).filter(target_user__user_id=new_user_id).filter(end_observed_at=None).exists():
             return
@@ -330,53 +358,76 @@ def create_relo(existing_user, new_user_id, observed=timezone.now(), outgoing):
 
 
 # Move relationship information from temporary user_following (etc.) list to Relo object.
+# TODO: Consider summing in/out degrees here for speed when building network ?
 def create_relos_from_list():
-    user = User.objects.filter(user_class__gte=2)[0]
-    print('Converting Relos from list for user: {}'.format(user.screen_name))
-    tweets = user.tweet.filter(data_source__gte=2).order_by('created_at')
-    earliest_streamed_tweet_time = tweets[0].created_at
-    for new_following_id in user.user_following:
-        create_relo(user, new_following_id, observed=earliest_streamed_tweet_time, outgoing=True)
-    for new_follower_id in user.user_followers:
-        create_relo(user, new_following_id, observed=earliest_streamed_tweet_time, outgoing=False)
-    # Check update lists for new and deleted relos, and update.
+    # Get users which have a populated list to turn into objects.
+    users_qs = User.objects.filter(user_class__gte=2).filter(Q(user_followers__isnull=False) | Q(user_following__isnull=False) | Q(user_followers_update__isnull=False) | Q(user_following_update__isnull=False)).order_by('id')
 
-    new_friend_links = [a for a in user.user_following_update if (a not in user.user_following)]
-    dead_friend_links = [a for a in user.user_following if (a not in user.user_following_update)]
+    print('Creating relationship object sets for {} users.'.format(users_qs.count()))
 
+    for start, end, total, qs in batch_qs(users_qs):
+        print("Now processing {}-{} of {}".format(start + 1, end, total))
+        for user in qs:
+            ########################################## Temporary exclusion for speed:
+            try:
+                if len(user.user_following) > FRIENDS_THRESHOLD:
+                    print('User {} friends exceeds threshold'.format(user.screen_name))
+                    continue
+            except:
+                pass
+            try:
+                if len(user.user_followers) > FOLLOWERS_THRESHOLD:
+                    print('User {} followers exceeds threshold'.format(user.screen_name))
+                    continue
+            except:
+                pass
 
-    for target_user_id in dead_friend_links:
-        for ob in Relo.objects.filter(source_user=user, target_user__user_id__contains=target_user_id).filter(end_observed_at=None):
-            ob.end_observed_at = timezone.now()
-            ob.save()
-        tuser = User.objects.get(user_id=target_user_id)
-        tuser.in_degree = tuser.in_degree - 1
-        tuser.save()
+            print('Creating Relationship Objects for User: {}'.format(user.screen_name))
+            tweets = user.tweet.filter(data_source__gte=1).order_by('created_at')
+            earliest_streamed_tweet_time = tweets[0].created_at
+            for new_following_id in user.user_following:
+                create_relo(user, new_following_id, outgoing=True, observed=earliest_streamed_tweet_time)
+            for new_follower_id in user.user_followers:
+                create_relo(user, new_follower_id, outgoing=False, observed=earliest_streamed_tweet_time)
 
-        #Commented out to reduce DB calls:
-        #user.out_degree -= 1
-        #user.save()
-    for target_user in new_friend_links:
-        create_relo(user, target_user, observed=user.user_network_update_observed_at, outgoing=True)
+            new_friend_links = [a for a in user.user_following_update if (a not in user.user_following)]
+            dead_friend_links = [a for a in user.user_following if (a not in user.user_following_update)]
 
-    new_follower_links = [a for a in user.user_followers_update if (a not in user.user_followers)]
-    dead_follower_links = [a for a in user.user_followers if (a not in user.user_followers_update)]
+            for target_user_id in dead_friend_links:
+                for ob in Relo.objects.filter(source_user=user, target_user__user_id__contains=target_user_id).filter(end_observed_at=None):
+                    ob.end_observed_at = user.user_network_update_observed_at
+                    ob.save()
+                tuser = User.objects.get(user_id=target_user_id)
+                tuser.in_degree = tuser.in_degree - 1
+                tuser.save()
+                #Commented out to reduce DB calls:
+                #user.out_degree -= 1
+                #user.save()
+            for target_user in new_friend_links:
+                create_relo(user, target_user, outgoing=True, observed=user.user_network_update_observed_at)
 
-    for source_user_id in dead_follower_links:
-        for ob in Relo.objects.filter(target_user=user, source_user__user_id__contains=source_user_id).filter(end_observed_at=None):
-            ob.end_observed_at = timezone.now()
-            ob.save()
-        suser = User.objects.get(user_id=source_user_id)
-        suser.in_degree = suser.in_degree - 1
-        suser.save()
+            new_follower_links = [a for a in user.user_followers_update if (a not in user.user_followers)]
+            dead_follower_links = [a for a in user.user_followers if (a not in user.user_followers_update)]
 
-        #Commented out to reduce DB calls:
-        #user.in_degree -= 1
-        #user.save()
-    for source_user in new_follower_links:
-        create_relo(user, source_user, observed=user.user_network_update_observed_at, outgoing=False)
+            for source_user_id in dead_follower_links:
+                for ob in Relo.objects.filter(target_user=user, source_user__user_id__contains=source_user_id).filter(end_observed_at=None):
+                    ob.end_observed_at = user.user_network_update_observed_at
+                    ob.save()
+                suser = User.objects.get(user_id=source_user_id)
+                suser.in_degree = suser.in_degree - 1
+                suser.save()
+                #Commented out to reduce DB calls:
+                #user.in_degree -= 1
+                #user.save()
+            for source_user in new_follower_links:
+                create_relo(user, source_user, outgoing=False, observed=user.user_network_update_observed_at)
 
-
+            user.user_following = None
+            user.user_followers = None
+            user.user_following_update = None
+            user.user_followers_update = None
+            user.user_network_update_observed_at = None
+            user.save()
 
     return
 

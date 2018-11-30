@@ -154,7 +154,7 @@ class User(models.Model):
     utc_offset = models.CharField(max_length=200, null=True)
     verified = models.NullBooleanField(null=True)
 
-    user_class = models.IntegerField()
+    user_class = models.IntegerField() # -1 = Sorted from class 0 as 'spam', 0 = Added from REST API, 1 = sorted from class 0 as not 'spam', 2 = Streamed
     added_at = models.DateTimeField()
     data_source = models.IntegerField(default=0) # 0=Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
     old_screen_name = models.CharField(max_length=200, null=True) # Originally observed screen_name if since-changed.
@@ -163,7 +163,7 @@ class User(models.Model):
 
     user_following = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily storing as list rather than creating relo objects.
     user_followers = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
-    user_following_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily
+    user_following_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
     user_followers_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
     user_network_update_observed_at = models.DateTimeField(null=True) #   TODO: Testing
 

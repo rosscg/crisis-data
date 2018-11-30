@@ -100,9 +100,11 @@ Run streams, disable OS auto-sleep.
 
 After collection:
   Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until it's termination is processed.
+  Create a dump of the database (see below). Do this at other relevant milestones.
   Run trim_spam_accounts.
   Run save_user_timelines.
-  Run update_relationship_data after a suitable time period (slow process due to rate limits). This currently only supports running once. Running again will damage the data.
+  Run update_relationship_data after a suitable time period (slow process due to rate limits). This currently only supports running once. Running again will damage the data by overwriting the 'user_network_update_observed_at' value.
+  Run 'create_relos_from_list'.
   Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2). See section below.
   Export to suitable format for analysis (to be implemented).
 
