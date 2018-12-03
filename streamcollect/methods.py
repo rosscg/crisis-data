@@ -27,22 +27,22 @@ import os
 
 # TODO: move this?
 def batch_qs(qs, batch_size=10):
-"""
-Returns a (start, end, total, queryset) tuple for each batch in the given
-queryset.
+    """
+    Returns a (start, end, total, queryset) tuple for each batch in the given
+    queryset.
 
-Usage:
-    # Must order queryset
-    article_qs = Article.objects.order_by('id')
-    for start, end, total, qs in batch_qs(article_qs):
-        print("Now processing {}-{} of {}".format(start + 1, end, total))
-        for article in qs:
-            print(article.body)
-"""
-total = qs.count()
-for start in range(0, total, batch_size):
-    end = min(start + batch_size, total)
-    yield (start, end, total, qs[start:end])
+    Usage:
+        # Must order queryset
+        article_qs = Article.objects.order_by('id')
+        for start, end, total, qs in batch_qs(article_qs):
+            print("Now processing {}-{} of {}".format(start + 1, end, total))
+            for article in qs:
+                print(article.body)
+    """
+    total = qs.count()
+    for start in range(0, total, batch_size):
+        end = min(start + batch_size, total)
+        yield (start, end, total, qs[start:end])
 
 
 # Check for users who have updated their Twitter screen names, or have been
@@ -368,7 +368,9 @@ def create_relos_from_list():
     for start, end, total, qs in batch_qs(users_qs):
         print("Now processing {}-{} of {}".format(start + 1, end, total))
         for user in qs:
-            ########################################## Temporary exclusion for speed:
+            ##########################################
+            ##########################################
+            ########################################## Temporary 'spam' exclusion for speed:
             try:
                 if len(user.user_following) > FRIENDS_THRESHOLD:
                     print('User {} friends exceeds threshold'.format(user.screen_name))
@@ -381,17 +383,25 @@ def create_relos_from_list():
                     continue
             except:
                 pass
+            ##########################################
+            ##########################################
 
             print('Creating Relationship Objects for User: {}'.format(user.screen_name))
             tweets = user.tweet.filter(data_source__gte=1).order_by('created_at')
             earliest_streamed_tweet_time = tweets[0].created_at
-            for new_following_id in user.user_following:
-                create_relo(user, new_following_id, outgoing=True, observed=earliest_streamed_tweet_time)
-            for new_follower_id in user.user_followers:
-                create_relo(user, new_follower_id, outgoing=False, observed=earliest_streamed_tweet_time)
+            if user.user_following is not None:
+                for new_following_id in user.user_following:
+                    create_relo(user, new_following_id, outgoing=True, observed=earliest_streamed_tweet_time)
+            if user.user_followers is not None:
+                for new_follower_id in user.user_followers:
+                    create_relo(user, new_follower_id, outgoing=False, observed=earliest_streamed_tweet_time)
 
-            new_friend_links = [a for a in user.user_following_update if (a not in user.user_following)]
-            dead_friend_links = [a for a in user.user_following if (a not in user.user_following_update)]
+            try:
+                new_friend_links = [a for a in user.user_following_update if (a not in user.user_following)]
+                dead_friend_links = [a for a in user.user_following if (a not in user.user_following_update)]
+            except:
+                new_friend_links = []
+                dead_friend_links = []
 
             for target_user_id in dead_friend_links:
                 for ob in Relo.objects.filter(source_user=user, target_user__user_id__contains=target_user_id).filter(end_observed_at=None):
@@ -406,8 +416,12 @@ def create_relos_from_list():
             for target_user in new_friend_links:
                 create_relo(user, target_user, outgoing=True, observed=user.user_network_update_observed_at)
 
-            new_follower_links = [a for a in user.user_followers_update if (a not in user.user_followers)]
-            dead_follower_links = [a for a in user.user_followers if (a not in user.user_followers_update)]
+            try:
+                new_follower_links = [a for a in user.user_followers_update if (a not in user.user_followers)]
+                dead_follower_links = [a for a in user.user_followers if (a not in user.user_followers_update)]
+            except:
+                new_follower_links = []
+                dead_follower_links = []
 
             for source_user_id in dead_follower_links:
                 for ob in Relo.objects.filter(target_user=user, source_user__user_id__contains=source_user_id).filter(end_observed_at=None):
