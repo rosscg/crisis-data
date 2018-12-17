@@ -335,24 +335,36 @@ def create_relo(existing_user, new_user_id, outgoing, observed=timezone.now()):
             tuser.added_at = timezone.now()
             tuser.user_id = new_user_id
             tuser.user_class=0
+#TODO: Replace try/except block with get_or_create, then test. Add if statement for save()
+#        tuser, created = User.objects.get_or_create(
+#            user_id=new_user_id,
+#            defaults={'added_at': timezone.now(), 'user_class': 0, 'in_degree': 1}
+#        )
+#       if not created: # Wrap next two lines, as new users don't need += 1
         tuser.in_degree += 1
         tuser.save()
         r.target_user = tuser
     else: # Incoming relationship
-            #existing_user.in_degree += 1
-            #existing_user.save()
-            r.target_user = existing_user
-            # Create new users for targets if not already in DB
-            try:
-                suser = User.objects.get(user_id=new_user_id)
-            except:
-                suser = User()
-                suser.added_at = timezone.now()
-                suser.user_id = new_user_id
-                suser.user_class=0
-            suser.out_degree += 1
-            suser.save()
-            r.source_user = suser
+        #existing_user.in_degree += 1
+        #existing_user.save()
+        r.target_user = existing_user
+        # Create new users for targets if not already in DB
+        try:
+            suser = User.objects.get(user_id=new_user_id)
+        except:
+            suser = User()
+            suser.added_at = timezone.now()
+            suser.user_id = new_user_id
+            suser.user_class=0
+#TODO: Replace try/except block with get_or_create, then test.
+#        suser, created = User.objects.get_or_create(
+#            user_id=new_user_id,
+#            defaults={'added_at': timezone.now(), 'user_class': 0, 'out_degree' : 0}
+#        )
+#       if not created: # Wrap next two lines, as new users don't need += 1
+        suser.out_degree += 1
+        suser.save()
+        r.source_user = suser
     r.save()
     return
 
@@ -436,12 +448,13 @@ def create_relos_from_list():
             for source_user in new_follower_links:
                 create_relo(user, source_user, outgoing=False, observed=user.user_network_update_observed_at)
 
-            user.user_following = None
-            user.user_followers = None
-            user.user_following_update = None
-            user.user_followers_update = None
-            user.user_network_update_observed_at = None
-            user.save()
+            # TODO: Decide whether to delete the list or keep for speed when building networks:
+            #user.user_following = None
+            #user.user_followers = None
+            #user.user_following_update = None
+            #user.user_followers_update = None
+            #user.user_network_update_observed_at = None
+            #user.save()
 
     return
 
