@@ -27,22 +27,22 @@ import os
 
 # TODO: move this?
 def batch_qs(qs, batch_size=10):
-"""
-Returns a (start, end, total, queryset) tuple for each batch in the given
-queryset.
+    """
+    Returns a (start, end, total, queryset) tuple for each batch in the given
+    queryset.
 
-Usage:
-    # Must order queryset
-    article_qs = Article.objects.order_by('id')
-    for start, end, total, qs in batch_qs(article_qs):
-        print("Now processing {}-{} of {}".format(start + 1, end, total))
-        for article in qs:
-            print(article.body)
-"""
-total = qs.count()
-for start in range(0, total, batch_size):
-    end = min(start + batch_size, total)
-    yield (start, end, total, qs[start:end])
+    Usage:
+        # Must order queryset
+        article_qs = Article.objects.order_by('id')
+        for start, end, total, qs in batch_qs(article_qs):
+            print("Now processing {}-{} of {}".format(start + 1, end, total))
+            for article in qs:
+                print(article.body)
+    """
+    total = qs.count()
+    for start in range(0, total, batch_size):
+        end = min(start + batch_size, total)
+        yield (start, end, total, qs[start:end])
 
 
 # Check for users who have updated their Twitter screen names, or have been
