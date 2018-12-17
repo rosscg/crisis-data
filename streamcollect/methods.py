@@ -335,24 +335,36 @@ def create_relo(existing_user, new_user_id, outgoing, observed=timezone.now()):
             tuser.added_at = timezone.now()
             tuser.user_id = new_user_id
             tuser.user_class=0
+#TODO: Replace try/except block with get_or_create, then test. Add if statement for save()
+#        tuser, created = User.objects.get_or_create(
+#            user_id=new_user_id,
+#            defaults={'added_at': timezone.now(), 'user_class': 0, 'in_degree': 1}
+#        )
+#       if not created: # Wrap next two lines, as new users don't need += 1
         tuser.in_degree += 1
         tuser.save()
         r.target_user = tuser
     else: # Incoming relationship
-            #existing_user.in_degree += 1
-            #existing_user.save()
-            r.target_user = existing_user
-            # Create new users for targets if not already in DB
-            try:
-                suser = User.objects.get(user_id=new_user_id)
-            except:
-                suser = User()
-                suser.added_at = timezone.now()
-                suser.user_id = new_user_id
-                suser.user_class=0
-            suser.out_degree += 1
-            suser.save()
-            r.source_user = suser
+        #existing_user.in_degree += 1
+        #existing_user.save()
+        r.target_user = existing_user
+        # Create new users for targets if not already in DB
+        try:
+            suser = User.objects.get(user_id=new_user_id)
+        except:
+            suser = User()
+            suser.added_at = timezone.now()
+            suser.user_id = new_user_id
+            suser.user_class=0
+#TODO: Replace try/except block with get_or_create, then test.
+#        suser, created = User.objects.get_or_create(
+#            user_id=new_user_id,
+#            defaults={'added_at': timezone.now(), 'user_class': 0, 'out_degree' : 0}
+#        )
+#       if not created: # Wrap next two lines, as new users don't need += 1
+        suser.out_degree += 1
+        suser.save()
+        r.source_user = suser
     r.save()
     return
 
@@ -368,7 +380,9 @@ def create_relos_from_list():
     for start, end, total, qs in batch_qs(users_qs):
         print("Now processing {}-{} of {}".format(start + 1, end, total))
         for user in qs:
-            ########################################## Temporary exclusion for speed:
+            ##########################################
+            ##########################################
+            ########################################## Temporary 'spam' exclusion for speed:
             try:
                 if len(user.user_following) > FRIENDS_THRESHOLD:
                     print('User {} friends exceeds threshold'.format(user.screen_name))
@@ -381,17 +395,25 @@ def create_relos_from_list():
                     continue
             except:
                 pass
+            ##########################################
+            ##########################################
 
             print('Creating Relationship Objects for User: {}'.format(user.screen_name))
             tweets = user.tweet.filter(data_source__gte=1).order_by('created_at')
             earliest_streamed_tweet_time = tweets[0].created_at
-            for new_following_id in user.user_following:
-                create_relo(user, new_following_id, outgoing=True, observed=earliest_streamed_tweet_time)
-            for new_follower_id in user.user_followers:
-                create_relo(user, new_follower_id, outgoing=False, observed=earliest_streamed_tweet_time)
+            if user.user_following is not None:
+                for new_following_id in user.user_following:
+                    create_relo(user, new_following_id, outgoing=True, observed=earliest_streamed_tweet_time)
+            if user.user_followers is not None:
+                for new_follower_id in user.user_followers:
+                    create_relo(user, new_follower_id, outgoing=False, observed=earliest_streamed_tweet_time)
 
-            new_friend_links = [a for a in user.user_following_update if (a not in user.user_following)]
-            dead_friend_links = [a for a in user.user_following if (a not in user.user_following_update)]
+            try:
+                new_friend_links = [a for a in user.user_following_update if (a not in user.user_following)]
+                dead_friend_links = [a for a in user.user_following if (a not in user.user_following_update)]
+            except:
+                new_friend_links = []
+                dead_friend_links = []
 
             for target_user_id in dead_friend_links:
                 for ob in Relo.objects.filter(source_user=user, target_user__user_id__contains=target_user_id).filter(end_observed_at=None):
@@ -406,8 +428,12 @@ def create_relos_from_list():
             for target_user in new_friend_links:
                 create_relo(user, target_user, outgoing=True, observed=user.user_network_update_observed_at)
 
-            new_follower_links = [a for a in user.user_followers_update if (a not in user.user_followers)]
-            dead_follower_links = [a for a in user.user_followers if (a not in user.user_followers_update)]
+            try:
+                new_follower_links = [a for a in user.user_followers_update if (a not in user.user_followers)]
+                dead_follower_links = [a for a in user.user_followers if (a not in user.user_followers_update)]
+            except:
+                new_follower_links = []
+                dead_follower_links = []
 
             for source_user_id in dead_follower_links:
                 for ob in Relo.objects.filter(target_user=user, source_user__user_id__contains=source_user_id).filter(end_observed_at=None):
@@ -422,12 +448,13 @@ def create_relos_from_list():
             for source_user in new_follower_links:
                 create_relo(user, source_user, outgoing=False, observed=user.user_network_update_observed_at)
 
-            user.user_following = None
-            user.user_followers = None
-            user.user_following_update = None
-            user.user_followers_update = None
-            user.user_network_update_observed_at = None
-            user.save()
+            # TODO: Decide whether to delete the list or keep for speed when building networks:
+            #user.user_following = None
+            #user.user_followers = None
+            #user.user_following_update = None
+            #user.user_followers_update = None
+            #user.user_network_update_observed_at = None
+            #user.save()
 
     return
 
