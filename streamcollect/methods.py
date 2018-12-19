@@ -77,7 +77,8 @@ def update_screen_names(users=None):
             u = User.objects.get(user_id=int(live_u.id_str))
             if live_u.screen_name != u.screen_name:
                 print('New screen name for user: {} - {}.'.format(u.screen_name, live_u.screen_name))
-                u.old_screen_name = u.screen_name
+                if u.old_screen_name is None:
+                    u.old_screen_name = u.screen_name
                 u.screen_name = live_u.screen_name
                 u.save()
                 c += 1

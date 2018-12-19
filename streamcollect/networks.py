@@ -5,13 +5,18 @@ def create_gephi_file(relevant_users, relevant_relos):
     G=nx.DiGraph()
     for node in relevant_users:
 
-        best_code = ''
-        for t in node.tweet.all():
-            for c in t.coding_for_tweet.all():
-                if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
-                    best_code = c.data_code.data_code_id
+#        best_code = ''
+#        for t in node.tweet.all():
+#            for c in t.coding_for_tweet.all():
+#                if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
+#                    best_code = c.data_code.data_code_id
 
-        G.add_node(node.screen_name, user_class=node.user_class, best_code=best_code)
+        try:
+            user_code = node.coding_for_user.filter(coding_id=1)[0].data_code.name
+        except:
+            user_code = ''
+
+        G.add_node(node.screen_name, user_class=node.user_class, user_code=user_code)
 
     for relo in relevant_relos:
         G.add_edge(relo.source_user.screen_name, relo.target_user.screen_name)

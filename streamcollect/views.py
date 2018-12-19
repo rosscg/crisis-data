@@ -29,7 +29,7 @@ from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY, MAPBOX_PK
 
 
 def monitor_event(request):
-    selected_data_sources = request.session.get('active_data_sources', [1,2,3,4]) # List of data_sources chosen to be displayed
+    selected_data_sources = request.session.get('active_data_sources', []) # List of data_sources chosen to be displayed
     print('selected_data_sources: {}'.format(selected_data_sources))
     data_query = Tweet.objects.filter(data_source__in=selected_data_sources).filter( Q(coordinates_lat__isnull=False) | Q(data_source=4)).filter(Q(quoted_by__isnull=True) & Q(replied_by__isnull=True)) # Tweet with coordinates, or associated Place coordinates (for data_source=4)
 
@@ -111,6 +111,8 @@ def user_details(request, user_id):
 def user_feed(request, user_id):
     user = get_object_or_404(User, user_id=user_id)
     tweets = Tweet.objects.filter(author__user_id=user_id).order_by('created_at')
+    #Exclude Retweets which are captured when saving user feed.
+    #tweets = Tweet.objects.filter(author__user_id=user_id).exclude(text__startswith="RT @").order_by('created_at')
     return render(request, 'streamcollect/user_feed.html', {'user': user, 'tweets': tweets})
 
 
@@ -675,13 +677,19 @@ def network_data_API(request):
     print("Collecting network_data...")
 
     #All ego nodes, and alters with an in/out degree of X or greater.
-    slice_size = 10000 #TODO: Change to a random sample
+    slice_size = 5000 #TODO: Change to a random sample
     classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
+    # Ignore REQUIRED_IN/OUT_DEGREE
+    classed_users = User.objects.filter(user_class__gte=2)[:slice_size]
 
     # Only show users which have had Tweets coded
-    coded_tweets = Tweet.objects.filter(coding_for_tweet__data_code__data_code_id__gt=0).filter(coding_for_tweet__coding_id=1)
+    #coded_tweets = Tweet.objects.filter(coding_for_tweet__data_code__data_code_id__gt=0).filter(coding_for_tweet__coding_id=1)
     #coded_users = User.objects.filter(tweet__in=coded_tweets).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
-    coded_users = User.objects.filter(tweet__in=coded_tweets)
+    #coded_users = User.objects.filter(tweet__in=coded_tweets)
+
+    # Users which are coded
+    dcd = DataCodeDimension.objects.all()[1]
+    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
 
     relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
     #relevant_users = classed_users | coded_users
@@ -690,8 +698,9 @@ def network_data_API(request):
 
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     print("Creating Relo JSON..")
-    relevant_relos = Relo.objects.filter(end_observed_at=None, target_user__in=relevant_users, source_user__in=relevant_users)
+    relevant_relos = Relo.objects.filter(target_user__in=relevant_users, source_user__in=relevant_users, end_observed_at=None)
     resultsrelo = [ob.as_json() for ob in relevant_relos]
+    print("Total Relos: {}".format(len(resultsrelo)))
 
     #Remove isolated nodes: TODO: May be too slow
     if EXCLUDE_ISOLATED_NODES:

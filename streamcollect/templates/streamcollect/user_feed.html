@@ -16,11 +16,12 @@
           {% for tweet in tweets %}
             {% if tweet.data_source > 0 %}
               <div class="streamed_tweet">
+            {% elif tweet.text|slice:":4" == 'RT @' %}
+              <div class="added_tweet retweeted_tweet">
             {% else %}
               <div class="added_tweet">
             {% endif %}
-                <p>{{ tweet.text }}</p>
-                <p><a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
+                <p>{{ tweet.text }}    <a href="http://www.twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
               </div>
           {% endfor %}
         </div>

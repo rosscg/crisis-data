@@ -181,11 +181,18 @@ class User(models.Model):
     def as_json(self):
         # Calculate the best (lowest) coded tweet for a user
         # TODO: Remove this or place it elsewhere.
-        best_code = ''
-        for t in self.tweet.all():
-            for c in t.coding_for_tweet.all():
-                if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
-                    best_code = c.data_code.data_code_id
+        #best_code = ''
+        #for t in self.tweet.all():
+        #    for c in t.coding_for_tweet.all():
+        #        if (best_code == '' or c.data_code.data_code_id < best_code) and c.data_code.data_code_id > 0:
+        #            best_code = c.data_code.data_code_id
+
+        # User code instead of best Tweet code:
+        try:
+            user_code = self.coding_for_user.filter(coding_id=1)[0].data_code.name
+        except:
+            user_code = ''
+
         if self.screen_name is None:
             title = str(self.user_id)
         else:
@@ -194,7 +201,7 @@ class User(models.Model):
             id=str(self.user_id),
             title=title,
             user_class=str(self.user_class),
-            group=str(best_code))
+            group=str(user_code))
 
 
 class Tweet(models.Model):

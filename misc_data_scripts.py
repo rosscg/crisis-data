@@ -144,6 +144,90 @@ window = window.replace(tzinfo=timezone.utc) # Make TZ aware
 new_users = User.objects.filter(added_at>window)
 
 #-----------------#
+# Finding users from within a certain bounding_box (ie. to remove a sub-box from set)
+#
+# BEFORE USE: Update exclusion_box, and check the spam account values match the config.
+# Note that the coordinate check logic inside the loop needs customisation if
+# using a box that is not top left corner.
+geo_users = User.objects.filter(data_source=3)
+exclusion_box = [29.1197, -99.66, 30.39, -97.5021]
+outside = 0
+lower = 0
+inside = 0
+for u in geo_users:
+    ts = Tweet.objects.filter(author=u, data_source=3)
+    t_outside_box = False
+    for t in ts:
+        if t.coordinates_lat < exclusion_box[0] or t.coordinates_lon > exclusion_box[3]:
+            # Beneath box or east of box
+            t_outside_box = True
+            #print("User: {} Tweet outside exclusion_box".format(u.screen_name))
+            outside += 1
+            break
+        else:
+            t.data_source = 0
+            t.save()
+    if t_outside_box == False:
+        if Tweet.objects.filter(author=u, data_source=2).count() > 0:
+            # Should change data_source of user here.
+            #print("User: {} has lower data_source Tweet".format(u.screen_name))
+            lower += 1
+            u.data_source = 2
+            u.save()
+            continue
+        elif Tweet.objects.filter(author=u, data_source=1).count() > 0:
+            # Should change data_source of user here.
+            #print("User: {} has lower data_source Tweet".format(u.screen_name))
+            lower += 1
+            u.data_source = 1
+            u.save()
+            continue
+        else:
+            # Tweets only within exclusion box:
+            #print("User: {} from within exclusion box".format(u.screen_name))
+            # Class as source = -1, and handle source=-1 in following block.
+            u.data_source = -1
+            u.save()
+            inside += 1
+            continue
+print("Outside box: {}".format(outside))
+print("Demoted to lower code: {}".format(lower))
+print("Inside box, due for delete/demote check: {}".format(inside))
+
+# Now check whether demoted users are isolated and should be removed.
+users = User.objects.filter(data_source=-1)
+isolated_count = 0
+for u in users:
+    linked = False
+    for r in u.relo_out.all():
+        if r.target_user.user_class == 2:
+            linked = True
+            break
+    for r in u.relo_in.all():
+        if r.source_user.user_class == 2:
+            linked = True
+            break
+    if linked == False:
+        isolated_count += 1
+        u.delete()
+    else:
+        if (u.followers_count is not None and u.followers_count > 5000) or \
+            (u.friends_count is not None and u.friends_count > 5000) or \
+            (u.statuses_count is not None and u.statuses_count > 10000):
+            # Spam account.
+            u.user_class = -1
+            u.data_source = 0
+            u.save()
+        else:
+            u.user_class = 1
+            u.data_source = 0
+            u.save()
+# Remove alter User objects which are no longer linked to anyone.
+lone_users = User.objects.filter(user_class__lte=1).filter(relo_out=None, relo_in=None)
+lone_users.count()
+lone_users.delete()
+
+#-----------------#
 #Dealing with old Databases
 #-----------------#
 # # Moving streamed column into data_source column

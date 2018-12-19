@@ -3,7 +3,7 @@ p {
 
 body {
     padding-left: 0px;
-    background: #DBEBFF;
+    background: white;
 }
 
 .user_details {
@@ -15,15 +15,19 @@ body {
 }
 
 .added_tweet, .streamed_tweet, .tweet_to_code {
-    padding: 15px;
-    margin: 10px;
-    border: 5px solid SteelBlue;
-    border-radius: 10px;
-    font-size:120%;
+    padding: 8px;
+    margin: 3px;
+    border: 3px solid SteelBlue;
+    border-radius: 8px;
+    font-size:100%;
 }
 
 .streamed_tweet {
     background-color: #fffbdb;
+}
+
+.retweeted_tweet {
+    background-color: Gainsboro;
 }
 
 .tweet_to_code {
