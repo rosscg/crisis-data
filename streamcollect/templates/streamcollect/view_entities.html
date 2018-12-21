@@ -51,7 +51,7 @@
       </tr>
       {% for url in urls %}
       <tr class="tr_alternate">
-        <td><b><a href="http://{{ url.url }}" target="_blank">{{ url.url|truncatechars:50 }}</a></td><td>{{ url.tweet_count }}</b></td>
+        <td><b><a href="https://{{ url.url }}" target="_blank">{{ url.url|truncatechars:50 }}</a></td><td>{{ url.tweet_count }}</b></td>
       </tr>
       {% endfor %}
     </table>

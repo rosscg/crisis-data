@@ -533,7 +533,7 @@ def submit(request):
         except ObjectDoesNotExist:
             print('Error! Failed to get Consumer Key from database.')
             return render(request, 'streamcollect/monitor_event.html')
-        auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'http://127.0.0.1:8000/callback')
+        auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'https://127.0.0.1:8000/callback')
         try:
             redirect_url = auth.get_authorization_url()
             request.session['request_token'] = auth.request_token

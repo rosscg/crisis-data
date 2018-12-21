@@ -16,7 +16,7 @@ from .config import FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, 
 
 from django.db import transaction
 from django.db.models import Count
-from urllib.request import urlopen # To unwind URLs
+from urllib.request import urlopen # To unwind URLs # TODO: Consider updating to requests package instead
 
 # For downloading media:
 from urllib.request import urlretrieve, urlopen
@@ -669,6 +669,8 @@ def download_media(tweet_data):
             print(e)
             return([], '')
             #raise   #TODO: Handle connection reset here
+            # TODO: if above error not important, fold this try into above with:
+            # response = urlopen(insta_url).read()
         soup = BeautifulSoup(page_source, 'html.parser')
 
         insta_image = soup.find_all("meta", property="og:image")
