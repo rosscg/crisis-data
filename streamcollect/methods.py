@@ -19,7 +19,7 @@ from django.db.models import Count
 from urllib.request import urlopen # To unwind URLs # TODO: Consider updating to requests package instead
 
 # For downloading media:
-from urllib.request import urlretrieve, urlopen
+from urllib.request import urlretrieve # TODO: Consider updating to requests package instead
 import urllib.parse as urlparse
 from bs4 import BeautifulSoup
 import os
@@ -151,6 +151,7 @@ def check_spam_account(user_data):
     #TODO: Testing users for validity of this setting choice:
     with open('users_rejected_as_spam.txt', 'a') as f:
         print('{}, {}, {}, {}, {}'.format(user_data.screen_name, user_data.id_str, user_data.followers_count, user_data.friends_count, user_data.statuses_count), file=f)
+    f.close()
     return True
 
 
@@ -781,6 +782,7 @@ def save_url(url_text, tweet_object):
     if stripped[:11] == 'twitter.com' and stripped[:25] is not 'twitter.com/i/web/status/':
         with open('ignored_tw_urls_log.txt', 'a') as f:
             print('Pre-unwound: {}'.format(url_text), file=f)
+        f.close()
         return
 
     try:
@@ -795,6 +797,7 @@ def save_url(url_text, tweet_object):
         with open('ignored_tw_urls_log.txt', 'a') as f:
             print(unwound, file=f)
             print('Original: {}'.format(stripped), file=f)
+        f.close()
         return
     url, created = Url.objects.get_or_create(url=unwound)
     #if created:

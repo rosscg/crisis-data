@@ -109,7 +109,7 @@
       }
 
       if( js_list[i].lat != null ) { //#TODO: Check why some coordinates are returning here as null, should be fixed and can remove.
-        L.marker([js_list[i].lat, js_list[i].lon], {icon: icon}).addTo(mymap).bindPopup(js_list[i].text + "<br><a href=\"https://www.twitter.com/" + js_list[i].author + "/status/" + js_list[i].tweet_id + "\" target=\"_blank\">Source</a>");
+        L.marker([js_list[i].lat, js_list[i].lon], {icon: icon}).addTo(mymap).bindPopup(js_list[i].text + "<br><a href=\"https://twitter.com/" + js_list[i].author + "/status/" + js_list[i].tweet_id + "\" target=\"_blank\">Source</a>");
       }
     };
 
