@@ -64,6 +64,7 @@ class stream_listener(StreamListener):
             if ignore:
                 with open('ignored_tw_kws_log.txt', 'a') as f:
                     print('{}, {}, \'{}\', {}'.format(kw, status.id_str, text, status.user.screen_name ), file=f)
+                f.close()
                 return
 
         # Exclude sources from exclusion list.
@@ -71,6 +72,7 @@ class stream_listener(StreamListener):
             if source in status.source:
                 with open('ignored_tw_sources_log.txt', 'a') as f:
                     print('{}, {}, \'{}\', {}'.format(status.source, status.id_str, text, status.user.screen_name ), file=f)
+                f.close()
                 return
 
         # TODO: Check how flow is affected by commenting this out, is it sustainable when relos are back?

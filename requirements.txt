@@ -9,6 +9,7 @@ Django==1.11.1
 django-celery-beat==1.0.1
 idna==2.5
 kombu==4.0.2
+lxml==4.2.5
 networkx==2.1
 oauthlib==2.0.2
 psycopg2==2.7.1

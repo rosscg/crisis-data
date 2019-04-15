@@ -12,7 +12,7 @@
       <div class="col-sm-4">
         <div class="user_details">
           <p>ID: <a href="{% url 'user_details' user_id=user.user_id %}">{{ user.user_id}}</a></p>
-          <p>Screen Name: <a href="http://www.twitter.com/{{ user.screen_name }}">{{ user.screen_name }}</a></p>
+          <p>Screen Name: <a href="https://twitter.com/{{ user.screen_name }}">{{ user.screen_name }}</a></p>
           <p>Name: {{ user.name}}</p>
           <p>User Class: {{ user.user_class }}</p>
         </div>
