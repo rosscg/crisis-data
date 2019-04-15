@@ -203,6 +203,20 @@ class User(models.Model):
             user_class=str(self.user_class),
             group=str(user_code))
 
+    def as_row(self, header=False):
+        if header: # return header titles rather than data.
+            return ['user_id', 'screen_name', 'created_at', 'default_profile', 'default_profile_image', 'description', 'favourites_count', 'followers_count', 'friends_count', 'geo_enabled', 'has_extended_profile', 'is_translation_enabled', 'lang', 'listed_count', 'location', 'name', 'needs_phone_verification', 'protected', 'statuses_count', 'suspended', 'time_zone', 'translator_type', 'url', 'utc_offset', 'verified', 'user_class', 'data_source', 'old_screen_name', 'is_deleted', 'is_deleted_observed', 'user_code', 'user_code_id']
+        try:
+            user_data_code = self.coding_for_user.filter(coding_id=1)[0].data_code
+            user_code = user_data_code.name
+            user_code_id = user_data_code.data_code_id
+        except:
+            user_code = None
+            user_code_id = None
+        row = [self.user_id, self.screen_name, self.created_at, self.default_profile, self.default_profile_image, self.description.replace('\n', ' '), self.favourites_count, self.followers_count, self.friends_count, self.geo_enabled, self.has_extended_profile, self.is_translation_enabled, self.lang, self.listed_count, self.location, self.name, self.needs_phone_verification, self.protected, self.statuses_count, self.suspended, self.time_zone, self.translator_type, self.url, self.utc_offset, self.verified, self.user_class, self.data_source, self.old_screen_name, self.is_deleted, self.is_deleted_observed, user_code, user_code_id]
+        return row
+
+
 
 class Tweet(models.Model):
     id = models.AutoField(primary_key=True)
@@ -254,7 +268,12 @@ class Tweet(models.Model):
             lon = lon,
             data_source = self.data_source
             )
-
+    # TODO: To complete. Sanitise \n characters in tweet text.
+    def as_row(self, header=False):
+        if header: # return header titles rather than data.
+            return ['tweet_id', 'author', 'text']
+        row = [self.tweet_id, self.author.screen_name, self.text.replace('\n', ' ')]
+        return row
 
 class DataCodeDimension(models.Model):
     name = models.CharField(max_length=20, null=False)

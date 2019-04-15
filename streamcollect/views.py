@@ -14,6 +14,8 @@ from celery.task.control import inspect
 import tweepy
 import random
 
+import csv # for tweetData, userData.csv generation
+
 from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, create_relos_from_list_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
@@ -484,7 +486,7 @@ def submit(request):
         task = trim_spam_accounts.delay()
         return redirect('functions')
 
-    elif "update_user_relos" in request.POST:
+    elif "create_relos_from_list" in request.POST:
         task = update_user_relos_task.delay()
         return redirect('functions')
 
@@ -666,6 +668,27 @@ def submit(request):
                 pass
         request.session['active_data_sources'] = actives_list
         return redirect('monitor_event')
+
+    elif "save_coded_data_to_file" in request.POST:
+        # Ouput all the data that has been coded by primary coder to file.
+        coding_subject = request.session.get('coding_subject', None)
+        if coding_subject == 'tweet':
+            data = Tweet.objects.filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__data_code_id__gt=0)
+            with open('tweetData.csv', 'w') as csvFile:
+                writer = csv.writer(csvFile)
+                writer.writerow(data[0].as_row(header=True))
+                for tweet in data:
+                    writer.writerow(tweet.as_row())
+            csvFile.close()
+        elif coding_subject == 'user':
+            data = User.objects.filter(coding_for_user__coding_id=1, coding_for_user__data_code__data_code_id__gt=0)
+            with open('userData.csv', 'w') as csvFile:
+                writer = csv.writer(csvFile)
+                writer.writerow(data[0].as_row(header=True))
+                for user in data:
+                    writer.writerow(user.as_row())
+            csvFile.close()
+        return redirect('coding_dash')
 
     else:
         print("Unlabelled button pressed")
