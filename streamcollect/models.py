@@ -169,8 +169,25 @@ class User(models.Model):
 
     # These currently represent the degrees to ego accounts and therefore only
     # relevant to alter objects, or egos with relationships with other egos.
+    # TODO: These sometimes appear to be -1
     in_degree = models.IntegerField(default=0)
     out_degree = models.IntegerField(default=0)
+
+    # Store centrality measures for network.
+    degree_centrality = models.FloatField(null=True)
+    betweenness_centrality = models.FloatField(null=True)
+    load_centrality = models.FloatField(null=True)
+    eigenvector_centrality = models.FloatField(null=True)
+    katz_centrality = models.FloatField(null=True)
+    closeness_centrality = models.FloatField(null=True)
+    undirected_eigenvector_centrality = models.FloatField(null=True)
+
+    # Store metrics from user stream
+    tweets_per_hour = models.FloatField(null=True)
+    ratio_original = models.FloatField(null=True) # Excludes retweets, replies, quotes
+    ratio_detected = models.FloatField(null=True) # Streamed : added
+    ratio_media = models.FloatField(null=True) # Containing attached media
+
 
     def __str__(self):
         if self.screen_name:
@@ -203,19 +220,28 @@ class User(models.Model):
             user_class=str(self.user_class),
             group=str(user_code))
 
-    def as_row(self, header=False):
+    def as_row(self, header=False, data_code_id=None):
+        fields = [f.name for f in User._meta.get_fields()]
         if header: # return header titles rather than data.
-            return ['user_id', 'screen_name', 'created_at', 'default_profile', 'default_profile_image', 'description', 'favourites_count', 'followers_count', 'friends_count', 'geo_enabled', 'has_extended_profile', 'is_translation_enabled', 'lang', 'listed_count', 'location', 'name', 'needs_phone_verification', 'protected', 'statuses_count', 'suspended', 'time_zone', 'translator_type', 'url', 'utc_offset', 'verified', 'user_class', 'data_source', 'old_screen_name', 'is_deleted', 'is_deleted_observed', 'user_code', 'user_code_id']
-        try:
-            user_data_code = self.coding_for_user.filter(coding_id=1)[0].data_code
+            return fields + ['user_code', 'user_code_id']
+        try: # Check if user has been coded. TODO: Could add all codes dynamically instead of only selected one.
+            if data_code_id == None:
+                # No data code specified, default to first code
+                user_data_code = self.coding_for_user.filter(coding_id=1)[0].data_code
+            else:
+                user_data_code = self.coding_for_user.filter(coding_id=1, data_code__id=data_code_id)[0].data_code
             user_code = user_data_code.name
             user_code_id = user_data_code.data_code_id
         except:
             user_code = None
             user_code_id = None
-        row = [self.user_id, self.screen_name, self.created_at, self.default_profile, self.default_profile_image, self.description.replace('\n', ' '), self.favourites_count, self.followers_count, self.friends_count, self.geo_enabled, self.has_extended_profile, self.is_translation_enabled, self.lang, self.listed_count, self.location, self.name, self.needs_phone_verification, self.protected, self.statuses_count, self.suspended, self.time_zone, self.translator_type, self.url, self.utc_offset, self.verified, self.user_class, self.data_source, self.old_screen_name, self.is_deleted, self.is_deleted_observed, user_code, user_code_id]
+        def get_value(field):
+            try:
+                return getattr(self, field)
+            except:
+                return None
+        row = [get_value(g) for g in fields] + [user_code, user_code_id]
         return row
-
 
 
 class Tweet(models.Model):

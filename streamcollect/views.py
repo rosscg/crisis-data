@@ -21,6 +21,7 @@ from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, create_relos_from_list_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
 from .methods import update_tracked_tags, add_users_from_mentions#, check_spam_account
 from .networks import create_gephi_file
+from .calculate_metrics import calculate_user_graph_metrics, calculate_user_stream_metrics
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
 from twdata import userdata #TODO: Is this used?
 from twdata.tasks import twitter_stream_task
@@ -518,17 +519,6 @@ def submit(request):
         task = compare_live_data_task.delay()
         return redirect('functions')
 
-    elif "export_data" in request.POST:
-        tweets = Tweet.objects.filter(data_source__gt=0)
-        i=0
-        print('Function currently disabled')
-        #for tweet in tweets:
-        #    i += 1
-        #    txt = open('data_export/'+str(i)+'.txt','w+') # TODO: Fix directory use with os.path
-        #    txt.write(tweet.text)
-        #    txt.close()
-        return redirect('functions')
-
     elif "twitter_auth" in request.POST: #TODO: No longer working?
         try:
             ckey=ConsumerKey.objects.all()[:1].get()
@@ -613,7 +603,7 @@ def submit(request):
     elif "undo_code" in request.POST:
         coding_id = request.session.get('active_coder', 1)
         active_coding_dimension = int(request.session.get('active_coding_dimension'))
-        last_coding = Coding.objects.filter(coding_id=coding_id, data_code__dimension__id=active_coding_dimension, data_code__data_code_id__gt=0).order_by('updated').last() # Get Last coded object for active coder, in current dimension.
+        last_coding = Coding.objects.filter(coding_id=coding_id, data_code__dimension__id=active_coding_dimension, data_code__data_code_id__gt=0).order_by('updated').last() # Get last coded object for active coder, in current dimension.
         if last_coding:
             if coding_id == 1:
                 blank_data_code = DataCode.objects.get(data_code_id=0)
@@ -668,6 +658,12 @@ def submit(request):
                 pass
         request.session['active_data_sources'] = actives_list
         return redirect('monitor_event')
+
+    elif "network_metrics" in request.POST:
+        users = User.objects.filter(user_class=2)
+        calculate_user_graph_metrics(users, Relo.objects.filter(source_user__user_class=2, target_user__user_class=2))
+        calculate_user_stream_metrics(users)
+        return redirect('functions')
 
     elif "save_coded_data_to_file" in request.POST:
         # Ouput all the data that has been coded by primary coder to file.
