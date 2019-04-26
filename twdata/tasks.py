@@ -1,7 +1,6 @@
 from celery import shared_task
 
 from .twitter_data import twitter_stream
-#from streamcollect.models import CeleryTask
 from streamcollect.config import STREAM_REFRESH_RATE
 
 
