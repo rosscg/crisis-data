@@ -148,8 +148,19 @@ Usage - Data Analysis:
 The build can host python notebooks which use Django to access models. Run the notebook server with:
 
 > ```
-> cd notebooks
-> ../manage.py shell_plus --notebook
+>$ cd notebooks
+>$ ../manage.py shell_plus --notebook
 > ```
 
-Note: To run the notebook from outside of the Django directory, see the answer [here](https://stackoverflow.com/questions/35483328/how-to-setup-jupyter-ipython-notebook-for-django)
+Note: To run the notebook from outside of the Django directory, see the answer [here](https://stackoverflow.com/questions/35483328/how-to-setup-jupyter-ipython-notebook-for-django).
+
+
+Remote Access:
+------------
+Use [ngrok](https://ngrok.com/) to serve the site remotely: `./ngrok http 8000`. Create an account and add your authtoken to avoid 8-hour timeout.
+
+To enable notebooks via ngrok, remote access needs to be enabled:
+* Create a config file: `$ jupyter notebook --generate-config`
+* Edit the config file by uncommenting the line containing `c.NotebookApp.allow_remote_access` and set to `True`.
+* Set a password for the notebook server: `$ jupyter notebook password`
+* Run ngrok `./ngrok http 8888`
