@@ -152,8 +152,29 @@ The build can host python notebooks which use Django to access models. Run the n
 >$ ../manage.py shell_plus --notebook
 > ```
 
-Note: To run the notebook from outside of the Django directory, see the answer [here](https://stackoverflow.com/questions/35483328/how-to-setup-jupyter-ipython-notebook-for-django).
+Note: To run the notebook from outside of the Django directory, edit the kernel settings found at `/Users/ross/Library/Jupyter/kernels/django_extensions` as follows (substitute `USERNAME`):
 
+> ```
+{
+>  "argv": [
+>    "/Users/USERNAME/Documents/crisis-data/venv/bin/python",
+>    "-m",
+>    "ipykernel_launcher",
+>    "-f",
+>    "{connection_file}",
+>    "--ext",
+>    "django_extensions.management.notebook_extension"
+>  ],
+>  "env": {
+>    "DJANGO_SETTINGS_MODULE": "homesite.settings",
+>    "PYTHONPATH": "/Users/USERNAME/Documents/crisis-data"
+>  },
+>  "display_name": "Crisis-Data Django",
+>  "language": "python",
+>  "interrupt_mode": "signal",
+>  "metadata": {}
+>}
+> ```
 
 Remote Access:
 ------------
