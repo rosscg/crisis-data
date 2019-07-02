@@ -11,102 +11,104 @@ Note: Excluding Tweets containing the term 'pray' is hard-coded to reduce unnece
 
 Local installation (Mac):
 ------------
-Install python3.
-Install Postgres.app, configure `$PATH` as detailed in step 3 [here](http://postgresapp.com/) (tested with v9.6).
-This build uses Postgres (over sqlite) as a database due to high write demands
-Create database from Postgres command line:
+* Install python3.
+* Install Postgres.app, configure `$PATH` as detailed in step 3 [here](http://postgresapp.com/) (tested with v9.6).
+* This build uses Postgres (over sqlite) as a database due to high write demands
+* Create database from Postgres command line:
 
-> ```
-> $ psql
-> $ CREATE DATABASE [dbname];
-> ```
+        > ```
+        > $ psql
+        > $ CREATE DATABASE [dbname];
+        > ```
 
-Turn off auto-sleep / install Caffeine (Mac) (only necessary during data collection).
+* Turn off auto-sleep / install Caffeine (Mac) (only necessary during data collection).
+* Install Redis from https://redis.io/ or brew, and build:
 
-Install Redis from https://redis.io/ or brew, and build:
+        > ```
+        > $ cd redis-4.0.1
+        > $ make
+        > $ make test
+        > $ src/redis-server
+        > ```
 
-> ```
-> $ cd redis-4.0.1
-> $ make
-> $ make test
-> $ src/redis-server
-> ```
+* You may need to install SSL certificates if using python 3.6, simply run `/Applications/Python 3.6/Install Certificates.command` as explained [here](https://bugs.python.org/issue28150).
+* Clone this project and open its directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually. The pip command below avoids using cache due to pip bug:
 
-You may need to install SSL certificates if using python 3.6, simply run `/Applications/Python 3.6/Install Certificates.command` as explained [here](https://bugs.python.org/issue28150).
-Clone this project and open directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually. The pip command below avoids using cache due to pip bug:
+        > ```
+        > $ git clone https://github.com/rosscg/crisis-data.git
+        > $ cd crisis-data
+        > $ python3 -m venv venv
+        > $ source venv/bin/activate
+        > $ pip install -r requirements.txt --no-cache-dir
+        > ```
 
-> ```
-> $ git clone https://github.com/rosscg/crisis-data.git
-> $ cd crisis-data
-> $ python3 -m venv venv
-> $ source venv/bin/activate
-> $ pip install -r requirements.txt --no-cache-dir
-> ```
+* Check if Hardcoded auto-coding line is still in `views.py` - from approx line 150 and remove (uncomment appropriate line beneath block).
 
-Check if Hardcoded auto-coding line is still in `views.py` - from approx line 150 and remove (uncomment appropriate line beneath block).
-
-Set database name [dbname], username and password in `homesite/settings.py`, line ~91.
+* Set database name, username and password in `homesite/settings.py`, line ~84.
 Default username is the system user name, default password is none.
 
-Re-name `streamcollect/tokensSKELETON.py` to `tokens.py` and add (at least) `CONSUMER_KEY` and `CONSUMER_SECRET` (generated from https://apps.twitter.com/).
+* Re-name `streamcollect/tokensSKELETON.py` to `tokens.py` and add (at least) `CONSUMER_KEY` and `CONSUMER_SECRET` (generated from https://apps.twitter.com/).
 
-Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate terminal windows:
-Note: `--concurrency=4` should be the number of cores in the system, can remove to default to this value, but need to update `CONCURRENT_TASKS` to the same value.
+* Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate terminal windows:
 
-> ```
-> $ redis-4.0.1/src/redis-server
-> $ celery -A homesite worker --concurrency=4 -l info -n object_worker -Q save_object_q
-> $ celery -A homesite worker --concurrency=4 -l info -n stream_worker -Q stream_q
-> $ celery -A homesite worker --concurrency=4 -l info -n media_worker -Q save_media_q
-> $ celery -A homesite beat -l info -S django
-> ```
+        > ```
+        > $ redis-4.0.1/src/redis-server
+        > $ celery -A homesite worker --concurrency=4 -l info -n object_worker -Q save_object_q
+        > $ celery -A homesite worker --concurrency=4 -l info -n stream_worker -Q stream_q
+        > $ celery -A homesite worker --concurrency=4 -l info -n media_worker -Q save_media_q
+        > $ celery -A homesite beat -l info -S django
+        > ```
+  * Note: `--concurrency=4` should be the number of cores in the system, can remove to default to this value, but need to update `CONCURRENT_TASKS` to the same value.
 
-Migrate database and run server:
-> ```
-> $ python manage.py migrate
-> $ python manage.py runserver
-> ```
+* Migrate database and run server:
 
-  OPTIONAL: Log in to the admin interface and add a period task to `update_user_relos_task` daily (alternatively, remove comment from `update_user_relos_periodic` in `tasks.py`)
+        > ```
+        > $ python manage.py migrate
+        > $ python manage.py runserver
+        > ```
 
-Load Twitter authentication details with the 'Load From Config' button on the Twitter Authentication page.
-Additional access tokens can be added via the web interface, requiring a user to log in to Twitter and authorise. 'Export Tokens' can save these tokens to a file for future use.
-Streams currently need at least 3 tokens added (one for each stream).
+ * Optional: Log in to the admin interface and add a period task to `update_user_relos_task` daily (alternatively, remove comment from `update_user_relos_periodic` in `tasks.py`)
+
+* Load Twitter authentication details with the 'Load From Config' button on the Twitter Authentication page.
+  * Additional access tokens can be added via the web interface, requiring a user to log in to Twitter and authorise. 'Export Tokens' can save these tokens to a file for future use.
+  * Streams currently need at least 3 tokens added (one for each stream).
 
 Notes:
-If Redis is running from previous launch (i.e. returns `bind: Address already in use`) find the port number (second column) and kill:
-> ```
-> $ ps aux | grep redis
-> $ kill -9 [PORT NUMBER]
-> ```
+* If Redis is running from previous launch (i.e. returns `bind: Address already in use`) find the port number (second column) and kill:
 
-Any change to the code requires Celery terminal commands to be relaunched.
+        > ```
+        > $ ps aux | grep redis
+        > $ kill -9 [PORT NUMBER]
+        > ```
+
+* Any change to the code requires Celery terminal commands to be relaunched.
 
 
 Usage - Data Collection:
 ------------
 The key functionality of the software is tracking keywords and GPS coordinates.
 
-If necessary, create new database in Postgres and adjust in `settings.py`.
-Edit `config.py` details as needed.
-  The exclusions aim to reduce the amount of processing and noise but affect the sample and therefore need to be considered with respect to the proposed analysis.
-Decide on periodic tasks in `tasks.py` (uncomment the decorators to run, requires the celery beat running).
-  `update_user_relos_periodic` is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
-  `update_data_periodic allows` new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. `REFRESH_STREAM` should be set to true, to add the new tags periodically.
-Create the event object - at the least it needs a name. Optionally add coordinates for the geo stream.
-Add keywords. Keywords cannot include spaces.
-High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
-Run streams, disable OS auto-sleep.
+* If necessary, create new database in Postgres and adjust in `settings.py`.
+* Edit `config.py` details as needed.
+    * The exclusions aim to reduce the amount of processing and noise but affect the sample and therefore need to be considered with respect to the proposed analysis.
+* Decide on periodic tasks in `tasks.py` (uncomment the decorators to run, requires the celery beat running).
+    * `update_user_relos_periodic` is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
+    * `update_data_periodic allows` new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. `REFRESH_STREAM` should be set to true, to add the new tags periodically.
+* Create the event object - at the least it needs a name. Optionally add coordinates for the geo stream.
+* Add keywords. Keywords cannot include spaces.
+* High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
+* Run streams, disable OS auto-sleep.
 
 After collection:
-  Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until its termination is processed.
-  Create a dump of the database (see below). Do this at other relevant milestones.
-  Run trim_spam_accounts.
-  Run save_user_timelines.
-  Run update_relationship_data after a suitable time period (slow process due to rate limits). This currently only supports running once. Running again will damage the data by overwriting the `user_network_update_observed_at` value.
-  Run `create_relos_from_list`.
-  Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2). See section below.
-  Export to suitable format for analysis (to be implemented).
+
+* Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until its termination is processed.
+* Create a dump of the database (see below). Do this at other relevant milestones.
+* Run trim_spam_accounts.
+* Run save_user_timelines.
+* Run update_relationship_data after a suitable time period (slow process due to rate limits). This currently only supports running once. Running again will damage the data by overwriting the `user_network_update_observed_at` value.
+* Run `create_relos_from_list`.
+* Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2). See section below.
+* Export to suitable format for analysis (to be implemented) or access via notebooks.
 
 Information on dumping the database to a file (for backup) can be found [here](https://www.postgresql.org/docs/9.1/static/backup-dump.html).
 
@@ -137,8 +139,8 @@ If selected from the coding dashboard, the secondary coder will be presented wit
 The results link will show the proportions distributed to each code, and the disagreement matrix for the two coders.
 
 Note:
-  Currently only one url from a Tweet is shown in the lower-right window, but in rare cases a Tweet may contain multiple urls.
-  If the Tweet (or user) has been deleted and therefore is not displayed in the bottom-left window, the original text content can still be seen by scrolling down in the top interface window.
+* Currently only one url from a Tweet is shown in the lower-right window, but in rare cases a Tweet may contain multiple urls.
+* If the Tweet (or user) has been deleted and therefore is not displayed in the bottom-left window, the original text content can still be seen by scrolling down in the top interface window.
 
 
 Usage - Data Analysis:
