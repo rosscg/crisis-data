@@ -155,7 +155,7 @@ The build can host python notebooks which use Django to access models. Run the n
 Note: To run the notebook from outside of the Django directory, edit the kernel settings found at `/Users/ross/Library/Jupyter/kernels/django_extensions` as follows (substitute `USERNAME`):
 
 > ```
-{
+> {
 >  "argv": [
 >    "/Users/USERNAME/Documents/crisis-data/venv/bin/python",
 >    "-m",
@@ -173,7 +173,7 @@ Note: To run the notebook from outside of the Django directory, edit the kernel 
 >  "language": "python",
 >  "interrupt_mode": "signal",
 >  "metadata": {}
->}
+> }
 > ```
 
 Remote Access:
