@@ -12,7 +12,7 @@ Note: Excluding Tweets containing the term 'pray' is hard-coded to reduce unnece
 Local installation (Mac):
 ------------
 Install python3.
-Install Postgres.app, configure '$PATH' as detailed in step 3 [here](http://postgresapp.com/) (tested with v9.6).
+Install Postgres.app, configure `$PATH` as detailed in step 3 [here](http://postgresapp.com/) (tested with v9.6).
 This build uses Postgres (over sqlite) as a database due to high write demands
 Create database from Postgres command line:
 
@@ -32,7 +32,7 @@ Install Redis from https://redis.io/ or brew, and build:
 > $ src/redis-server
 > ```
 
-You may need to install SSL certificates if using python 3.6, simply run '/Applications/Python 3.6/Install Certificates.command' as explained [here](https://bugs.python.org/issue28150).
+You may need to install SSL certificates if using python 3.6, simply run `/Applications/Python 3.6/Install Certificates.command` as explained [here](https://bugs.python.org/issue28150).
 Clone this project and open directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually. The pip command below avoids using cache due to pip bug:
 
 > ```
@@ -43,15 +43,15 @@ Clone this project and open directory. Create virtual environment and install de
 > $ pip install -r requirements.txt --no-cache-dir
 > ```
 
-Check if Hardcoded auto-coding line is still in 'views.py' - from approx line 150 and remove (uncomment appropriate line beneath block).
+Check if Hardcoded auto-coding line is still in `views.py` - from approx line 150 and remove (uncomment appropriate line beneath block).
 
-Set database name [dbname], username and password in 'homesite/settings.py', line ~91.
+Set database name [dbname], username and password in `homesite/settings.py`, line ~91.
 Default username is the system user name, default password is none.
 
-Re-name 'streamcollect/tokensSKELETON.py' to 'tokens.py' and add (at least) 'CONSUMER_KEY' and 'CONSUMER_SECRET' (generated from https://apps.twitter.com/).
+Re-name `streamcollect/tokensSKELETON.py` to `tokens.py` and add (at least) `CONSUMER_KEY` and `CONSUMER_SECRET` (generated from https://apps.twitter.com/).
 
 Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate terminal windows:
-Note: '--concurrency=4' should be the number of cores in the system, can remove to default to this value, but need to update 'CONCURRENT_TASKS' to the same value.
+Note: `--concurrency=4` should be the number of cores in the system, can remove to default to this value, but need to update `CONCURRENT_TASKS` to the same value.
 
 > ```
 > $ redis-4.0.1/src/redis-server
@@ -67,14 +67,14 @@ Migrate database and run server:
 > $ python manage.py runserver
 > ```
 
-  OPTIONAL: Log in to the admin interface and add a period task to 'update_user_relos_task' daily (alternatively, remove comment from 'update_user_relos_periodic' in 'tasks.py')
+  OPTIONAL: Log in to the admin interface and add a period task to `update_user_relos_task` daily (alternatively, remove comment from `update_user_relos_periodic` in `tasks.py`)
 
 Load Twitter authentication details with the 'Load From Config' button on the Twitter Authentication page.
 Additional access tokens can be added via the web interface, requiring a user to log in to Twitter and authorise. 'Export Tokens' can save these tokens to a file for future use.
 Streams currently need at least 3 tokens added (one for each stream).
 
 Notes:
-If Redis is running from previous launch (i.e. returns 'bind: Address already in use') find the port number (second column) and kill:
+If Redis is running from previous launch (i.e. returns `bind: Address already in use`) find the port number (second column) and kill:
 > ```
 > $ ps aux | grep redis
 > $ kill -9 [PORT NUMBER]
@@ -87,24 +87,24 @@ Usage - Data Collection:
 ------------
 The key functionality of the software is tracking keywords and GPS coordinates.
 
-If necessary, create new database in Postgres and adjust in 'settings.py'.
-Edit 'config.py' details as needed.
+If necessary, create new database in Postgres and adjust in `settings.py`.
+Edit `config.py` details as needed.
   The exclusions aim to reduce the amount of processing and noise but affect the sample and therefore need to be considered with respect to the proposed analysis.
-Decide on periodic tasks in 'tasks.py' (uncomment the decorators to run, requires the celery beat running).
-  'update_user_relos_periodic' is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
-  'update_data_periodic allows' new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. 'REFRESH_STREAM' should be set to true, to add the new tags periodically.
+Decide on periodic tasks in `tasks.py` (uncomment the decorators to run, requires the celery beat running).
+  `update_user_relos_periodic` is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
+  `update_data_periodic allows` new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. `REFRESH_STREAM` should be set to true, to add the new tags periodically.
 Create the event object - at the least it needs a name. Optionally add coordinates for the geo stream.
 Add keywords. Keywords cannot include spaces.
 High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
 Run streams, disable OS auto-sleep.
 
 After collection:
-  Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until it's termination is processed.
+  Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until its termination is processed.
   Create a dump of the database (see below). Do this at other relevant milestones.
   Run trim_spam_accounts.
   Run save_user_timelines.
-  Run update_relationship_data after a suitable time period (slow process due to rate limits). This currently only supports running once. Running again will damage the data by overwriting the 'user_network_update_observed_at' value.
-  Run 'create_relos_from_list'.
+  Run update_relationship_data after a suitable time period (slow process due to rate limits). This currently only supports running once. Running again will damage the data by overwriting the `user_network_update_observed_at` value.
+  Run `create_relos_from_list`.
   Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2). See section below.
   Export to suitable format for analysis (to be implemented).
 
