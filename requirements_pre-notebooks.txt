@@ -1,0 +1,25 @@
+amqp==2.1.4
+beautifulsoup4==4.6.3
+billiard==3.5.0.2
+celery==4.0.2
+certifi==2017.4.17
+chardet==3.0.4
+decorator==4.3.0
+Django==1.11.1
+django-celery-beat==1.0.1
+idna==2.5
+kombu==4.0.2
+lxml==4.2.5
+networkx==2.1
+oauthlib==2.0.2
+psycopg2==2.7.1
+PySocks==1.6.7
+python-dateutil==2.6.0
+pytz==2017.2
+redis==2.10.5
+requests==2.18.1
+requests-oauthlib==0.8.0
+six==1.10.0
+-e git+https://github.com/rosscg/tweepy.git@20fd9aa7d218d175cd83d0c351b21200fe6fe671#egg=tweepy
+urllib3==1.21.1
+vine==1.1.3

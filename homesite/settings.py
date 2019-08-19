@@ -27,7 +27,7 @@ SECRET_KEY = '^jhmoug5pmt^(x(4)c*5cjwi&(v913&@b*$yqs4-_!1!)41-%)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', '69b70668.ngrok.io']
+ALLOWED_HOSTS = ['127.0.0.1']
 X_FRAME_OPTIONS = 'DENY'
 
 # Application definition
@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'streamcollect',
     'twdata',
-    'django_celery_beat'
+    'django_celery_beat',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [
@@ -126,3 +127,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+NOTEBOOK_ARGUMENTS = [
+    '--ip=127.0.0.1',
+    '--port=8888',
+    '--no-browser',
+]

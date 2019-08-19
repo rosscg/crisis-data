@@ -30,8 +30,9 @@ user_class represents the relevance of the user to the collection as follows:
   0 = Alter: Follows or is followed by an ego user. Also users which are quoted by or replied to by an ego user. Unsorted.
   -1 = A class 0 user which has been identified as a 'spam' account.
 in_degree and out_degree currently only represent the degrees to ego accounts and are therefore only relevant to alter objects, or egos with relationships with other egos.
-Note: id is a field generated automatically, the user's Twitter id is stored as user_id
+Various metrics for the user are calculated and stored here for analysis (e.g. centrality measures).
 data_source represents the highest source of the user's observed Tweets. [TODO: effectively duplicated, and may be imputed by running through their tweets.data_source values]
+Note: id is a field generated automatically, the user's Twitter id is stored as user_id
 
 
 Tweet

@@ -169,8 +169,25 @@ class User(models.Model):
 
     # These currently represent the degrees to ego accounts and therefore only
     # relevant to alter objects, or egos with relationships with other egos.
+    # TODO: These sometimes appear to be -1
     in_degree = models.IntegerField(default=0)
     out_degree = models.IntegerField(default=0)
+
+    # Store centrality measures for network.
+    degree_centrality = models.FloatField(null=True)
+    betweenness_centrality = models.FloatField(null=True)
+    load_centrality = models.FloatField(null=True)
+    eigenvector_centrality = models.FloatField(null=True)
+    katz_centrality = models.FloatField(null=True)
+    closeness_centrality = models.FloatField(null=True)
+    undirected_eigenvector_centrality = models.FloatField(null=True)
+
+    # Store metrics from user stream
+    tweets_per_hour = models.FloatField(null=True)
+    ratio_original = models.FloatField(null=True) # Excludes retweets, replies, quotes
+    ratio_detected = models.FloatField(null=True) # Streamed : added
+    ratio_media = models.FloatField(null=True) # Containing attached media
+
 
     def __str__(self):
         if self.screen_name:
@@ -202,6 +219,29 @@ class User(models.Model):
             title=title,
             user_class=str(self.user_class),
             group=str(user_code))
+
+    def as_row(self, header=False, data_code_id=None):
+        fields = [f.name for f in User._meta.get_fields()]
+        if header: # return header titles rather than data.
+            return fields + ['user_code', 'user_code_id']
+        try: # Check if user has been coded. TODO: Could add all codes dynamically instead of only selected one.
+            if data_code_id == None:
+                # No data code specified, default to first code
+                user_data_code = self.coding_for_user.filter(coding_id=1)[0].data_code
+            else:
+                user_data_code = self.coding_for_user.filter(coding_id=1, data_code__id=data_code_id)[0].data_code
+            user_code = user_data_code.name
+            user_code_id = user_data_code.data_code_id
+        except:
+            user_code = None
+            user_code_id = None
+        def get_value(field):
+            try:
+                return getattr(self, field)
+            except:
+                return None
+        row = [get_value(g) for g in fields] + [user_code, user_code_id]
+        return row
 
 
 class Tweet(models.Model):
@@ -254,7 +294,12 @@ class Tweet(models.Model):
             lon = lon,
             data_source = self.data_source
             )
-
+    # TODO: To complete. Sanitise \n characters in tweet text.
+    def as_row(self, header=False):
+        if header: # return header titles rather than data.
+            return ['tweet_id', 'author', 'text']
+        row = [self.tweet_id, self.author.screen_name, self.text.replace('\n', ' ')]
+        return row
 
 class DataCodeDimension(models.Model):
     name = models.CharField(max_length=20, null=False)
