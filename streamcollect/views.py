@@ -304,6 +304,7 @@ def coding_results(request):
     total_table.append(['', total_main_coder.count(), '', total_secondary_coder.count()])
 
     # Populate disagree matrix
+    # TODO: Works only for Tweets, not Users codings.
     for t in double_coded_tweets:
         coding1 = t.coding_for_tweet.filter(coding_id=1)[0]
         coding2 = t.coding_for_tweet.filter(coding_id=2)[0]
@@ -355,10 +356,10 @@ def coding_disagreement(request, coder1code, coder2code):
     coder1code = DataCode.objects.get(name = codes[int(coder1code)])
     coder2code = DataCode.objects.get(name = codes[int(coder2code)])
 
-    total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding__data_code__dimension_id=active_coding_dimension, coding__data_code=coder2code).filter(coding__coding_id=1, coding__data_code__dimension_id=active_coding_dimension, coding__data_code=coder1code)
+    total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder2code).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder1code)
     tweets = []
     for t in total_double_coded:
-        if t.coding.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != t.coding.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
+        if t.coding_for_tweet.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != t.coding_for_tweet.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
             tweets.append(t)
 
     return render(request, 'streamcollect/coding_disagreement.html', {'tweets': tweets})
