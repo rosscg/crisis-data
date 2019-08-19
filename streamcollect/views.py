@@ -311,24 +311,25 @@ def coding_results(request):
     for t in double_coded_tweets:
         coding1 = t.coding_for_tweet.filter(coding_id=1)[0]
         coding2 = t.coding_for_tweet.filter(coding_id=2)[0]
-        if coding1.data_code.data_code_id != coding2.data_code.data_code_id:
-            disagree_table[index_dict.get(coding1.data_code.name)][index_dict.get(coding2.data_code.name)] += 1
+        disagree_table[index_dict.get(coding1.data_code.name)][index_dict.get(coding2.data_code.name)] += 1
     # Add proportion of disagreed codes by row
+    i=1
     for row in disagree_table[1:]:
         total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__name=row[0], coding_for_tweet__data_code__dimension_id=active_coding_dimension).count()
         if total_double_coded > 0:
-            prop = '{:.1%}'.format(sum(row[1:]) / total_double_coded)
+            prop = '{:.1%}'.format((sum(row[1:]) - row[i]) / total_double_coded)
         else:
             prop = '0%'
         row.append(prop)
         row.append(total_double_coded)
+        i += 1
     # Add proportion of disagreed codes by col
     disagreement_cols = []
     total_cols = []
     i = 1
     while i < (len(disagree_table[0])-2):
         total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code__name=disagree_table[0][i]).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__dimension_id=active_coding_dimension).count()
-        total_disagreed = sum([x[i] for x in disagree_table[1:]])
+        total_disagreed = sum([x[i] for x in disagree_table[1:]]) - disagree_table[i][i]
         if total_double_coded > 0:
             prop = '{:.1%}'.format(total_disagreed / total_double_coded)
         else:
