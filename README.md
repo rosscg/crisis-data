@@ -5,9 +5,6 @@ This application is designed to collect user network data from Twitter using key
 
 The build uses a fork of Tweepy which allows multiple tokens to be used.
 
-Note: Excluding Tweets containing the term 'pray' is hard-coded to reduce unnecessary content (as the original application involved disaster events).
-
-
 ------------
 ### Local installation (Mac):
 * Install python3.

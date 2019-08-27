@@ -261,7 +261,7 @@ def add_user(user_class=0, user_data=None, data_source=0, **kwargs):
     u.listed_count = user_data.listed_count
     u.location = user_data.location
     u.name = user_data.name
-    #u.needs_phone_verification = user_data.needs_phone_verification
+    u.needs_phone_verification = user_data.needs_phone_verification
     #u.profile_background_color = user_data.profile_background_color
     #u.profile_background_image_url = user_data.profile_background_image_url
     #u.profile_background_image_url_https = user_data.profile_background_image_url_https

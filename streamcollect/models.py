@@ -290,35 +290,24 @@ class User(models.Model):
     favourites_count = models.IntegerField(null=True)
     followers_count = models.IntegerField(null=True)
     friends_count = models.IntegerField(null=True)
-    geo_enabled = models.NullBooleanField(null=True)
-    has_extended_profile = models.NullBooleanField(null=True)
-    is_translation_enabled = models.NullBooleanField(null=True)
-    lang = models.CharField(max_length=200, null=True)
+    geo_enabled = models.NullBooleanField(null=True)                            # DEPRECATED Still available via GET account/settings
+    has_extended_profile = models.NullBooleanField(null=True)                   # DEPRECATED
+    is_translation_enabled = models.NullBooleanField(null=True)                 # DEPRECATED
+    lang = models.CharField(max_length=200, null=True)                          # DEPRECATED Still available via GET account/settings
     listed_count = models.IntegerField(null=True)
     location = models.CharField(max_length=200, null=True)
     name = models.CharField(max_length=200, null=True)
     needs_phone_verification = models.NullBooleanField(null=True)
-    #profile_background_color = models.CharField(max_length=200, null=True)
-    #profile_background_image_url = models.CharField(max_length=200, null=True)
-    #profile_background_image_url_https = models.CharField(max_length=200, null=True)
-    #profile_background_tile = models.NullBooleanField(null=True)
-    #profile_image_url = models.CharField(max_length=200, null=True)
     #profile_image_url_https = models.CharField(max_length=200, null=True)
-    #profile_link_color = models.CharField(max_length=200, null=True)
-    #profile_location = models.CharField(max_length=200, null=True)
-    #profile_sidebar_border_color = models.CharField(max_length=200,null=True)
-    #profile_sidebar_fill_color = models.CharField(max_length=200, null=True)
-    #profile_text_color = models.CharField(max_length=200, null=True)
-    #profile_use_background_image = models.NullBooleanField(null=True)
     protected = models.NullBooleanField(null=True)
     screen_name = models.CharField(max_length=200, null=True)
     statuses_count = models.IntegerField(null=True)
-    suspended = models.NullBooleanField(null=True)
-    time_zone = models.CharField(max_length=200, null=True)
-    translator_type = models.CharField(max_length=200, null=True)
+    #suspended = models.NullBooleanField(null=True)
+    time_zone = models.CharField(max_length=200, null=True)                     # DEPRECATED Still available via GET account/settings
+    translator_type = models.CharField(max_length=200, null=True)               # DEPRECATED
     url = models.CharField(max_length=200, null=True)
     user_id = models.BigIntegerField(unique=True) # This cannot be the primary_key due to errors with Postgres and BigInt
-    utc_offset = models.CharField(max_length=200, null=True)
+    utc_offset = models.CharField(max_length=200, null=True)                    # DEPRECATED Still available via GET account/settings
     verified = models.NullBooleanField(null=True)
 
     user_class = models.IntegerField() # -1 = Sorted from class 0 as 'spam', 0 = Added from REST API, 1 = sorted from class 0 as not 'spam', 2 = Streamed
