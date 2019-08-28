@@ -36,7 +36,7 @@ is_deleted / is_deleted_observed: account has been observed as deleted since ini
 user_following / user_followers: temporary array of user ids, used to add users as objects after collection.
 user_following_update / user_followers_update / user_network_update_observed_at: updated list of above values, and date at which it was observed.
 in_degree / out_degree: currently only represent the degrees to ego accounts and are therefore only relevant to alter objects, or egos with relationships with other egos.
-centrality measures: various measures calculated on recorded follower/following network.
+centrality measures: various measures calculated on recorded follower/following network, null if not part of principal component.
 tweets_per_hour: Tweets created over the recording period
 ratio_original: ratio of original Tweets (vs. replies and quotes) over the recording period. Note, retweets are not recorded so not included in these calculations.
 ratio_detected: ratio of Tweets detected by the system against total over period (excl. RTs).

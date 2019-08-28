@@ -36,13 +36,13 @@ def calculate_user_graph_metrics(users, relationships):
     print('saving metrics to user objects...')
     for user in users:
         try:
-            user.degree_centrality = degree_dict[user.screen_name]
-            user.betweenness_centrality = betweenness_dict[user.screen_name]
-            user.load_centrality = load_dict[user.screen_name]
-            user.eigenvector_centrality = eigenvector_dict[user.screen_name]
-            #user.katz_centrality = katz_dict[user.screen_name]
-            user.closeness_centrality = closeness_dict[user.screen_name]
-            user.undirected_eigenvector_centrality = undirected_eigenvector_dict[user.screen_name]
+            user.centrality_degree = degree_dict[user.screen_name]
+            user.centrality_betweenness = betweenness_dict[user.screen_name]
+            user.centrality_load = load_dict[user.screen_name]
+            user.centrality_eigenvector = eigenvector_dict[user.screen_name]
+            #user.centrality_katz = katz_dict[user.screen_name]
+            user.centrality_closeness = closeness_dict[user.screen_name]
+            user.centrality_undirected_eigenvector = undirected_eigenvector_dict[user.screen_name]
             user.save()
         except:
             # User not part of largest connected component.

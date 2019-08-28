@@ -4,70 +4,6 @@ from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 
 
-class AccessToken(models.Model):
-    access_key = models.CharField(max_length=100, unique=True)
-    access_secret = models.CharField(max_length=100, unique=True)
-    screen_name = models.CharField(max_length=40, unique=True, null=True)
-
-    def __str__(self):
-        return "(\'{}\', \'{}\', \'{}\')".format(self.screen_name, self.access_key, self.access_secret)
-
-
-class Coding(models.Model):
-    # TODO: Write validation to allow only one FK here? - either tweet OR user.
-    tweet = models.ForeignKey(Tweet, related_name='coding_for_tweet', on_delete=models.CASCADE, null=True)
-    user = models.ForeignKey(User, related_name='coding_for_user', on_delete=models.CASCADE, null=True)
-    data_code = models.ForeignKey(DataCode, on_delete=models.CASCADE)
-    coding_id = models.IntegerField(default=1)
-    updated = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ('coding_id', 'data_code', 'tweet')
-        unique_together = ('coding_id', 'data_code', 'user')
-
-    def __str__(self):
-        if self.tweet is not None:
-            return "DataCode: {}, Tweet: {}, Coder: {}".format(str(self.data_code.data_code_id), self.tweet.text[:40], str(self.coding_id))
-        else:
-            return "DataCode: {}, User ID: {}, Coder: {}".format(str(self.data_code.data_code_id), self.user.screen_name, str(self.coding_id))
-
-
-class ConsumerKey(models.Model):
-    consumer_key = models.CharField(max_length=100, unique=True)
-    consumer_secret = models.CharField(max_length=100, unique=True)
-
-    def __str__(self):
-        return "(\'{}\', \'{}\')".format(self.consumer_key, self.consumer_secret)
-
-
-class DataCode(models.Model):
-    data_code_id = models.IntegerField(unique=True, null=False) # Required as the PK doesn't reset when rows are removed. #TODO: May not be required anymore
-    name = models.CharField(max_length=40, null=False)
-    description = models.CharField(null=True, max_length=400)
-    tweets = models.ManyToManyField(Tweet, through='Coding')
-    users = models.ManyToManyField(User, through='Coding')
-    dimension = models.ForeignKey(DataCodeDimension, related_name='datacode', on_delete=models.CASCADE, null=True)
-
-    def __str__(self):
-        return "Code ID {}: {}, Dimension: {}".format(str(self.data_code_id), self.name, self.dimension)
-
-
-class DataCodeDimension(models.Model):
-    name = models.CharField(max_length=20, null=False)
-    description = models.CharField(null=True, max_length=400)
-    coding_subject = models.CharField(max_length=20, null=False)
-
-    def save(self, *args, **kwargs):
-        if self.coding_subject == 'user' or self.coding_subject == 'tweet' :
-            return super(DataCodeDimension, self).save(*args, **kwargs)
-        else:
-            print('Error with coding subject label: \'{}\'. Must be \'tweet\' or \'user\'.'.format(self.coding_subject))
-            return
-
-    def __str__(self):
-        return str(self.name)
-
-
 class Event(models.Model):
     name = models.CharField(max_length=20)
     time_start = models.DateTimeField(null=True, blank=True)
@@ -120,14 +56,6 @@ class GeoPoint(models.Model):
         return str(self.latitude) + ", " + str(self.longitude)
 
 
-class Hashtag(models.Model):
-    hashtag = models.CharField(max_length=200, unique=True)
-    tweets = models.ManyToManyField(Tweet, related_name='hashtags')
-
-    def __str__(self):
-        return str(self.hashtag)
-
-
 class Keyword(models.Model):
     event = models.ForeignKey(Event, related_name='keyword', on_delete=models.CASCADE, null=True)
     keyword = models.CharField(max_length=100, unique=True)
@@ -147,14 +75,6 @@ class Keyword(models.Model):
 
     def __str__(self):
         return str(self.keyword)
-
-
-class Mention(models.Model):
-    mention = models.CharField(max_length=200, unique=True)
-    tweets = models.ManyToManyField(Tweet, related_name='mentions')
-
-    def __str__(self):
-        return str(self.mention)
 
 
 class Place(models.Model):
@@ -190,94 +110,6 @@ class Place(models.Model):
             return "Place: {}, middle coords lat: {}, lon: {}".format(self.full_name, c[0], c[1])
         except:
             return "Place id: {}".format(self.place_id)
-
-
-class Relo(models.Model):
-    #TODO: on_delete needs to be resolved appropriately.
-    source_user = models.ForeignKey(User, related_name='relo_out', on_delete=models.CASCADE)
-    target_user = models.ForeignKey(User, related_name='relo_in', on_delete=models.CASCADE)
-    observed_at = models.DateTimeField()
-    end_observed_at = models.DateTimeField(null=True)
-
-    def as_json(self):
-        return dict(
-            source=str(self.source_user.user_id),
-            target=str(self.target_user.user_id))
-
-    def as_csv(self):
-        return '{},{}'.format(self.source_user.user_id, self.target_user.user_id)
-
-    def __str__(self):
-        if self.end_observed_at is None:
-            return "{} following: {}".format(self.source_user, self.target_user)
-        else:
-            return "Dead Relo: {} following: {}".format(self.source_user, self.target_user)
-
-
-class Tweet(models.Model):
-    id = models.AutoField(primary_key=True)
-    coordinates_lat = models.FloatField(null=True)
-    coordinates_lon = models.FloatField(null=True)
-    coordinates_type = models.CharField(null=True, max_length=10)
-    created_at = models.DateTimeField()
-    favorite_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
-    #filter_level = models.CharField(max_length=10)
-    tweet_id = models.BigIntegerField(null=True, unique=True)   #This cannot be the primary_key due to errors with Postgres and BigInt
-    in_reply_to_status_id = models.BigIntegerField(null=True)
-    in_reply_to_user_id = models.BigIntegerField(null=True)
-    lang = models.CharField(max_length=10, null=True)
-    #possibly_sensitive = models.NullBooleanField(null=True)
-    quoted_status_id_int = models.BigIntegerField(null=True)
-    retweet_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
-    #retweeted_status        // tweet object
-    source = models.CharField(max_length=300)
-    text = models.CharField(max_length=500)
-
-    author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
-    place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
-    data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
-    is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
-    is_deleted_observed = models.DateTimeField(null=True)
-    media_files = ArrayField(models.CharField(max_length=200), null=True)
-    media_files_type = models.CharField(max_length=200, null=True) # describes the media_files field: image, video or gif
-
-    replied_to_status = models.ForeignKey('self', related_name='replied_by', on_delete=models.SET_NULL, null=True)
-    quoted_status = models.ForeignKey('self', related_name='quoted_by', on_delete=models.SET_NULL, null=True)
-
-    def __str__(self):
-        return str(self.text)
-
-    def as_dict(self):
-        if self.coordinates_lat is None and self.place is not None:
-            midpoint = self.place.get_midpoint()
-            lat = midpoint[0]
-            lon = midpoint[1]
-        else:
-            lat = self.coordinates_lat
-            lon = self.coordinates_lon
-
-        return dict(
-            text = self.text,
-            author = self.author.screen_name,
-            tweet_id = str(self.tweet_id), # Passed as string due to javascript |safe tag appears to round to nearest 100
-            lat = lat,
-            lon = lon,
-            data_source = self.data_source
-            )
-    # TODO: To complete. Sanitise \n characters in tweet text.
-    def as_row(self, header=False):
-        if header: # return header titles rather than data.
-            return ['tweet_id', 'author', 'text']
-        row = [self.tweet_id, self.author.screen_name, self.text.replace('\n', ' ')]
-        return row
-
-
-class Url(models.Model):
-    url = models.CharField(max_length=400, unique=True)
-    tweets = models.ManyToManyField(Tweet, related_name='urls')
-
-    def __str__(self):
-        return str(self.url)
 
 
 class User(models.Model):
@@ -330,13 +162,13 @@ class User(models.Model):
     out_degree = models.IntegerField(default=0)
 
     # Store centrality measures for network.
-    degree_centrality = models.FloatField(null=True)
-    betweenness_centrality = models.FloatField(null=True)
-    load_centrality = models.FloatField(null=True)
-    eigenvector_centrality = models.FloatField(null=True)
-    katz_centrality = models.FloatField(null=True)
-    closeness_centrality = models.FloatField(null=True)
-    undirected_eigenvector_centrality = models.FloatField(null=True)
+    centrality_degree = models.FloatField(null=True)
+    centrality_betweenness = models.FloatField(null=True)
+    centrality_load = models.FloatField(null=True)
+    centrality_eigenvector = models.FloatField(null=True)
+    centrality_katz = models.FloatField(null=True)          # Unused
+    centrality_closeness = models.FloatField(null=True)
+    centrality_undirected_eigenvector = models.FloatField(null=True)
 
     # Store metrics from user stream
     tweets_per_hour = models.FloatField(null=True)
@@ -398,3 +230,170 @@ class User(models.Model):
                 return None
         row = [get_value(g) for g in fields] + [user_code, user_code_id]
         return row
+
+
+class Tweet(models.Model):
+    id = models.AutoField(primary_key=True)
+    coordinates_lat = models.FloatField(null=True)
+    coordinates_lon = models.FloatField(null=True)
+    coordinates_type = models.CharField(null=True, max_length=10)
+    created_at = models.DateTimeField()
+    favorite_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
+    #filter_level = models.CharField(max_length=10)
+    tweet_id = models.BigIntegerField(null=True, unique=True)   #This cannot be the primary_key due to errors with Postgres and BigInt
+    in_reply_to_status_id = models.BigIntegerField(null=True)
+    in_reply_to_user_id = models.BigIntegerField(null=True)
+    lang = models.CharField(max_length=10, null=True)
+    #possibly_sensitive = models.NullBooleanField(null=True)
+    quoted_status_id_int = models.BigIntegerField(null=True)
+    retweet_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
+    #retweeted_status        // tweet object
+    source = models.CharField(max_length=300)
+    text = models.CharField(max_length=500)
+
+    author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
+    place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
+    data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
+    is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
+    is_deleted_observed = models.DateTimeField(null=True)
+    media_files = ArrayField(models.CharField(max_length=200), null=True)
+    media_files_type = models.CharField(max_length=200, null=True) # describes the media_files field: image, video or gif
+
+    replied_to_status = models.ForeignKey('self', related_name='replied_by', on_delete=models.SET_NULL, null=True)
+    quoted_status = models.ForeignKey('self', related_name='quoted_by', on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return str(self.text)
+
+    def as_dict(self):
+        if self.coordinates_lat is None and self.place is not None:
+            midpoint = self.place.get_midpoint()
+            lat = midpoint[0]
+            lon = midpoint[1]
+        else:
+            lat = self.coordinates_lat
+            lon = self.coordinates_lon
+
+        return dict(
+            text = self.text,
+            author = self.author.screen_name,
+            tweet_id = str(self.tweet_id), # Passed as string due to javascript |safe tag appears to round to nearest 100
+            lat = lat,
+            lon = lon,
+            data_source = self.data_source
+            )
+    # TODO: To complete. Sanitise \n characters in tweet text.
+    def as_row(self, header=False):
+        if header: # return header titles rather than data.
+            return ['tweet_id', 'author', 'text']
+        row = [self.tweet_id, self.author.screen_name, self.text.replace('\n', ' ')]
+        return row
+
+class DataCodeDimension(models.Model):
+    name = models.CharField(max_length=20, null=False)
+    description = models.CharField(null=True, max_length=400)
+    coding_subject = models.CharField(max_length=20, null=False)
+
+    def save(self, *args, **kwargs):
+        if self.coding_subject == 'user' or self.coding_subject == 'tweet' :
+            return super(DataCodeDimension, self).save(*args, **kwargs)
+        else:
+            print('Error with coding subject label: \'{}\'. Must be \'tweet\' or \'user\'.'.format(self.coding_subject))
+            return
+
+    def __str__(self):
+        return str(self.name)
+
+
+class DataCode(models.Model):
+    data_code_id = models.IntegerField(unique=True, null=False) # Required as the PK doesn't reset when rows are removed. #TODO: May not be required anymore
+    name = models.CharField(max_length=40, null=False)
+    description = models.CharField(null=True, max_length=400)
+    tweets = models.ManyToManyField(Tweet, through='Coding')
+    users = models.ManyToManyField(User, through='Coding')
+    dimension = models.ForeignKey(DataCodeDimension, related_name='datacode', on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return "Code ID {}: {}, Dimension: {}".format(str(self.data_code_id), self.name, self.dimension)
+
+
+class Coding(models.Model):
+    # TODO: Write validation to allow only one FK here? - either tweet OR user.
+    tweet = models.ForeignKey(Tweet, related_name='coding_for_tweet', on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(User, related_name='coding_for_user', on_delete=models.CASCADE, null=True)
+    data_code = models.ForeignKey(DataCode, on_delete=models.CASCADE)
+    coding_id = models.IntegerField(default=1)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('coding_id', 'data_code', 'tweet')
+        unique_together = ('coding_id', 'data_code', 'user')
+
+    def __str__(self):
+        if self.tweet is not None:
+            return "DataCode: {}, Tweet: {}, Coder: {}".format(str(self.data_code.data_code_id), self.tweet.text[:40], str(self.coding_id))
+        else:
+            return "DataCode: {}, User ID: {}, Coder: {}".format(str(self.data_code.data_code_id), self.user.screen_name, str(self.coding_id))
+
+
+class Hashtag(models.Model):
+    hashtag = models.CharField(max_length=200, unique=True)
+    tweets = models.ManyToManyField(Tweet, related_name='hashtags')
+
+    def __str__(self):
+        return str(self.hashtag)
+
+
+class Url(models.Model):
+    url = models.CharField(max_length=400, unique=True)
+    tweets = models.ManyToManyField(Tweet, related_name='urls')
+
+    def __str__(self):
+        return str(self.url)
+
+
+class Mention(models.Model):
+    mention = models.CharField(max_length=200, unique=True)
+    tweets = models.ManyToManyField(Tweet, related_name='mentions')
+
+    def __str__(self):
+        return str(self.mention)
+
+
+class Relo(models.Model):
+    #TODO: on_delete needs to be resolved appropriately.
+    source_user = models.ForeignKey(User, related_name='relo_out', on_delete=models.CASCADE)
+    target_user = models.ForeignKey(User, related_name='relo_in', on_delete=models.CASCADE)
+    observed_at = models.DateTimeField()
+    end_observed_at = models.DateTimeField(null=True)
+
+    def as_json(self):
+        return dict(
+            source=str(self.source_user.user_id),
+            target=str(self.target_user.user_id))
+
+    def as_csv(self):
+        return '{},{}'.format(self.source_user.user_id, self.target_user.user_id)
+
+    def __str__(self):
+        if self.end_observed_at is None:
+            return "{} following: {}".format(self.source_user, self.target_user)
+        else:
+            return "Dead Relo: {} following: {}".format(self.source_user, self.target_user)
+
+
+class AccessToken(models.Model):
+    access_key = models.CharField(max_length=100, unique=True)
+    access_secret = models.CharField(max_length=100, unique=True)
+    screen_name = models.CharField(max_length=40, unique=True, null=True)
+
+    def __str__(self):
+        return "(\'{}\', \'{}\', \'{}\')".format(self.screen_name, self.access_key, self.access_secret)
+
+
+class ConsumerKey(models.Model):
+    consumer_key = models.CharField(max_length=100, unique=True)
+    consumer_secret = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return "(\'{}\', \'{}\')".format(self.consumer_key, self.consumer_secret)
