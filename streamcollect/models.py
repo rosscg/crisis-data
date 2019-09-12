@@ -15,17 +15,14 @@ class Event(models.Model):
 
     def __str__(self):
         return str(self.name)
-        
+
     def save(self, *args, **kwargs):
         if Event.objects.exists() and not self.pk:
             raise ValidationError('There can be only one Event instance')
-
         if self.time_end and self.time_start and self.time_start >= self.time_end:
             print('Error, dates not in order')
             self.time_end = None
-
         self.name = self.name.replace(' ', '-')
-
         return super(Event, self).save(*args, **kwargs)
 
 
