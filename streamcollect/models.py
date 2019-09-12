@@ -13,6 +13,9 @@ class Event(models.Model):
     gps_stream_start = models.DateTimeField(null=True, blank=True)
     gps_stream_end = models.DateTimeField(null=True, blank=True)
 
+    def __str__(self):
+        return str(self.name)
+        
     def save(self, *args, **kwargs):
         if Event.objects.exists() and not self.pk:
             raise ValidationError('There can be only one Event instance')
@@ -25,14 +28,14 @@ class Event(models.Model):
 
         return super(Event, self).save(*args, **kwargs)
 
-    def __str__(self):
-        return str(self.name)
-
 
 class GeoPoint(models.Model):
     event = models.ForeignKey(Event, related_name='geopoint', on_delete=models.CASCADE, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
+
+    def __str__(self):
+        return str(self.latitude) + ", " + str(self.longitude)
 
     def save(self, *args, **kwargs):
         if GeoPoint.objects.all().count() >= 2 and not self.pk:
@@ -52,9 +55,6 @@ class GeoPoint(models.Model):
         self.event = Event.objects.all()[0]
         return super(GeoPoint, self).save(*args, **kwargs)
 
-    def __str__(self):
-        return str(self.latitude) + ", " + str(self.longitude)
-
 
 class Keyword(models.Model):
     event = models.ForeignKey(Event, related_name='keyword', on_delete=models.CASCADE, null=True)
@@ -62,19 +62,17 @@ class Keyword(models.Model):
     created_at = models.DateTimeField()
     priority = models.IntegerField(default=0)
 
+    def __str__(self):
+        return str(self.keyword)
+
     def save(self, *args, **kwargs):
-
         self.keyword = self.keyword.replace(' ', '') # Twitter expects single keywords
-
         try:
             self.event = Event.objects.all()[0]
         except:
             print("ERROR adding keyword - create event first")
             return
         return super(Keyword, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return str(self.keyword)
 
 
 class Place(models.Model):
@@ -86,7 +84,6 @@ class Place(models.Model):
     full_name = models.CharField(max_length=100, null=True)
     country_code = models.CharField(max_length=5, null=True)
     country = models.CharField(max_length=100, null=True)
-
     #TODO: Consider making these Geepoint objects and fix GeoPoint spec.
     #TODO: Check if boxes are ever non-rectangle (and therefore need all 4 points)
     lat_1 = models.FloatField(null=True)
@@ -98,12 +95,6 @@ class Place(models.Model):
     lat_4 = models.FloatField(null=True)
     lon_4 = models.FloatField(null=True)
 
-    def get_midpoint(self):
-        lat = round((self.lat_1 + self.lat_2 + self.lat_3 + self.lat_4)/4, 5)
-        lon = round((self.lon_1 + self.lon_2 + self.lon_3 + self.lon_4)/4, 5)
-        return [lat, lon]
-
-
     def __str__(self):
         try:
             c = self.get_midpoint()
@@ -111,9 +102,15 @@ class Place(models.Model):
         except:
             return "Place id: {}".format(self.place_id)
 
+    def get_midpoint(self):
+        lat = round((self.lat_1 + self.lat_2 + self.lat_3 + self.lat_4)/4, 5)
+        lon = round((self.lon_1 + self.lon_2 + self.lon_3 + self.lon_4)/4, 5)
+        return [lat, lon]
+
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
+    ### Fields from User object ###
     created_at = models.DateTimeField(null=True)
     default_profile = models.NullBooleanField(null=True)
     default_profile_image = models.NullBooleanField(null=True)
@@ -141,26 +138,25 @@ class User(models.Model):
     user_id = models.BigIntegerField(unique=True) # This cannot be the primary_key due to errors with Postgres and BigInt
     utc_offset = models.CharField(max_length=200, null=True)                    # DEPRECATED Still available via GET account/settings
     verified = models.NullBooleanField(null=True)
-
+    ### Fields added at collection ###
     user_class = models.IntegerField() # -1 = Sorted from class 0 as 'spam', 0 = Added from REST API, 1 = sorted from class 0 as not 'spam', 2 = Streamed
     added_at = models.DateTimeField()
     data_source = models.IntegerField(default=0) # 0=Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
     old_screen_name = models.CharField(max_length=200, null=True) # Originally observed screen_name if since-changed.
     is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
-
+    ### Temporary fields ###
     user_following = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily storing as list rather than creating relo objects.
     user_followers = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
     user_following_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
     user_followers_update = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing
     user_network_update_observed_at = models.DateTimeField(null=True) #   TODO: Testing
-
     # These currently represent the degrees to ego accounts and therefore only
     # relevant to alter objects, or egos with relationships with other egos.
     # TODO: These sometimes appear to be -1
     in_degree = models.IntegerField(default=0)
     out_degree = models.IntegerField(default=0)
-
+    ### Derived fields ###
     # Store centrality measures for network.
     centrality_degree = models.FloatField(null=True)
     centrality_betweenness = models.FloatField(null=True)
@@ -169,13 +165,11 @@ class User(models.Model):
     centrality_katz = models.FloatField(null=True)          # Unused
     centrality_closeness = models.FloatField(null=True)
     centrality_undirected_eigenvector = models.FloatField(null=True)
-
     # Store metrics from user stream
     tweets_per_hour = models.FloatField(null=True)
     ratio_original = models.FloatField(null=True) # Excludes retweets, replies, quotes
     ratio_detected = models.FloatField(null=True) # Streamed : added
     ratio_media = models.FloatField(null=True) # Containing attached media
-
 
     def __str__(self):
         if self.screen_name:
@@ -183,6 +177,7 @@ class User(models.Model):
         else:
             return str(self.user_id)
 
+    ### As JSON and as_row outputs for saving data. TODO: No longer needed ###
     def as_json(self):
         # Calculate the best (lowest) coded tweet for a user
         # TODO: Remove this or place it elsewhere.
@@ -197,7 +192,6 @@ class User(models.Model):
             user_code = self.coding_for_user.filter(coding_id=1)[0].data_code.name
         except:
             user_code = ''
-
         if self.screen_name is None:
             title = str(self.user_id)
         else:
@@ -234,6 +228,7 @@ class User(models.Model):
 
 class Tweet(models.Model):
     id = models.AutoField(primary_key=True)
+    ### Fields from Tweet object ###
     coordinates_lat = models.FloatField(null=True)
     coordinates_lon = models.FloatField(null=True)
     coordinates_type = models.CharField(null=True, max_length=10)
@@ -250,15 +245,14 @@ class Tweet(models.Model):
     #retweeted_status        // tweet object
     source = models.CharField(max_length=300)
     text = models.CharField(max_length=500)
-
     author = models.ForeignKey(User, related_name='tweet', on_delete=models.CASCADE)
     place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
+    ### Fields added at collection ###
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
     is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
     media_files = ArrayField(models.CharField(max_length=200), null=True)
     media_files_type = models.CharField(max_length=200, null=True) # describes the media_files field: image, video or gif
-
     replied_to_status = models.ForeignKey('self', related_name='replied_by', on_delete=models.SET_NULL, null=True)
     quoted_status = models.ForeignKey('self', related_name='quoted_by', on_delete=models.SET_NULL, null=True)
 
@@ -282,17 +276,22 @@ class Tweet(models.Model):
             lon = lon,
             data_source = self.data_source
             )
-    # TODO: To complete. Sanitise \n characters in tweet text.
+
+    # TODO: To complete (no longer needed??). Sanitise \n characters in tweet text.
     def as_row(self, header=False):
         if header: # return header titles rather than data.
             return ['tweet_id', 'author', 'text']
         row = [self.tweet_id, self.author.screen_name, self.text.replace('\n', ' ')]
         return row
 
+
 class DataCodeDimension(models.Model):
     name = models.CharField(max_length=20, null=False)
     description = models.CharField(null=True, max_length=400)
     coding_subject = models.CharField(max_length=20, null=False)
+
+    def __str__(self):
+        return str(self.name)
 
     def save(self, *args, **kwargs):
         if self.coding_subject == 'user' or self.coding_subject == 'tweet' :
@@ -300,9 +299,6 @@ class DataCodeDimension(models.Model):
         else:
             print('Error with coding subject label: \'{}\'. Must be \'tweet\' or \'user\'.'.format(self.coding_subject))
             return
-
-    def __str__(self):
-        return str(self.name)
 
 
 class DataCode(models.Model):
@@ -367,6 +363,12 @@ class Relo(models.Model):
     observed_at = models.DateTimeField()
     end_observed_at = models.DateTimeField(null=True)
 
+    def __str__(self):
+        if self.end_observed_at is None:
+            return "{} following: {}".format(self.source_user, self.target_user)
+        else:
+            return "Dead Relo: {} following: {}".format(self.source_user, self.target_user)
+
     def as_json(self):
         return dict(
             source=str(self.source_user.user_id),
@@ -374,12 +376,6 @@ class Relo(models.Model):
 
     def as_csv(self):
         return '{},{}'.format(self.source_user.user_id, self.target_user.user_id)
-
-    def __str__(self):
-        if self.end_observed_at is None:
-            return "{} following: {}".format(self.source_user, self.target_user)
-        else:
-            return "Dead Relo: {} following: {}".format(self.source_user, self.target_user)
 
 
 class AccessToken(models.Model):
