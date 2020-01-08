@@ -3,6 +3,11 @@
 
 This application is designed to collect user network data from Twitter using keyword and GPS streams. Rich user data is recorded, including their follower/following network. This network data can then be monitored for changes over time.
 
+Manual coding is supported for both user accounts and individual Tweets.
+
+Data is stored in a local database and support is included to access the data from within Jupyter notebooks.
+
+
 The build uses a fork of Tweepy which allows multiple tokens to be used.
 
 ------------
