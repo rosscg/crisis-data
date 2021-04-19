@@ -23,7 +23,7 @@ The build uses a fork of Tweepy which allows multiple tokens to be used.
         > ```
 
 * Turn off auto-sleep / install Caffeine (Mac) (only necessary during data collection).
-* Install Redis from https://redis.io/ or brew, and build:
+* Download Redis from https://redis.io/ or brew, and build:
 
         > ```
         > $ cd redis-4.0.1

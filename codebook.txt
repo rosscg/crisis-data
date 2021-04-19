@@ -39,7 +39,7 @@ in_degree / out_degree: currently only represent the degrees to ego accounts and
 centrality measures: various measures calculated on recorded follower/following network, null if not part of principal component.
 tweets_per_hour: Tweets created over the recording period
 ratio_original: ratio of original Tweets (vs. replies and quotes) over the recording period. Note, retweets are not recorded so not included in these calculations.
-ratio_detected: ratio of Tweets detected by the system against total over period (excl. RTs).
+ratio_detected: ratio of Tweets detected by the system against total over period (excl. RTs). Note: the system will not detect all eligible Tweets by a user, so use this metric with caution.
 ratio_media: ratio with attached media objects.
 
 

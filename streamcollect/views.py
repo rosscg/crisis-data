@@ -710,6 +710,7 @@ def network_data_API(request):
 
     # Users which are coded
     dcd = DataCodeDimension.objects.all()[1]
+    #TODO: This query can be made more efficient:
     coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
 
     relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
