@@ -48,6 +48,10 @@
             </tr>
           {% endfor %}
       </table>
+      <br/>
+      <h3>Agreement Coefficients:</h3>
+      <b>Cohen's Kappa:</b> {{agreement_coefs.kappa|floatformat:4}} <br/>
+      <b>Krippendorff's Alpha:</b> {{agreement_coefs.alpha|floatformat:4}} <br/>
     </div>
   </div>
 
