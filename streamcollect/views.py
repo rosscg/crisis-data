@@ -697,10 +697,10 @@ def network_data_API(request):
 
     #All ego nodes, and alters with an in/out degree of X or greater.
     slice_size = 5000 #TODO: Change to a random sample
-    classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
+    #classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
     # Ignore REQUIRED_IN/OUT_DEGREE
-    classed_users = User.objects.filter(user_class__gte=2)[:slice_size]
-
+    #classed_users = User.objects.filter(user_class__gte=2)[:slice_size]
+    classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=1) | Q(out_degree__gte=1) | Q(user_class__gte=2))
     # Only show users which have had Tweets coded
     #coded_tweets = Tweet.objects.filter(coding_for_tweet__data_code__data_code_id__gt=0).filter(coding_for_tweet__coding_id=1)
     #coded_users = User.objects.filter(tweet__in=coded_tweets).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
@@ -708,10 +708,11 @@ def network_data_API(request):
 
     # Users which are coded
     dcd = DataCodeDimension.objects.all()[1]
-    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
+#    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
 
-    relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
+#    relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
     #relevant_users = classed_users | coded_users
+    relevant_users = [x for x in classed_users]
 
     print("Coded Users (by tweet): {}, Classed Users: {}, Relevant Users: {}".format(coded_users.count(), classed_users.count(), len(relevant_users)))
 
