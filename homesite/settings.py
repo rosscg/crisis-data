@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'homesite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hurricanewilla',
+        'NAME': 'sandbox',
         'USER': 'ross',
         'PASSWORD': '',
         'HOST': 'localhost',
@@ -127,3 +127,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+#STATIC_ROOT = 'static_root/'
+
+
+NOTEBOOK_ARGUMENTS = [
+    '--ip=127.0.0.1',
+    '--port=8888',
+    '--no-browser',
+]

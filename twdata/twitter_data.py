@@ -17,7 +17,7 @@ from celery.task.control import inspect # gets current tasks for low priority de
 
 
 
-class stream_listener(StreamListener):
+class Stream_Listener(StreamListener):
 
     def __init__(self, gps_bool, data):
         self.api = None
@@ -187,7 +187,7 @@ def twitter_stream(gps=False, priority=1):
                 #kill_celery_task('stream_kw_low')
             return
 
-    twitterStream = Stream(auth, stream_listener(gps, data), tweet_mode='extended') #TODO: Test, Adjust on both lines. Test for retweets. Adjust how RTs are hard-coded to handle for IGNORE_RTS
+    twitterStream = Stream(auth, Stream_Listener(gps, data), tweet_mode='extended') #TODO: Test, Adjust on both lines. Test for retweets. Adjust how RTs are hard-coded to handle for IGNORE_RTS
 
     if gps:
         twitterStream.filter(locations=data, async=False)
@@ -202,7 +202,7 @@ def twitter_stream(gps=False, priority=1):
                     print("Error: no keywords found.")
                     #kill_celery_task('stream_kw')
                     return
-                twitterStream = Stream(auth, stream_listener(False, data), tweet_mode='extended')
+                twitterStream = Stream(auth, Stream_Listener(False, data), tweet_mode='extended')
             print("Running new stream (with refresh)...")
             twitterStream.filter(track=data, async=False)
             time.sleep(STREAM_REFRESH_RATE)

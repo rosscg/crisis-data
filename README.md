@@ -1,16 +1,17 @@
-Twitter social network data collection
+# Twitter social network data collection
 ==================================
 
 This application is designed to collect user network data from Twitter using keyword and GPS streams. Rich user data is recorded, including their follower/following network. This network data can then be monitored for changes over time.
 
+Manual coding is supported for both user accounts and individual Tweets.
+
+Data is stored in a local database and support is included to access the data from within Jupyter notebooks.
+
+
 The build uses a fork of Tweepy which allows multiple tokens to be used.
 
-Note: Excluding Tweets containing the term 'pray' is hard-coded to reduce unnecessary content (as the original application involved disaster events).
-
-==================================
-
-Local installation (Mac):
 ------------
+### Local installation (Mac):
 * Install python3.
 * Install Postgres.app, configure `$PATH` as detailed in step 3 [here](http://postgresapp.com/) (tested with v9.6).
 * This build uses Postgres (over sqlite) as a database due to high write demands
@@ -22,7 +23,7 @@ Local installation (Mac):
         > ```
 
 * Turn off auto-sleep / install Caffeine (Mac) (only necessary during data collection).
-* Install Redis from https://redis.io/ or brew, and build:
+* Download Redis from https://redis.io/ or brew, and build:
 
         > ```
         > $ cd redis-4.0.1
@@ -39,7 +40,7 @@ Local installation (Mac):
         > $ cd crisis-data
         > $ python3 -m venv venv
         > $ source venv/bin/activate
-        > $ pip install -r requirements.txt --no-cache-dir
+        > $ pip3 install -r requirements.txt --no-cache-dir
         > ```
 
 * Check if Hardcoded auto-coding line is still in `views.py` - from approx line 150 and remove (uncomment appropriate line beneath block).
@@ -73,7 +74,7 @@ Default username is the system user name, default password is none.
   * Additional access tokens can be added via the web interface, requiring a user to log in to Twitter and authorise. 'Export Tokens' can save these tokens to a file for future use.
   * Streams currently need at least 3 tokens added (one for each stream).
 
-Notes:
+###### Notes:
 * If Redis is running from previous launch (i.e. returns `bind: Address already in use`) find the port number (second column) and kill:
 
         > ```
@@ -83,9 +84,9 @@ Notes:
 
 * Any change to the code requires Celery terminal commands to be relaunched.
 
-
-Usage - Data Collection:
 ------------
+### Usage - Data Collection:
+
 The key functionality of the software is tracking keywords and GPS coordinates.
 
 * If necessary, create new database in Postgres and adjust in `settings.py`.
@@ -99,7 +100,7 @@ The key functionality of the software is tracking keywords and GPS coordinates.
 * High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
 * Run streams, disable OS auto-sleep.
 
-After collection:
+##### After collection:
 
 * Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until its termination is processed.
 * Create a dump of the database (see below). Do this at other relevant milestones.
@@ -124,9 +125,9 @@ To flush Redis DB (to clear queue of tasks):
 > $ celery purge
 > ```
 
-
-Usage - Data Coding:
 ------------
+### Usage - Data Coding:
+
 Once the collection is complete, use the 'Data Coding' interface to code the Tweets. If it has been some time since data collection and you plan to code user objects, it is recommended to run the 'update_screen_names' function, as the source window will not work if the user has changed their screen name since collection.
 
 From the 'Coding Dashboard', add the code dimension (or add a generic name if multiple dimensions are unneeded) then add the codes. From this page, the current code dimension and coder id can be selected before launching the coding interface.
@@ -138,13 +139,13 @@ If selected from the coding dashboard, the secondary coder will be presented wit
 
 The results link will show the proportions distributed to each code, and the disagreement matrix for the two coders.
 
-Note:
+###### Note:
 * Currently only one url from a Tweet is shown in the lower-right window, but in rare cases a Tweet may contain multiple urls.
 * If the Tweet (or user) has been deleted and therefore is not displayed in the bottom-left window, the original text content can still be seen by scrolling down in the top interface window.
 
-
-Usage - Data Analysis:
 ------------
+### Usage - Data Analysis:
+
 The build can host python notebooks which use Django to access models. Run the notebook server with:
 
 > ```
@@ -152,7 +153,8 @@ The build can host python notebooks which use Django to access models. Run the n
 >$ ../manage.py shell_plus --notebook
 > ```
 
-Note: To run the notebook from outside of the Django directory, edit the kernel settings found at `/Users/ross/Library/Jupyter/kernels/django_extensions` as follows (substitute `USERNAME`):
+###### Note:
+To run the notebook from outside of the Django directory, edit the kernel settings found at (Mac:) `~/Library/Jupyter/kernels/django_extensions` as follows (substitute `USERNAME` and path on line 3 and 13):
 
 > ```
 > {
@@ -176,9 +178,16 @@ Note: To run the notebook from outside of the Django directory, edit the kernel 
 > }
 > ```
 
-Remote Access:
+###### Note:
+On Linux systems, the error: `ImportError: No module named 'pysqlite2'` is likely due to sqlite3 missing from the python install. Install and rebuild python, see answer [here](https://stackoverflow.com/questions/20126475/importerror-no-module-named-sqlite3-in-python3-3/21909896).
+
 ------------
-Use [ngrok](https://ngrok.com/) to serve the site remotely: `./ngrok http 8000`. Create an account and add your authtoken to avoid 8-hour timeout.
+### Remote Access:
+
+Use [ngrok](https://ngrok.com/) to serve the site remotely:
+`./ngrok http 8000`
+
+Create an account and add your authtoken to avoid 8-hour timeout.
 
 To enable notebooks via ngrok, remote access needs to be enabled:
 * Create a config file: `$ jupyter notebook --generate-config`

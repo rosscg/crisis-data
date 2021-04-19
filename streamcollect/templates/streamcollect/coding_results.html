@@ -38,20 +38,20 @@
               {% endif %}
               {% for cell in row %}
                 {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
-                {% if not forloop.first and forloop.counter == forloop.parentloop.counter %}
-                -
-                {% else %}
                   {% if forloop.parentloop.counter > 1 and forloop.counter > 1 and forloop.counter < disagree_table|length|add:'-1' and forloop.parentloop.counter < disagree_table.0|length|add:'-1' and cell > 0 %}
                     <a href="{% url 'coding_disagreement' coder1code=forloop.parentloop.counter|add:'-2'  coder2code=forloop.counter|add:'-2' %}" target="_blank">{{ cell }}</a>
                   {% else %}
                     {{ cell }}
                   {% endif %}
-                {% endif %}
                 {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
               {% endfor %}
             </tr>
           {% endfor %}
       </table>
+      <br/>
+      <h3>Agreement Coefficients:</h3>
+      <b>Cohen's Kappa:</b> {{agreement_coefs.kappa|floatformat:4}} <br/>
+      <b>Krippendorff's Alpha:</b> {{agreement_coefs.alpha|floatformat:4}} <br/>
     </div>
   </div>
 

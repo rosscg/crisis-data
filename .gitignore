@@ -20,5 +20,6 @@ db.sqlite3
 
 /streamcollect/tokens.py
 tokens_export.py
-todo.txt
+todo.md
+app-notes.txt
 celerybeat.pid

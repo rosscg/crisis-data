@@ -19,7 +19,7 @@ import csv # for tweetData, userData.csv generation
 from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, create_relos_from_list_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
-from .methods import update_tracked_tags, add_users_from_mentions#, check_spam_account
+from .methods import update_tracked_tags, add_users_from_mentions, calculate_agreement_coefs #, check_spam_account
 from .networks import create_gephi_file
 from .calculate_metrics import calculate_user_graph_metrics, calculate_user_stream_metrics
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
@@ -278,11 +278,16 @@ def coding_interface(request):
 def coding_results(request):
 
     active_coding_dimension = request.session.get('active_coding_dimension', None)
+    is_tw_dimension = DataCodeDimension.objects.get(id=active_coding_dimension).coding_subject == 'tweet'
 
     total_main_coder = Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension)
     total_secondary_coder = Coding.objects.filter(coding_id='2').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=active_coding_dimension)
 
-    double_coded_tweets = Tweet.objects.filter(coding_for_tweet__coding_id = 2, coding_for_tweet__data_code__dimension = active_coding_dimension)
+    if is_tw_dimension:
+        double_coded_objs = Tweet.objects.filter(coding_for_tweet__coding_id = 2, coding_for_tweet__data_code__dimension = active_coding_dimension)
+    else:
+        double_coded_objs = User.objects.filter(coding_for_user__coding_id = 2, coding_for_user__data_code__dimension = active_coding_dimension)
+
     codes = DataCode.objects.filter(dimension=active_coding_dimension)
 
     total_table = [['', 'Primary', 'Percentage', 'Secondary']]
@@ -306,28 +311,39 @@ def coding_results(request):
         total_table[index][3] += 1
     total_table.append(['', total_main_coder.count(), '', total_secondary_coder.count()])
 
-    # Populate disagree matrix
-    for t in double_coded_tweets:
-        coding1 = t.coding_for_tweet.filter(coding_id=1)[0]
-        coding2 = t.coding_for_tweet.filter(coding_id=2)[0]
-        if coding1.data_code.data_code_id != coding2.data_code.data_code_id:
-            disagree_table[index_dict.get(coding1.data_code.name)][index_dict.get(coding2.data_code.name)] += 1
+    # Populate disagreement matrix
+    for obj in double_coded_objs:
+        if is_tw_dimension:
+            coding1 = obj.coding_for_tweet.filter(coding_id=1)[0]
+            coding2 = obj.coding_for_tweet.filter(coding_id=2)[0]
+        else:
+            coding1 = obj.coding_for_user.filter(coding_id=1)[0]
+            coding2 = obj.coding_for_user.filter(coding_id=2)[0]
+        disagree_table[index_dict.get(coding1.data_code.name)][index_dict.get(coding2.data_code.name)] += 1
     # Add proportion of disagreed codes by row
+    i=1
     for row in disagree_table[1:]:
-        total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__name=row[0], coding_for_tweet__data_code__dimension_id=active_coding_dimension).count()
+        if is_tw_dimension:
+            total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__name=row[0], coding_for_tweet__data_code__dimension_id=active_coding_dimension).count()
+        else:
+            total_double_coded = User.objects.filter(coding_for_user__coding_id=2, coding_for_user__data_code__dimension_id=active_coding_dimension).filter(coding_for_user__coding_id=1, coding_for_user__data_code__name=row[0], coding_for_user__data_code__dimension_id=active_coding_dimension).count()
         if total_double_coded > 0:
-            prop = '{:.1%}'.format(sum(row[1:]) / total_double_coded)
+            prop = '{:.1%}'.format((sum(row[1:]) - row[i]) / total_double_coded)
         else:
             prop = '0%'
         row.append(prop)
         row.append(total_double_coded)
+        i += 1
     # Add proportion of disagreed codes by col
     disagreement_cols = []
     total_cols = []
     i = 1
     while i < (len(disagree_table[0])-2):
-        total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code__name=disagree_table[0][i]).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__dimension_id=active_coding_dimension).count()
-        total_disagreed = sum([x[i] for x in disagree_table[1:]])
+        if is_tw_dimension:
+            total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code__name=disagree_table[0][i]).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__dimension_id=active_coding_dimension).count()
+        else:
+            total_double_coded = User.objects.filter(coding_for_user__coding_id=2, coding_for_user__data_code__dimension_id=active_coding_dimension, coding_for_user__data_code__name=disagree_table[0][i]).filter(coding_for_user__coding_id=1, coding_for_user__data_code__dimension_id=active_coding_dimension).count()
+        total_disagreed = sum([x[i] for x in disagree_table[1:]]) - disagree_table[i][i]
         if total_double_coded > 0:
             prop = '{:.1%}'.format(total_disagreed / total_double_coded)
         else:
@@ -345,7 +361,11 @@ def coding_results(request):
     #    c.delete()
     #
 
-    return render(request, 'streamcollect/coding_results.html', {'total_table':total_table, 'disagree_table':disagree_table})
+    #TODO: more practical to generate this matrix then format it rather than current other way around
+    cont_mat = [ x[1:-2] for x in disagree_table[1:-2] ]
+    agreement_coefs = calculate_agreement_coefs(cont_mat)
+
+    return render(request, 'streamcollect/coding_results.html', {'total_table':total_table, 'disagree_table':disagree_table, 'agreement_coefs':agreement_coefs})
 
 
 def coding_disagreement(request, coder1code, coder2code):
@@ -358,10 +378,10 @@ def coding_disagreement(request, coder1code, coder2code):
     coder1code = DataCode.objects.get(name = codes[int(coder1code)])
     coder2code = DataCode.objects.get(name = codes[int(coder2code)])
 
-    total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding__data_code__dimension_id=active_coding_dimension, coding__data_code=coder2code).filter(coding__coding_id=1, coding__data_code__dimension_id=active_coding_dimension, coding__data_code=coder1code)
+    total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder2code).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder1code)
     tweets = []
     for t in total_double_coded:
-        if t.coding.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != t.coding.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
+        if t.coding_for_tweet.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != t.coding_for_tweet.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
             tweets.append(t)
 
     return render(request, 'streamcollect/coding_disagreement.html', {'tweets': tweets})
@@ -708,7 +728,12 @@ def network_data_API(request):
 
     # Users which are coded
     dcd = DataCodeDimension.objects.all()[1]
+<<<<<<< HEAD
 #    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
+=======
+    #TODO: This query can be made more efficient:
+    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
+>>>>>>> 1067e65fcea64854c16e462334974516431e1277
 
 #    relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
     #relevant_users = classed_users | coded_users

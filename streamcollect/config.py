@@ -14,7 +14,7 @@ STATUSES_THRESHOLD = 10000
 # Ignore Tweets by keyword:
 IGNORED_KWS = ['pray', '🙏']
 # Ignore from following sources:
-IGNORED_SOURCES = ['Paper.li', 'TweetMyJOBS', 'CareerArc']
+IGNORED_SOURCES = ['Paper.li', 'TweetMyJOBS', 'CareerArc'] # These sources have been identified as automated accounts which do not contribute useful information, so were ignored in the original application of this tool. Adjust as necessary.
 
 # Ignore Re-Tweets. Note that keywords will match phrases in the ancestor Tweet, but geo-stream
 # will not detect coordinates in ancestor (nor are RTs ever assigned coordinates). Enabling RTs
