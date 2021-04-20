@@ -7,28 +7,37 @@
   <a href="{% url 'coding_results' %}">Back to Tables</a>
 
   <h3>Disagreement</h3>
+  Total instances: {{ objs|length }}<br/><br/>
 
   <table>
     <tr>
       <th>First Coder</th>
       <th>Second Coder</th>
-      <th>Tweet</th>
+      <th>Object</th>
       <th></th>
     </tr>
-    {% for t in tweets %}
+    {% for obj in objs %}
     <tr>
-      {% for c in t.coding_for_tweet.all|dictsort:'coding_id' %}
+      {% if is_tw_dimension %}
+      {% for c in obj.coding_for_tweet.all|dictsort:'coding_id' %}
         {% if c.data_code.dimension.id == request.session.active_coding_dimension %}
           <td>{{c.data_code.name}}</td>
         {% endif %}
       {% endfor %}
-      <td>{{t.text}}</td>
-      <td><a href='https://twitter.com/{{ t.author.screen_name }}/status/{{ t.tweet_id }}'>Source</a></td>
+      <td>{{obj.text}}</td>
+      <td><a href='https://twitter.com/{{ obj.author.screen_name }}/status/{{ obj.tweet_id }}'>Source</a></td>
+      {% else %}
+      {% for c in obj.coding_for_user.all|dictsort:'coding_id' %}
+        {% if c.data_code.dimension.id == request.session.active_coding_dimension %}
+          <td>{{c.data_code.name}}</td>
+        {% endif %}
+      {% endfor %}
+      <td>{{obj.screen_name}}</td>
+      <td><a href='/user_feed/{{ obj.user_id }}/'>Source</a></td>
+      {% endif %}
     </tr>
     {% endfor %}
   </table>
-
-  <p align='right'><b>Total Disagreed Tweets: {{ tweets|length }}</b></p>
 
 </div>
 

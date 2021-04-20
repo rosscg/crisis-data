@@ -19,7 +19,8 @@ import csv # for tweetData, userData.csv generation
 from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
 from .forms import EventForm, GPSForm
 from .tasks import save_twitter_object_task, update_user_relos_task, create_relos_from_list_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
-from .methods import update_tracked_tags, add_users_from_mentions, calculate_agreement_coefs #, check_spam_account
+from .methods import update_tracked_tags, add_users_from_mentions #, check_spam_account
+from .contingency_matrix_funcs import calculate_agreement_coefs
 from .networks import create_gephi_file
 from .calculate_metrics import calculate_user_graph_metrics, calculate_user_stream_metrics
 from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
@@ -37,7 +38,7 @@ def monitor_event(request):
     data_query = Tweet.objects.filter(data_source__in=selected_data_sources).filter( Q(coordinates_lat__isnull=False) | Q(data_source=4)).filter(Q(quoted_by__isnull=True) & Q(replied_by__isnull=True)) # Tweet with coordinates, or associated Place coordinates (for data_source=4)
 
     sample = min(data_query.count(), MAX_MAP_PINS)
-    tweets_list = [ obj.as_dict() for obj in data_query.order_by('?')[:sample] ] # TODO: order_by(?) is slow ?
+    tweets_list = [ obj.as_dict() for obj in data_query.order_by('?')[:sample] ] # TODO: order_by(?) is slow ? # order_by('?') is random
     tweets = json.dumps(tweets_list, cls=DjangoJSONEncoder)
     mid_point = None
     bounding_box = None
@@ -369,7 +370,11 @@ def coding_results(request):
 
 
 def coding_disagreement(request, coder1code, coder2code):
+
     active_coding_dimension = request.session.get('active_coding_dimension', None)
+    is_tw_dimension = DataCodeDimension.objects.get(id=active_coding_dimension).coding_subject == 'tweet'
+    print(is_tw_dimension)
+
     # Double lookup here to preserve the order of codes as originally passed to the html,
     # as it was not possible to pass the datacode back from the template due to the format
     # of the table loop. Therefore, have passed the forloop counter integers as indices.
@@ -377,14 +382,21 @@ def coding_disagreement(request, coder1code, coder2code):
 
     coder1code = DataCode.objects.get(name = codes[int(coder1code)])
     coder2code = DataCode.objects.get(name = codes[int(coder2code)])
+    if is_tw_dimension:
+        total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder2code).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder1code)
+    else:
+        total_double_coded = User.objects.filter(coding_for_user__coding_id=2, coding_for_user__data_code__dimension_id=active_coding_dimension, coding_for_user__data_code=coder2code).filter(coding_for_user__coding_id=1, coding_for_user__data_code__dimension_id=active_coding_dimension, coding_for_user__data_code=coder1code)
 
-    total_double_coded = Tweet.objects.filter(coding_for_tweet__coding_id=2, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder2code).filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__dimension_id=active_coding_dimension, coding_for_tweet__data_code=coder1code)
-    tweets = []
-    for t in total_double_coded:
-        if t.coding_for_tweet.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != t.coding_for_tweet.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
-            tweets.append(t)
+    objs = []
+    for obj in total_double_coded:
+        if is_tw_dimension:
+            if obj.coding_for_tweet.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != obj.coding_for_tweet.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
+                objs.append(obj)
+        else:
+            if obj.coding_for_user.filter(coding_id=1, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id != obj.coding_for_user.filter(coding_id=2, data_code__dimension_id=active_coding_dimension)[0].data_code.data_code_id:
+                objs.append(obj)
 
-    return render(request, 'streamcollect/coding_disagreement.html', {'tweets': tweets})
+    return render(request, 'streamcollect/coding_disagreement.html', {'objs': objs, 'is_tw_dimension': is_tw_dimension})
 
 
 def view_entities(request):

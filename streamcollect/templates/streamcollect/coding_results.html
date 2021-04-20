@@ -21,7 +21,7 @@
     </div>
 
     <div class="col-md-6">
-      <h3>Disagreement Matrix:</h3>
+      <h3>Contingency Matrix:</h3>
       <table>
         <tr class="tr_alternate">
           <td></td><td></td>
@@ -38,8 +38,10 @@
               {% endif %}
               {% for cell in row %}
                 {% if forloop.first or forloop.parentloop.first %} <th> {% else %} <td align='center'> {% endif %}
-                  {% if forloop.parentloop.counter > 1 and forloop.counter > 1 and forloop.counter < disagree_table|length|add:'-1' and forloop.parentloop.counter < disagree_table.0|length|add:'-1' and cell > 0 %}
-                    <a href="{% url 'coding_disagreement' coder1code=forloop.parentloop.counter|add:'-2'  coder2code=forloop.counter|add:'-2' %}" target="_blank">{{ cell }}</a>
+                  {% if forloop.parentloop.counter == forloop.counter %}
+                    {{ cell }}
+                  {% elif forloop.parentloop.counter > 1 and forloop.counter > 1 and forloop.counter < disagree_table|length|add:'-1' and forloop.parentloop.counter < disagree_table.0|length|add:'-1' and cell > 0 %}
+                    <a href="{% url 'coding_disagreement' coder1code=forloop.parentloop.counter|add:'-2' coder2code=forloop.counter|add:'-2' %}" target="_blank">{{ cell }}</a>
                   {% else %}
                     {{ cell }}
                   {% endif %}
@@ -50,6 +52,7 @@
       </table>
       <br/>
       <h3>Agreement Coefficients:</h3>
+      <b>Observed Agreement:</b> {{agreement_coefs.observed_agreement|floatformat:4}} <br/>
       <b>Cohen's Kappa:</b> {{agreement_coefs.kappa|floatformat:4}} <br/>
       <b>Krippendorff's Alpha:</b> {{agreement_coefs.alpha|floatformat:4}} <br/>
     </div>
