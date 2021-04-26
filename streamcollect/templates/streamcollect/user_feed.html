@@ -1,4 +1,5 @@
 {% load staticfiles %}
+{% load add_hyperlink %}
 <html>
   <head>
       <title>StreamCollect</title>
@@ -21,7 +22,8 @@
             {% else %}
               <div class="added_tweet">
             {% endif %}
-                <p>{{ tweet.text }}    <a href="https://twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
+                <p>{{ tweet.text|add_hyperlink|safe }}</p>
+                <p>{{ tweet.created_at }} <a href="https://twitter.com/{{ tweet.author.screen_name }}/status/{{ tweet.tweet_id }}" target="_blank">Source</a></p>
               </div>
           {% endfor %}
         </div>

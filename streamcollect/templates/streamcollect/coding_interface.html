@@ -1,4 +1,6 @@
 {% load staticfiles %}
+{% load add_hyperlink %}
+
 <html>
   <head>
     <title>StreamCollect - Coding Interface</title>
@@ -58,7 +60,7 @@
       <div class="row">
         <div class="col-lg-12">
           <div class="tweet_to_code">
-            <p>{{ data_object.text }}</p>
+            <p>{{ data_object.text|add_hyperlink|safe }}</p>
             <p>&emsp;<a href="https://twitter.com/{{ data_object.author.screen_name }}/status/{{ data_object.tweet_id }}" target="_blank">Source</a>&emsp;&emsp;&emsp;<a href="{% url 'user_details' user_id=data_object.author.user_id %}" target="_blank">Author</a></p>
           </div>
         </div>

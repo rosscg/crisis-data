@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'streamcollect',
+    'streamcollect.templatetags',
     'twdata',
     'django_celery_beat',
     'django_extensions'
