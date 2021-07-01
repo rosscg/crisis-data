@@ -739,16 +739,19 @@ def network_data_API(request):
     #coded_users = User.objects.filter(tweet__in=coded_tweets)
 
     # Users which are coded
-    dcd = DataCodeDimension.objects.all()[1]
-#    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
-    #TODO: This query can be made more efficient:
-    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
-
+    try:
+        dcd = DataCodeDimension.objects.filter(coding_subject='user')[0] # Default to first user dimension
+        #    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
+        #TODO: This query can be made more efficient:
+        coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
+        coded_users_count = coded_users.count()
+    except:
+        coded_users_count = 0
 #    relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
     #relevant_users = classed_users | coded_users
     relevant_users = [x for x in classed_users]
 
-    print("Coded Users (by tweet): {}, Classed Users: {}, Relevant Users: {}".format(coded_users.count(), classed_users.count(), len(relevant_users)))
+    print("Coded Users (by tweet): {}, Classed Users: {}, Relevant Users: {}".format(coded_users_count, classed_users.count(), len(relevant_users)))
 
     #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     print("Creating Relo JSON..")
