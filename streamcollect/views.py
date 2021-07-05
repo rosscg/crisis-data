@@ -732,51 +732,57 @@ def network_data_API(request):
     #classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE) | Q(user_class__gte=2))[:slice_size]
     # Ignore REQUIRED_IN/OUT_DEGREE
     #classed_users = User.objects.filter(user_class__gte=2)[:slice_size]
-    classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=1) | Q(out_degree__gte=1) | Q(user_class__gte=2))
+    #classed_users = User.objects.filter(user_class__gt=0).filter(Q(in_degree__gte=1) | Q(out_degree__gte=1) | Q(user_class__gte=2)) # Include alter nodes (requires running of trim_spam_accounts first)
+    classed_users = User.objects.filter(user_class__gte=2) # Only ego nodes
+
     # Only show users which have had Tweets coded
     #coded_tweets = Tweet.objects.filter(coding_for_tweet__data_code__data_code_id__gt=0).filter(coding_for_tweet__coding_id=1)
     #coded_users = User.objects.filter(tweet__in=coded_tweets).filter(Q(in_degree__gte=REQUIRED_IN_DEGREE) | Q(out_degree__gte=REQUIRED_OUT_DEGREE))
     #coded_users = User.objects.filter(tweet__in=coded_tweets)
 
-    # Users which are coded
-    try:
-        dcd = DataCodeDimension.objects.filter(coding_subject='user')[0] # Default to first user dimension
-        #    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
-        #TODO: This query can be made more efficient:
-        coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
-        coded_users_count = coded_users.count()
-    except:
-        coded_users_count = 0
-#    relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
-    #relevant_users = classed_users | coded_users
-    relevant_users = [x for x in classed_users]
+    # Users which are coded [ie. use this block to ensure all coded users are included in the output]
+#     try:
+#         dcd = DataCodeDimension.objects.filter(coding_subject='user')[0] # Default to first user dimension
+#         #    coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
+#         #TODO: This query can be made more efficient:
+#         coded_users = User.objects.filter(coding_for_user__in=Coding.objects.filter(coding_id='1').filter(data_code__data_code_id__gt=0).filter(data_code__dimension_id=dcd))
+#         coded_users_count = coded_users.count()
+#     except:
+#         coded_users_count = 0
+# #    relevant_users = [x for x in classed_users] + [y for y in coded_users] # Creates list
+#     #relevant_users = classed_users | coded_users
+#     #relevant_users = [x for x in classed_users]
 
-    print("Coded Users (by tweet): {}, Classed Users: {}, Relevant Users: {}".format(coded_users_count, classed_users.count(), len(relevant_users)))
+    #print("Coded Users (by tweet): {}, Classed Users: {}, Relevant Users: {}".format(coded_users_count, classed_users.count(), len(relevant_users)))
 
-    #Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
+    # Get relationships which connect two 'relevant users'. This is slow. Could pre-generate?
     print("Creating Relo JSON..")
-    relevant_relos = Relo.objects.filter(target_user__in=relevant_users, source_user__in=relevant_users, end_observed_at=None)
-    resultsrelo = [ob.as_json() for ob in relevant_relos]
-    print("Total Relos: {}".format(len(resultsrelo)))
+    relevant_relos = Relo.objects.filter(target_user__in=classed_users, source_user__in=classed_users, end_observed_at=None)
 
-    #Remove isolated nodes: TODO: May be too slow
-    if EXCLUDE_ISOLATED_NODES:
-        print("Excluding Isolated Nodes..")
-        targets = list(relevant_relos.values_list('target_user', flat=True))
-        sources = list(relevant_relos.values_list('source_user', flat=True))
+    print("Writing GEXF file..")
+    create_gephi_file(classed_users, relevant_relos)
 
-        relo_node_list = targets + list(set(sources) - set(targets))
-        print("Creating User JSON..")
-        resultsuser = [ob.as_json() for ob in relevant_users if ob.id in relo_node_list]
-    else:
-        print("Creating User JSON..")
-        resultsuser = [ob.as_json() for ob in relevant_users]
-
-    data = {"nodes" : resultsuser, "links" : resultsrelo}
-    jsondata = json.dumps(data)
-
-    # Create GEXF file of network.
-    create_gephi_file(relevant_users, relevant_relos)
+    # resultsrelo = [ob.as_json() for ob in relevant_relos]
+    # print("Total Relos: {}".format(len(resultsrelo)))
+    #
+    # #Remove isolated nodes: TODO: May be too slow
+    # if EXCLUDE_ISOLATED_NODES:
+    #     print("Excluding Isolated Nodes..")
+    #     targets = list(relevant_relos.values_list('target_user', flat=True))
+    #     sources = list(relevant_relos.values_list('source_user', flat=True))
+    #
+    #     relo_node_list = targets + list(set(sources) - set(targets))
+    #     print("Creating User JSON..")
+    #     resultsuser = [ob.as_json() for ob in relevant_users if ob.id in relo_node_list]
+    # else:
+    #     print("Creating User JSON..")
+    #     resultsuser = [ob.as_json() for ob in relevant_users]
+    #
+    # data = {"nodes" : resultsuser, "links" : resultsrelo}
+    # jsondata = json.dumps(data)
 
     #TODO: HttpReponse vs Jsonresponse? Latter doesn't work with current d3
-    return HttpResponse(jsondata)
+    # return HttpResponse(jsondata)
+
+    # TEMP return while HttpResponse above is commented out
+    return redirect('monitor_event')
