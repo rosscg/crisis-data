@@ -1,7 +1,7 @@
 import networkx as nx
 
 
-def create_gephi_file(relevant_users, relevant_relos):
+def create_gephi_file(relevant_users, relevant_relos, lcc=False):
     G=nx.DiGraph()
     for node in relevant_users:
 #        best_code = ''
@@ -16,6 +16,15 @@ def create_gephi_file(relevant_users, relevant_relos):
         G.add_node(node.screen_name, user_class=node.user_class, user_code=user_code)
     for relo in relevant_relos:
         G.add_edge(relo.source_user.screen_name, relo.target_user.screen_name)
+
+    print('Nodes: {} Edges: {}'.format(G.number_of_nodes(), G.number_of_edges()))
+
+    # Only write the largest connected component:
+    if lcc:
+        Gcc = sorted(nx.connected_components(G.to_undirected()), key=len, reverse=True)
+        G = G.subgraph(Gcc[0])
+        print('Paring to LCC -- Nodes: {} Edges: {}'.format(G.number_of_nodes(), G.number_of_edges()))
+
     nx.write_gexf(G, 'gephi_network_data.gexf', prettyprint=True)
     return
 
