@@ -16,16 +16,23 @@ import random
 
 import csv # for tweetData, userData.csv generation
 
-from .models import User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword, AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
+# from twdata import userdata #TODO: Is this used?
+from twdata.tasks import twitter_stream_task
+
+from .models import User, Relo, Tweet, DataCodeDimension, DataCode,
+                    Coding, Keyword, AccessToken, ConsumerKey, Event,
+                    GeoPoint, Hashtag, Url, Mention
 from .forms import EventForm, GPSForm
-from .tasks import save_twitter_object_task, update_user_relos_task, create_relos_from_list_task, save_user_timelines_task, trim_spam_accounts, compare_live_data_task
+from .tasks import save_twitter_object_task, update_user_relos_task,
+                    create_relos_from_list_task, save_user_timelines_task,
+                    trim_spam_accounts, compare_live_data_task
 from .methods import update_tracked_tags, add_users_from_mentions #, check_spam_account
 from .contingency_matrix_funcs import calculate_agreement_coefs
 from .networks import create_gephi_file
-from .calculate_metrics import calculate_user_graph_metrics, calculate_user_stream_metrics
-from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE, EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
-from twdata import userdata #TODO: Is this used?
-from twdata.tasks import twitter_stream_task
+from .calculate_metrics import calculate_user_graph_metrics,
+                                calculate_user_stream_metrics
+from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE,
+                    EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
 # Remove once in production (used by twitter_auth.html). Alternatively, this
 # should load from a file in the parent, in the load_tokens method
 #TODO: Currently causes an error on fresh db builds. Should be fine if Skeleton is renamed.
@@ -33,12 +40,18 @@ from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY, MAPBOX_PK
 
 
 def monitor_event(request):
-    selected_data_sources = request.session.get('active_data_sources', []) # List of data_sources chosen to be displayed
+    # List of data_sources chosen to be displayed
+    selected_data_sources = request.session.get('active_data_sources', [])
     print('selected_data_sources: {}'.format(selected_data_sources))
-    data_query = Tweet.objects.filter(data_source__in=selected_data_sources).filter( Q(coordinates_lat__isnull=False) | Q(data_source=4)).filter(Q(quoted_by__isnull=True) & Q(replied_by__isnull=True)) # Tweet with coordinates, or associated Place coordinates (for data_source=4)
+     # Tweet with coordinates, or associated Place coordinates (for data_source=4):
+    data_query = Tweet.objects.filter(
+                    data_source__in=selected_data_sources).filter(
+                    Q(coordinates_lat__isnull=False) | Q(data_source=4)).filter(
+                    Q(quoted_by__isnull=True) & Q(replied_by__isnull=True))
 
     sample = min(data_query.count(), MAX_MAP_PINS)
-    tweets_list = [ obj.as_dict() for obj in data_query.order_by('?')[:sample] ] # TODO: order_by(?) is slow ? # order_by('?') is random
+    # TODO: order_by(?) is slow ? # order_by('?') is random
+    tweets_list = [ obj.as_dict() for obj in data_query.order_by('?')[:sample] ]
     tweets = json.dumps(tweets_list, cls=DjangoJSONEncoder)
     mid_point = None
     bounding_box = None
@@ -54,7 +67,12 @@ def monitor_event(request):
             mid_point = [geo_1.latitude, geo_1.longitude]
     except:
         event = None
-    return render(request, 'streamcollect/monitor_event.html', {'tweets': tweets, 'mid_point': json.dumps(mid_point), 'bounding_box': json.dumps(bounding_box), 'mapbox_pk': json.dumps(MAPBOX_PK), 'selected_data_sources': selected_data_sources})
+    return render(request, 'streamcollect/monitor_event.html',
+                            {'tweets': tweets,
+                             'mid_point': json.dumps(mid_point),
+                             'bounding_box': json.dumps(bounding_box),
+                             'mapbox_pk': json.dumps(MAPBOX_PK),
+                             'selected_data_sources': selected_data_sources})
 
 
 def list_users(request):
@@ -71,9 +89,10 @@ def view_event(request):
     try:
         event = Event.objects.all()[0]
         if event.geopoint.all().count() == 2:
-            mid_point = ((event.geopoint.all()[0].latitude + event.geopoint.all()[1].latitude) / 2 , (event.geopoint.all()[0].longitude + event.geopoint.all()[1].longitude) /2)
+            mid_point = ((event.geopoint.all()[0].latitude + event.geopoint.all()[1].latitude) / 2 ,
+                         (event.geopoint.all()[0].longitude + event.geopoint.all()[1].longitude) / 2)
     except:
-        event = None
+        event = Event.objects.create(name="UntitledEvent")
     return render(request, 'streamcollect/view_event.html', {'event': event, 'mid_point': mid_point})
 
 
@@ -103,7 +122,9 @@ def edit_event(request): # Temp, needs validation & better interface.
         form = EventForm(instance=event)
         form2 = GPSForm(instance=geo1, prefix='GeoPoint 1')
         form3 = GPSForm(instance=geo2, prefix='GeoPoint 2')
-        return render(request, 'streamcollect/edit_event.html', {'forms': [form, form2, form3], 'mapbox_pk': json.dumps(MAPBOX_PK) })
+        return render(request, 'streamcollect/edit_event.html',
+                                {'forms': [form, form2, form3],
+                                'mapbox_pk': json.dumps(MAPBOX_PK) })
 
 
 def user_details(request, user_id):
@@ -138,8 +159,10 @@ def stream_status(request):
         elif 'priority' not in t['kwargs']:
             gps_stream_status = True
 
-
-    return render(request, 'streamcollect/stream_status.html', {'kw_stream_status': kw_stream_status, 'gps_stream_status': gps_stream_status, 'keywords': keywords})
+    return render(request, 'streamcollect/stream_status.html',
+                            {'kw_stream_status': kw_stream_status,
+                            'gps_stream_status': gps_stream_status,
+                            'keywords': keywords})
 
 
 def functions(request):
