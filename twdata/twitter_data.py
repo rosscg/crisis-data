@@ -9,11 +9,11 @@ from celery.task.control import inspect # gets current tasks for low priority de
 from streamcollect.models import Keyword, AccessToken, ConsumerKey
 from streamcollect.tasks import save_twitter_object_task
 #from .config import CONSUMER_KEY, CONSUMER_SECRET
-from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM,
-                                    FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD,
-                                    STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH,
-                                    BOUNDING_BOX_HEIGHT, IGNORED_KWS,
-                                    IGNORED_SOURCES, IGNORE_RTS
+from streamcollect.config import (
+    STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD,
+    STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, IGNORED_KWS,
+    IGNORED_SOURCES, IGNORE_RTS
+    )
 
 CPU_COUNT = multiprocessing.cpu_count()
 

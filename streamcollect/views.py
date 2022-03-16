@@ -19,20 +19,32 @@ import csv # for tweetData, userData.csv generation
 # from twdata import userdata #TODO: Is this used?
 from twdata.tasks import twitter_stream_task
 
-from .models import User, Relo, Tweet, DataCodeDimension, DataCode,
-                    Coding, Keyword, AccessToken, ConsumerKey, Event,
-                    GeoPoint, Hashtag, Url, Mention
+from .models import (
+    User, Relo, Tweet, DataCodeDimension, DataCode, Coding, Keyword,
+    AccessToken, ConsumerKey, Event, GeoPoint, Hashtag, Url, Mention
+    )
 from .forms import EventForm, GPSForm
-from .tasks import save_twitter_object_task, update_user_relos_task,
-                    create_relos_from_list_task, save_user_timelines_task,
-                    trim_spam_accounts, compare_live_data_task
+from .tasks import (
+    create_relos_from_list_task,
+    compare_live_data_task,
+    save_twitter_object_task,
+    save_user_timelines_task,
+    trim_spam_accounts,
+    update_user_relos_task
+    )
 from .methods import update_tracked_tags, add_users_from_mentions #, check_spam_account
 from .contingency_matrix_funcs import calculate_agreement_coefs
 from .networks import create_gephi_file
-from .calculate_metrics import calculate_user_graph_metrics,
-                                calculate_user_stream_metrics
-from .config import REQUIRED_IN_DEGREE, REQUIRED_OUT_DEGREE,
-                    EXCLUDE_ISOLATED_NODES, MAX_MAP_PINS
+from .calculate_metrics import (
+    calculate_user_graph_metrics,
+    calculate_user_stream_metrics
+    )
+from .config import (
+    EXCLUDE_ISOLATED_NODES,
+    MAX_MAP_PINS,
+    REQUIRED_IN_DEGREE,
+    REQUIRED_OUT_DEGREE
+    )
 # Remove once in production (used by twitter_auth.html). Alternatively, this
 # should load from a file in the parent, in the load_tokens method
 #TODO: Currently causes an error on fresh db builds. Should be fine if Skeleton is renamed.
