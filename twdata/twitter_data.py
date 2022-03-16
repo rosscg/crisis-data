@@ -1,20 +1,24 @@
 import time
+import multiprocessing # count available CPUs
 from django.core.exceptions import ObjectDoesNotExist
 
 from tweepy import Stream, OAuthHandler
 from tweepy.streaming import StreamListener
+from celery.task.control import inspect # gets current tasks for low priority decision
 
 from streamcollect.models import Keyword, AccessToken, ConsumerKey
-#from .config import CONSUMER_KEY, CONSUMER_SECRET
-from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM, FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD, STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH, BOUNDING_BOX_HEIGHT, IGNORED_KWS, IGNORED_SOURCES, IGNORE_RTS, CONCURRENT_TASKS
-
 from streamcollect.tasks import save_twitter_object_task
+#from .config import CONSUMER_KEY, CONSUMER_SECRET
+from streamcollect.config import STREAM_REFRESH_RATE, REFRESH_STREAM,
+                                    FRIENDS_THRESHOLD, FOLLOWERS_THRESHOLD,
+                                    STATUSES_THRESHOLD, BOUNDING_BOX_WIDTH,
+                                    BOUNDING_BOX_HEIGHT, IGNORED_KWS,
+                                    IGNORED_SOURCES, IGNORE_RTS
+
+CPU_COUNT = multiprocessing.cpu_count()
 
 keywords_high_priority_global = None
 keywords_low_priority_global = None
-
-from celery.task.control import inspect # gets current tasks for low priority decision
-
 
 
 class Stream_Listener(StreamListener):
@@ -104,7 +108,7 @@ class Stream_Listener(StreamListener):
                             # We are therefore currently discarding these. TODO: Could choose to handle.
 
                 #reserved_tasks = CeleryTask.objects.all().count() # TODO: Do this with celery q instead
-                if reserved_tasks > CONCURRENT_TASKS*4*.5: # 4 is the default worker_prefetch_multiplier multiplied by concurrency. Low priority only adds when a proportion slots are free.
+                if reserved_tasks > CPU_COUNT*4*.5: # 4 is the default worker_prefetch_multiplier multiplied by concurrency. Low priority only adds when a proportion slots are free.
                     #print('too many tasks, discarding job')
                     return
         else: # GPS stream
@@ -130,7 +134,7 @@ class Stream_Listener(StreamListener):
                         #print(status.place)
                         return
 
-        if reserved_tasks < CONCURRENT_TASKS*4 or data_source == 3: # 4 is the default worker_prefetch_multiplier multiplied by concurrency. Currently forces saving all geo-tweets.
+        if reserved_tasks < CPU_COUNT*4 or data_source == 3: # 4 is the default worker_prefetch_multiplier multiplied by concurrency. Currently forces saving all geo-tweets.
             print(status.text)
             save_twitter_object_task.delay(tweet=status, user_class=2, save_entities=True, data_source=data_source)
 

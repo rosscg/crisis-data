@@ -54,12 +54,11 @@ Default username is the system user name, default password is none.
 
         > ```
         > $ redis-4.0.1/src/redis-server
-        > $ celery -A homesite worker --concurrency=4 -l info -n object_worker -Q save_object_q
-        > $ celery -A homesite worker --concurrency=4 -l info -n stream_worker -Q stream_q
-        > $ celery -A homesite worker --concurrency=4 -l info -n media_worker -Q save_media_q
+        > $ celery -A homesite worker -l info -n object_worker -Q save_object_q
+        > $ celery -A homesite worker -l info -n stream_worker -Q stream_q
+        > $ celery -A homesite worker -l info -n media_worker -Q save_media_q
         > $ celery -A homesite beat -l info -S django
         > ```
-  * Note: `--concurrency=4` should be the number of cores in the system, can remove to default to this value, but need to update `CONCURRENT_TASKS` to the same value.
 
 * Migrate database and run server:
 
