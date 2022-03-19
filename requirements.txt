@@ -6,7 +6,7 @@ certifi==2017.4.17
 chardet==3.0.4
 Cython
 decorator==4.3.0
-Django==1.11.23
+Django==2.2.27
 django-celery-beat==1.0.1
 django-extensions==2.1.9
 idna==2.5
