@@ -17,10 +17,13 @@ import urllib.parse as urlparse
 from bs4 import BeautifulSoup
 import os
 
-
 #Uncomment the decorators here to allow tasks to run periodically. Requires a running Celery Beat (see Readme)
 #@periodic_task(run_every=timedelta(hours=24), bind=True)
 def update_user_relos_periodic(self):
+    '''
+    Very intensive and will exhaust the API limits quickly, so is generally
+    best left until after the stream collection.
+    '''
     update_user_relos_task()
     return
 #@periodic_task(run_every=timedelta(hours=6), bind=True)
@@ -29,6 +32,11 @@ def trim_spam_accounts_periodic(self):
     return
 #@periodic_task(run_every=timedelta(minutes=30), bind=True)
 def update_data_periodic(self):
+    '''
+    Allows new hashtags to be added to the tracked tags depending on their
+    prevalence in the detected Tweets. `REFRESH_STREAM` should be set to true,
+    to add the new tags periodically.
+    '''
     update_tracked_tags()   #Requires config.py: REFRESH_STREAM=True
     #add_users_from_mentions()
     return
@@ -202,7 +210,7 @@ def download_media(tweet_data): # TODO: Fold into task ?
                 print(tweet_data)
             return([], '')
 
-    directory = './' + event + '_media/' + media_type + '/'
+    directory = './data/' + event + '_media/' + media_type + '/'
     if not os.path.exists(directory):
         os.makedirs(directory)
 
