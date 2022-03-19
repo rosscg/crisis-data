@@ -1,0 +1,33 @@
+Add superuser in dockerfile
+echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@myproject.com', 'password')" | python manage.py shell
+
+
+Set New event db
+Export db to disk (and media files)
+
+check size of docker image
+
+push settings changes to repo
+add .dockerignore
+
+Instructions to map data file to relevant place:
+- .:/data
+
+
+Add docker env params (e.g. location of data write out), read this:
+https://nickjanetakis.com/blog/dockerize-a-flask-celery-and-redis-application-with-docker-compose
+
+
+
+
+# Create dump
+docker exec -t crisis-data_db_1 pg_dump -c -U username eventdb | gzip > dump_$(date +"%Y-%m-%d").gz
+
+# Restore db from dump
+gzip -d -c dump.gz | cat | docker exec -i crisis-data_db_1 psql -U username eventdb
+
+
+
+TOREAD: (See docker ENV examples in first link)
+https://nickjanetakis.com/blog/dockerize-a-flask-celery-and-redis-application-with-docker-compose
+https://gist.github.com/onlyphantom/0bffc5dcc25a756e247cb526c01072c0
