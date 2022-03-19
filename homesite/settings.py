@@ -1,13 +1,14 @@
+
 import os
 
 # Celery settings
-CELERY_BROKER_URL = 'redis://redis'
+CELERY_BROKER_URL = 'redis://localhost'
 #: Only add pickle to this list if your broker is secured
 #: from unwanted access (see userguide/security.html)
 # Using pickle as tweet objects are not JSON serialisable, e.g. calling
 # save_twitter_object_task.delay(tweet) from stream_listener
 CELERY_ACCEPT_CONTENT = ['json', 'pickle']
-CELERY_RESULT_BACKEND = 'redis://redis'
+CELERY_RESULT_BACKEND = 'redis://localhost'
 CELERY_TASK_SERIALIZER = 'pickle'
 #CELERY_TIMEZONE = 'Europe/London'
 
@@ -24,12 +25,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '^jhmoug5pmt^(x(4)c*5cjwi&(v913&@b*$yqs4-_!1!)41-%)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'localhost', '[::1]']
+ALLOWED_HOSTS = ['127.0.0.1']
 X_FRAME_OPTIONS = 'DENY'
 
 # Application definition
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -76,47 +78,62 @@ WSGI_APPLICATION = 'homesite.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_NAME'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'db',
-        'PORT': '5432',
+        'NAME': 'sandbox',
+        'USER': 'ross',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '',
     }
 }
 
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
+
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
+
 LANGUAGE_CODE = 'en-us'
+
 TIME_ZONE = 'UTC' # UTC used by Twitter objects, don't change
+
 USE_I18N = True
+
 USE_L10N = True
+
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 #STATIC_ROOT = 'static_root/'
 
 
 NOTEBOOK_ARGUMENTS = [
-    '--ip=0.0.0.0',
+    '--ip=127.0.0.1',
     '--port=8888',
     '--no-browser',
-    '--allow-root',
 ]

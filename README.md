@@ -7,49 +7,99 @@ Manual coding is supported for both user accounts and individual Tweets.
 
 Data is stored in a local database and support is included to access the data from within Jupyter notebooks.
 
-The build uses a fork of Tweepy which allows multiple Twitter API tokens to be used.
+
+The build uses a fork of Tweepy which allows multiple tokens to be used.
 
 ------------
-### Installation with Docker:
-
-* Clone repository
-* Re-name `streamcollect/tokensSKELETON.py` to `tokens.py` and add (at least) `CONSUMER_KEY` and `CONSUMER_SECRET` (from the [Twitter Dev Portal](https://developer.twitter.com/apps)).
-
-* Install [Docker](https://www.docker.com/products/docker-desktop)
-* Increase memory in Docker to ~4gb (exit code 137 denotes out of memory error)
-* Run Docker:
-
-```console
-$ docker-compose up
-```
-
-* Navigate to [127.0.0.1](127.0.0.1)
-* Load Twitter authentication details with the 'Load From Config' button on the [Twitter Authentication page](http://127.0.0.1:8000/twitter_auth).
-  * CURRENTLY NOT WORKING -- Additional access tokens can be added via the web interface, requiring a user to log in to Twitter and authorise. 'Export Tokens' can save these tokens to a file for future use.
-  * Streams currently need at least 3 tokens added (one for each stream).
-* Optional: Log in to the admin interface and add a period task to `update_user_relos_task` daily (alternatively, remove comment from `update_user_relos_periodic` in `tasks.py`)
-
-
 ### Local installation (Mac):
+* Install python3.
+* Install Postgres.app, configure `$PATH` as detailed in step 3 [here](http://postgresapp.com/) (tested with v9.6).
+* This build uses Postgres (over sqlite) as a database due to high write demands
+* Create database from Postgres command line:
 
-If running without docker, homesite/settings.py should be updated per [this commit](https://github.com/rosscg/crisis-data/tree/3125563d4798ee7a2598da2af8b9c6719219a67b). See related README.md for installation process.
+        > ```
+        > $ psql
+        > $ CREATE DATABASE [dbname];
+        > ```
+
+* Turn off auto-sleep / install Caffeine (Mac) (only necessary during data collection).
+* Download Redis from https://redis.io/ or brew, and build:
+
+        > ```
+        > $ cd redis-4.0.1
+        > $ make
+        > $ make test
+        > $ src/redis-server
+        > ```
+
+* You may need to install SSL certificates if using python 3.6, simply run `/Applications/Python 3.6/Install Certificates.command` as explained [here](https://bugs.python.org/issue28150).
+* Clone this project and open its directory. Create virtual environment and install dependencies. Pip should be included in the venv, otherwise may need to install manually. The pip command below avoids using cache due to pip bug:
+
+        > ```
+        > $ git clone https://github.com/rosscg/crisis-data.git
+        > $ cd crisis-data
+        > $ python3 -m venv venv
+        > $ source venv/bin/activate
+        > $ pip3 install -r requirements.txt --no-cache-dir
+        > ```
+
+* Check if Hardcoded auto-coding line is still in `views.py` - from approx line 150 and remove (uncomment appropriate line beneath block).
+
+* Set database name, username and password in `homesite/settings.py`, line ~84.
+Default username is the system user name, default password is none.
+
+* Re-name `streamcollect/tokensSKELETON.py` to `tokens.py` and add (at least) `CONSUMER_KEY` and `CONSUMER_SECRET` (generated from https://apps.twitter.com/).
+
+* Run Redis (from Redis Directory), Celery Worker and Celery Beat in separate terminal windows:
+
+        > ```
+        > $ redis-4.0.1/src/redis-server
+        > $ celery -A homesite worker -l info -n object_worker -Q save_object_q
+        > $ celery -A homesite worker -l info -n stream_worker -Q stream_q
+        > $ celery -A homesite worker -l info -n media_worker -Q save_media_q
+        > $ celery -A homesite beat -l info -S django
+        > ```
+
+* Migrate database and run server:
+
+        > ```
+        > $ python manage.py migrate
+        > $ python manage.py runserver
+        > ```
+
+ * Optional: Log in to the admin interface and add a period task to `update_user_relos_task` daily (alternatively, remove comment from `update_user_relos_periodic` in `tasks.py`)
+
+* Load Twitter authentication details with the 'Load From Config' button on the Twitter Authentication page.
+  * Additional access tokens can be added via the web interface, requiring a user to log in to Twitter and authorise. 'Export Tokens' can save these tokens to a file for future use.
+  * Streams currently need at least 3 tokens added (one for each stream).
+
+###### Notes:
+* If Redis is running from previous launch (i.e. returns `bind: Address already in use`) find the port number (second column) and kill:
+
+        > ```
+        > $ ps aux | grep redis
+        > $ kill -9 [PORT NUMBER]
+        > ```
+
+* Any change to the code requires Celery terminal commands to be relaunched.
 
 ------------
-### Data Collection:
+### Usage - Data Collection:
 
 The key functionality of the software is tracking keywords and GPS coordinates.
+
+* If necessary, create new database in Postgres and adjust in `settings.py`.
 * Edit `config.py` details as needed.
     * The exclusions aim to reduce the amount of processing and noise but affect the sample and therefore need to be considered with respect to the proposed analysis.
-* OPTIONAL: Decide on periodic tasks in `tasks.py` (uncomment the decorators to run, uncomment celery beat contained in docker-compose.yml).  
-* If media is downloaded (default behaviour), it uses the local directory mapped to /data in the web container -- update DOCKER_WEB_VOLUME in .env before building if required.
-
-* Edit the event name via the 'View Event' page.
+* Decide on periodic tasks in `tasks.py` (uncomment the decorators to run, requires the celery beat running).
+    * `update_user_relos_periodic` is very intensive and will exhaust the API limits quickly, so is generally best left until after the stream collection.
+    * `update_data_periodic allows` new hashtags to be added to the tracked tags depending on their prevalence in the detected Tweets. `REFRESH_STREAM` should be set to true, to add the new tags periodically.
+* Create the event object - at the least it needs a name. Optionally add coordinates for the geo stream.
 * Add keywords. Keywords cannot include spaces.
-  * High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
-* Add coordinates for the geo stream.
-* Run streams from the 'Stream Status' page. Disable OS auto-sleep.
+* High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
+* Run streams, disable OS auto-sleep.
 
-### Post collection:
+##### After collection:
 
 * Stop streams, wait for remaining tasks to resolve (could take some time). If there is a queue of tasks, the stream may continue to run until its termination is processed.
 * Create a dump of the database (see below). Do this at other relevant milestones.
@@ -60,17 +110,18 @@ The key functionality of the software is tracking keywords and GPS coordinates.
 * Optional: Add codes and code Tweets. Database supports up to 9 coders (though UI only supports 2). See section below.
 * Export to suitable format for analysis (to be implemented) or access via notebooks.
 
-### Database Dump
-Create dump of database:
+Information on dumping the database to a file (for backup) can be found [here](https://www.postgresql.org/docs/9.1/static/backup-dump.html).
 
 > ```
-> $ docker exec -t crisis-data_db_1 pg_dump -c -U username eventdb | gzip > dump_$(date +"%Y-%m-%d").gz
+> $ pg_dump dbname > outfile
+> $ createdb dbname2
+> $ psql dbname2 < infile
 > ```
 
-Restore db from dump:
-
+To flush Redis DB (to clear queue of tasks):
 > ```
-> $ gzip -d -c dump.gz | cat | docker exec -i crisis-data_db_1 psql -U username eventdb
+> $ redis-4.0.1/src/redis-cli flushdb
+> $ celery purge
 > ```
 
 ------------
@@ -94,13 +145,40 @@ The results link will show the proportions distributed to each code, and the dis
 ------------
 ### Usage - Data Analysis:
 
-The build can host python notebooks which use Django to access models.
-* Rebuild using requirements_incl_notebooks.txt
-* Uncomment the notebook container in docker-compose.yml
-* Open 0.0.0.0:8888 and use the token provided in the console
+The build can host python notebooks which use Django to access models. Run the notebook server with:
 
-#### Local Installation
-For non-Docker installation, see commit [here](https://github.com/rosscg/crisis-data/tree/3125563d4798ee7a2598da2af8b9c6719219a67b)
+> ```
+>$ cd notebooks
+>$ ../manage.py shell_plus --notebook
+> ```
+
+###### Note:
+To run the notebook from outside of the Django directory, edit the kernel settings found at (Mac:) `~/Library/Jupyter/kernels/django_extensions` as follows (substitute `USERNAME` and path on line 3 and 13):
+
+> ```
+> {
+>  "argv": [
+>    "/Users/USERNAME/Documents/crisis-data/venv/bin/python",
+>    "-m",
+>    "ipykernel_launcher",
+>    "-f",
+>    "{connection_file}",
+>    "--ext",
+>    "django_extensions.management.notebook_extension"
+>  ],
+>  "env": {
+>    "DJANGO_SETTINGS_MODULE": "homesite.settings",
+>    "PYTHONPATH": "/Users/USERNAME/Documents/crisis-data"
+>  },
+>  "display_name": "Crisis-Data Django",
+>  "language": "python",
+>  "interrupt_mode": "signal",
+>  "metadata": {}
+> }
+> ```
+
+###### Note:
+On Linux systems, the error: `ImportError: No module named 'pysqlite2'` is likely due to sqlite3 missing from the python install. Install and rebuild python, see answer [here](https://stackoverflow.com/questions/20126475/importerror-no-module-named-sqlite3-in-python3-3/21909896).
 
 ------------
 ### Remote Access:
