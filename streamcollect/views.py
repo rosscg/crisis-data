@@ -451,10 +451,10 @@ def twitter_auth(request):
 
 def callback(request):
     try:
-        ckey=ConsumerKey.objects.all()[:1].get()
+        ckey = ConsumerKey.objects.all()[:1].get()
     except ObjectDoesNotExist:
         print('Error! Failed to get Consumer Key from database.')
-        return render(request, 'streamcollect/monitor_event.html')
+        return render(request, 'streamcollect/twitter_auth.html')
     verifier = request.GET.get('oauth_verifier')
     auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
     token = request.session.get('request_token', None)
@@ -463,8 +463,8 @@ def callback(request):
     tokens = AccessToken.objects.all()
     try:
         auth.get_access_token(verifier)
-    except tweepy.TweepError:
-        print('Error! Failed to get access token.')
+    except tweepy.TweepError as e:
+        print('Error! Failed to get access token.', e)
         return render(request, 'streamcollect/twitter_auth.html', {'error': 'Failed to get access token','tokens': tokens})
     if not AccessToken.objects.filter(access_key=auth.access_token).exists():
         token = AccessToken(access_key=auth.access_token, access_secret=auth.access_token_secret, screen_name=auth.get_username())
@@ -592,12 +592,12 @@ def submit(request):
         except ObjectDoesNotExist:
             print('Error! Failed to get Consumer Key from database.')
             return render(request, 'streamcollect/monitor_event.html')
-        auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'https://127.0.0.1:8000/callback')
+        auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret, 'http://127.0.0.1:8000/callback')
         try:
             redirect_url = auth.get_authorization_url()
             request.session['request_token'] = auth.request_token
-        except tweepy.TweepError:
-            print('Error! Failed to get request token.')
+        except tweepy.TweepError as e:
+            print('Error! Failed to get request token.', e)
             return render(request, 'streamcollect/monitor_event.html')
         return redirect(redirect_url)
 
