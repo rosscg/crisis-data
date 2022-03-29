@@ -45,7 +45,7 @@ from .config import (
     REQUIRED_IN_DEGREE,
     REQUIRED_OUT_DEGREE
     )
-# Remove once in production (used by twitter_auth.html). Alternatively, this
+# Remove once in production (used by functions.html). Alternatively, this
 # should load from a file in the parent, in the load_tokens method
 #TODO: Currently causes an error on fresh db builds. Should be fine if Skeleton is renamed.
 from .tokens import ACCESS_TOKENS, CONSUMER_SECRET, CONSUMER_KEY, MAPBOX_PK
@@ -105,7 +105,29 @@ def view_event(request):
                          (event.geopoint.all()[0].longitude + event.geopoint.all()[1].longitude) / 2)
     except:
         event = Event.objects.create(name="UntitledEvent")
-    return render(request, 'streamcollect/view_event.html', {'event': event, 'mid_point': mid_point})
+
+    keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
+
+    kw_stream_status = False
+    gps_stream_status = False
+
+    #TODO: catch exception here for when workers aren't running (also in functions tab)
+    try:
+        ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker')
+    except:
+        ts = []
+    for t in ts:
+        task_id = t.get('id')
+        if 'priority' in t['kwargs']:
+            kw_stream_status = True
+        elif 'priority' not in t['kwargs']:
+            gps_stream_status = True
+
+    return render(request, 'streamcollect/view_event.html', {'event': event,
+                                            'mid_point': mid_point,
+                                            'kw_stream_status': kw_stream_status,
+                                            'gps_stream_status': gps_stream_status,
+                                            'keywords': keywords})
 
 
 def edit_event(request): # Temp, needs validation & better interface.
@@ -153,37 +175,17 @@ def user_feed(request, user_id):
     return render(request, 'streamcollect/user_feed.html', {'user': user, 'tweets': tweets})
 
 
-def stream_status(request):
-    keywords = Keyword.objects.all().values_list('keyword', flat=True).order_by('created_at')
-
-    kw_stream_status = False
-    gps_stream_status = False
-
-    #TODO: catch exception here for when workers aren't running (also in functions tab)
-    try:
-        ts = inspect(['celery@stream_worker']).active().get('celery@stream_worker')
-    except:
-        ts = []
-    for t in ts:
-        task_id = t.get('id')
-        if 'priority' in t['kwargs']:
-            kw_stream_status = True
-        elif 'priority' not in t['kwargs']:
-            gps_stream_status = True
-
-    return render(request, 'streamcollect/stream_status.html',
-                            {'kw_stream_status': kw_stream_status,
-                            'gps_stream_status': gps_stream_status,
-                            'keywords': keywords})
-
-
 def functions(request):
     try:
         tasks = inspect(['celery@stream_worker']).active().get('celery@stream_worker') + inspect(['celery@object_worker']).active().get('celery@object_worker') + inspect(['celery@object_worker']).reserved().get('celery@object_worker')
     except:
         tasks = []
     tasks = [d['name'] for d in tasks]
-    return render(request, 'streamcollect/functions.html', {'tasks': tasks})
+
+    tokens = AccessToken.objects.all()
+
+    return render(request, 'streamcollect/functions.html', {'tasks': tasks,
+                                                            'tokens': tokens})
 
 
 def coding_dash(request):
@@ -448,17 +450,12 @@ def view_entities(request):
     return render(request, 'streamcollect/view_entities.html', {'hashtags': hashtags_with_counts, 'urls': urls_with_counts,  'mentions': mentions_with_counts})
 
 
-def twitter_auth(request):
-    tokens = AccessToken.objects.all()
-    return render(request, 'streamcollect/twitter_auth.html', {'tokens': tokens})
-
-
 def callback(request):
     try:
         ckey = ConsumerKey.objects.all()[:1].get()
     except ObjectDoesNotExist:
         print('Error! Failed to get Consumer Key from database.')
-        return render(request, 'streamcollect/twitter_auth.html')
+        return render(request, 'streamcollect/functions.html')
     verifier = request.GET.get('oauth_verifier')
     auth = tweepy.OAuthHandler(ckey.consumer_key, ckey.consumer_secret)
     token = request.session.get('request_token', None)
@@ -469,11 +466,11 @@ def callback(request):
         auth.get_access_token(verifier)
     except tweepy.TweepError as e:
         print('Error! Failed to get access token.', e)
-        return render(request, 'streamcollect/twitter_auth.html', {'error': 'Failed to get access token','tokens': tokens})
+        return render(request, 'streamcollect/functions.html', {'error': 'Failed to get access token','tokens': tokens})
     if not AccessToken.objects.filter(access_key=auth.access_token).exists():
         token = AccessToken(access_key=auth.access_token, access_secret=auth.access_token_secret, screen_name=auth.get_username())
         token.save()
-    return render(request, 'streamcollect/twitter_auth.html', {'success': 'True', 'token': auth.access_token, 'tokens': tokens})
+    return render(request, 'streamcollect/functions.html', {'success': 'True', 'token': auth.access_token, 'tokens': tokens})
 
 
 def submit(request):
@@ -590,7 +587,7 @@ def submit(request):
         task = compare_live_data_task.delay()
         return redirect('functions')
 
-    elif "twitter_auth" in request.POST: #TODO: No longer working?
+    elif "twitter_auth" in request.POST:
         try:
             ckey=ConsumerKey.objects.all()[:1].get()
         except ObjectDoesNotExist:
@@ -613,7 +610,7 @@ def submit(request):
             if not AccessToken.objects.filter(access_key=k).exists():
                 token = AccessToken(screen_name=n, access_key=k, access_secret=s)
                 token.save()
-        return redirect('twitter_auth')
+        return redirect('functions')
 
     elif "export_tokens" in request.POST:
         try:
@@ -631,7 +628,7 @@ def submit(request):
         f.write(')\n')
         f.write('MAPBOX_PK = \'' + MAPBOX_PK + '\'\n')
         f.close
-        return redirect('twitter_auth')
+        return redirect('functions')
 
     elif "add_data_code" in request.POST:
         code = request.POST['code']

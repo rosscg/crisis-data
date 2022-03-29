@@ -5,61 +5,60 @@
 
   <div class="row">
 
-    <div class="col-md-4">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="trim_spam_accounts" value="Trim Spam Accounts">
-          </div>
-        </div>
-      </form>
-    </div>
+    <div class="col-sm-8">
 
-    <div class="col-md-4">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="update_user_relos" value="Update Relationship Data">
-          </div>
-        </div>
-      </form>
-    </div>
+      <div class="row">
+      {% if error %}
+        <h4 class="title">Error:</h4>
+        <p>{{error}}</p>
+      {% elif success %}
+        <h4 class="title">Token Successfully Added:</h4>
+        <p>{{token}}</p>
+      {% else %}
+        <h4 class="title">Load Twitter credentials:</h4>
+      {% endif %}
+      </div>
 
-    <div class="col-md-4">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="create_relos_from_list" value="Create Relationship Objects from List">
-          </div>
+      <div class="row">
+        <div class="col-sm-12">
+
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <input type="submit" class="btn btn-primary btn-md" name="twitter_auth" value="Add Token">
+            </div>
+          </form>
+
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <input type="submit" class="btn btn-primary btn-md" name="load_tokens" value="Load From Config">
+            </div>
+          </form>
+
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <input type="submit" class="btn btn-primary btn-md" name="export_tokens" value="Export Tokens">
+            </div>
+          </form>
+
+          {% if tokens %}
+            {{ tokens|length }} Existing Tokens
+          {% endif %}
+
         </div>
-      </form>
+      </div>
+
     </div>
+  </div>
+
+  <div class="row">
+
+    <h4 class="title">Data Collection:</h4>
 
     <div class="col-md-4">
       <form action="submit" method="POST">{% csrf_token %}
         <div class="form-group">
           <div class="col-xs-3">
             <input type="submit" class="btn btn-primary btn-md" name="delete_keywords" value="Delete Keywords">
-          </div>
-        </div>
-      </form>
-    </div>
-
-    <div class="col-md-4">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="terminate_tasks" value="Terminate Tasks">
-          </div>
-        </div>
-      </form>
-    </div>
-
-    <div class="col-md-4">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="user_timeline" value="User Timeline">
           </div>
         </div>
       </form>
@@ -79,7 +78,63 @@
       <form action="submit" method="POST">{% csrf_token %}
         <div class="form-group">
           <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="terminate_tasks" value="Terminate Tasks">
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <div class="row">
+
+    <h4 class="title">Data Processing:</h4>
+
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="user_timeline" value="Get User Timelines">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
             <input type="submit" class="btn btn-primary btn-md" name="update_screen_names" value="Update Screen Names">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="update_user_relos" value="Get Relationship Data">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="trim_spam_accounts" value="Trim Spam Accounts">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="create_relos_from_list" value="Create Relationship Objects from List">
           </div>
         </div>
       </form>

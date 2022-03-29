@@ -1,73 +1,154 @@
 {% extends 'streamcollect/base.html' %}
 
 {% block content %}
-<div class="container">
-  <div class="page-header">
-    <h1 class="title"><small>{{ event.name }}</small></h1>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-8">
-      <div class="event_details">
-
-        <p>Event Start Time: {{ event.time_start }}</p>
-        <p>Event End Time: {{ event.time_end }}</p>
-        <p>Keyword Stream Started: {{ event.kw_stream_start }}</p>
-        <p>Keyword Stream Ended: {{ event.kw_stream_end }}</p>
-        <p>GPS Stream Started: {{ event.gps_stream_start }}</p>
-        <p>GPS Stream Ended: {{ event.gps_stream_end }}</p>
-
-        {% for coord in event.geopoint.all %}
-          <p> Geo Point: ({{ coord.latitude }}, {{ coord.longitude }}) </p>
-        {% endfor %}
-
-        {% if event.geopoint.all.count == 2 %}
-          <p>Mid Point: {{ mid_point }}</p>
-          <p><a href="https://www.google.co.uk/maps/@{{ mid_point.0 }},{{ mid_point.1 }},7z" target="_blank">Google Maps</a></p>
-        {% else %}
-          <p><a href="https://www.google.co.uk/maps/@{{ event.geopoint.all.0.latitude }},{{ event.geopoint.all.0.longitude }},7z" target="_blank">Google Maps</a></p>
-        {% endif %}
-
-        <a class="btn btn-primary" href="{% url 'edit_event' %}">
-          <!-- <span class="glyphicon glyphicon-pencil"></span> -->
-          Edit Event
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-sm-3">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <label>Add Low-Priority Keyword:</label>
-          <input type="text" class="form-control" name="info">
-          <input type="hidden" value='view_event' name="redirect_to">
-          <input type="submit" class="btn btn-primary btn-md" name="add_keyword_low" value="Submit">
-        </div>
-      </form>
-    </div>
-    <div class="col-sm-3">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <label>Add Priority Keyword:</label>
-          <input type="text" class="form-control" name="info">
-          <input type="hidden" value='view_event' name="redirect_to">
-          <input type="submit" class="btn btn-primary btn-md" name="add_keyword_high" value="Submit">
-        </div>
-      </form>
-    </div>
-  </div>
 
 
 <div class="row">
-  <div class="col-sm-3">
-    <p> Keywords: <br/>
-    {% for keyword in event.keyword.all %}
-      <a href="https://twitter.com/hashtag/{{ keyword.keyword }}" target="_blank">{{ keyword.keyword }}</a><br/>
-    {% endfor %} </p>
+  <div class="col-md-6">
+
+    <div class="container">
+      <div class="page-header">
+        <h1 class="title"><small>{{ event.name }}</small></h1>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="event_details">
+
+            <p>Event Start Time: {{ event.time_start }}</p>
+            <p>Event End Time: {{ event.time_end }}</p>
+            <p>Keyword Stream Started: {{ event.kw_stream_start }}</p>
+            <p>Keyword Stream Ended: {{ event.kw_stream_end }}</p>
+            <p>GPS Stream Started: {{ event.gps_stream_start }}</p>
+            <p>GPS Stream Ended: {{ event.gps_stream_end }}</p>
+
+            {% for coord in event.geopoint.all %}
+              <p> Geo Point: ({{ coord.latitude }}, {{ coord.longitude }}) </p>
+            {% endfor %}
+
+            {% if event.geopoint.all.count == 2 %}
+              <p>Mid Point: {{ mid_point }}</p>
+              <p><a href="https://www.google.co.uk/maps/@{{ mid_point.0 }},{{ mid_point.1 }},7z" target="_blank">Google Maps</a></p>
+            {% else %}
+              <p><a href="https://www.google.co.uk/maps/@{{ event.geopoint.all.0.latitude }},{{ event.geopoint.all.0.longitude }},7z" target="_blank">Google Maps</a></p>
+            {% endif %}
+
+            <a class="btn btn-primary" href="{% url 'edit_event' %}">
+              <!-- <span class="glyphicon glyphicon-pencil"></span> -->
+              Edit Event
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-6">
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <label>Add Low-Priority Keyword:</label>
+              <input type="text" class="form-control" name="info">
+              <input type="hidden" value='view_event' name="redirect_to">
+              <input type="submit" class="btn btn-primary btn-md" name="add_keyword_low" value="Submit">
+            </div>
+          </form>
+        </div>
+        <div class="col-sm-6">
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <label>Add Priority Keyword:</label>
+              <input type="text" class="form-control" name="info">
+              <input type="hidden" value='view_event' name="redirect_to">
+              <input type="submit" class="btn btn-primary btn-md" name="add_keyword_high" value="Submit">
+            </div>
+          </form>
+        </div>
+      </div>
+
+
+    <div class="row">
+      <div class="col-sm-3">
+        <p> Keywords: <br/>
+        {% for keyword in event.keyword.all %}
+          <a href="https://twitter.com/hashtag/{{ keyword.keyword }}" target="_blank">{{ keyword.keyword }}</a><br/>
+        {% endfor %} </p>
+      </div>
+    </div>
+
+    </div>
+
   </div>
-</div>
+
+  <div class="col-md-6">
+    <div class="alert alert-warning" role="alert" style="color: black; display: inline-block">
+      <strong>Disable computer sleep!</strong>
+    </div>
+
+    {% if kw_stream_status is True %}
+    <div class="row">
+      <h3 class="title">The keyword stream is running.</h3>
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-4">
+            <input type="submit" class="btn btn-primary btn-md" name="stop_kw_stream" value="Stop Stream">
+          </div>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if kw_stream_status is False %}
+    <div class="row">
+      <h3 class="title">The keyword stream is off.</h3>
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-4">
+            <input type="submit" class="btn btn-primary btn-md" name="start_kw_stream" value="Start Stream">
+          </div>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    <div>
+      <p>Keywords:
+          {% if keywords|length == 0 %}
+            <b>No Keywords Detected.</b>
+          {% else %}
+            {% for keyword in keywords %}
+              <b>{{ keyword }}, </b>
+            {% endfor %}
+        {% endif %}
+      </p>
+    </div>
+
+
+
+    {% if gps_stream_status is True %}
+    <div class="row">
+      <h3 class="title"><small>The GPS stream is running.</small></h3>
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-4">
+            <input type="submit" class="btn btn-primary btn-md" name="stop_gps_stream" value="Stop Stream">
+          </div>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if gps_stream_status is False %}
+    <div class="row">
+      <h3 class="title"><small>The GPS stream is off.</small></h3>
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-4">
+            <input type="submit" class="btn btn-primary btn-md" name="start_gps_stream" value="Start Stream">
+          </div>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+  </div>
 
 </div>
 {% endblock %}
