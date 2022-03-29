@@ -14,24 +14,42 @@
       <div class="row">
         <div class="col-sm-12">
           <div class="event_details">
-
-            <p>Event Start Time: {{ event.time_start }}</p>
-            <p>Event End Time: {{ event.time_end }}</p>
-            <p>Keyword Stream Started: {{ event.kw_stream_start }}</p>
-            <p>Keyword Stream Ended: {{ event.kw_stream_end }}</p>
-            <p>GPS Stream Started: {{ event.gps_stream_start }}</p>
-            <p>GPS Stream Ended: {{ event.gps_stream_end }}</p>
-
-            {% for coord in event.geopoint.all %}
-              <p> Geo Point: ({{ coord.latitude }}, {{ coord.longitude }}) </p>
-            {% endfor %}
-
-            {% if event.geopoint.all.count == 2 %}
-              <p>Mid Point: {{ mid_point }}</p>
-              <p><a href="https://www.google.co.uk/maps/@{{ mid_point.0 }},{{ mid_point.1 }},7z" target="_blank">Google Maps</a></p>
-            {% else %}
-              <p><a href="https://www.google.co.uk/maps/@{{ event.geopoint.all.0.latitude }},{{ event.geopoint.all.0.longitude }},7z" target="_blank">Google Maps</a></p>
-            {% endif %}
+            <table>
+              <tr>
+                <td>Event Duration: </td>
+                <td>{{ event.time_start }} - {{ event.time_end }}<td>
+              </tr>
+              <tr>
+                <td>Keyword Stream:</td>
+                <td>{{ event.kw_stream_start }} - {{ event.kw_stream_end }}</td>
+              </tr>
+              <tr>
+                <td>GPS Stream:</td>
+                <td>{{ event.gps_stream_start }} - {{ event.gps_stream_end }}</td>
+              </tr>
+              <tr>
+                <td>Geo Points:</td>
+                <td>{% for coord in event.geopoint.all %}
+                  ({{ coord.latitude }}, {{ coord.longitude }})
+                {% endfor %}
+                </td>
+               </tr>
+               <tr>
+                {% if event.geopoint.all.count == 2 %}
+                  <td>Mid Point:
+                  </td>
+                  <td>{{ mid_point }}</td>
+                  <tr>
+                    <td>
+                      <a href="https://www.google.co.uk/maps/@{{ mid_point.0 }},{{ mid_point.1 }},7z" target="_blank">Google Maps</a>
+                    </td>
+                {% elif event.geopoint.all %}
+                  <td>
+                    <a href="https://www.google.co.uk/maps/@{{ event.geopoint.all.0.latitude }},{{ event.geopoint.all.0.longitude }},7z" target="_blank">Google Maps</a>
+                  </td>
+                {% endif %}
+              </tr>
+             </table>
 
             <a class="btn btn-primary" href="{% url 'edit_event' %}">
               <!-- <span class="glyphicon glyphicon-pencil"></span> -->
@@ -79,13 +97,20 @@
   </div>
 
   <div class="col-md-6">
-    <div class="alert alert-warning" role="alert" style="color: black; display: inline-block">
+    <!-- <div class="alert alert-warning" role="alert" style="color: black; display: inline-block">
       <strong>Disable computer sleep!</strong>
+    </div> -->
+
+    <div class="alert alert-warning alert-dismissible fade show" role="alert" style="color: black; display: inline-block">
+      <strong>Disable computer sleep!</strong>
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
     </div>
 
     {% if kw_stream_status is True %}
     <div class="row">
-      <h3 class="title">The keyword stream is running.</h3>
+      <h4 class="title">The keyword stream is running.</h4>
       <form action="submit" method="POST">{% csrf_token %}
         <div class="form-group">
           <div class="col-xs-4">
@@ -98,7 +123,7 @@
 
     {% if kw_stream_status is False %}
     <div class="row">
-      <h3 class="title">The keyword stream is off.</h3>
+      <h4 class="title">The keyword stream is off.</h4>
       <form action="submit" method="POST">{% csrf_token %}
         <div class="form-group">
           <div class="col-xs-4">
@@ -110,12 +135,12 @@
     {% endif %}
 
     <div>
-      <p>Keywords:
+      <p><b>Keywords:</b>
           {% if keywords|length == 0 %}
-            <b>No Keywords Detected.</b>
+            No Keywords Detected.
           {% else %}
             {% for keyword in keywords %}
-              <b>{{ keyword }}, </b>
+              {{ keyword }},
             {% endfor %}
         {% endif %}
       </p>
@@ -125,7 +150,7 @@
 
     {% if gps_stream_status is True %}
     <div class="row">
-      <h3 class="title"><small>The GPS stream is running.</small></h3>
+      <h4 class="title"><small>The GPS stream is running.</small></h4>
       <form action="submit" method="POST">{% csrf_token %}
         <div class="form-group">
           <div class="col-xs-4">
@@ -138,7 +163,7 @@
 
     {% if gps_stream_status is False %}
     <div class="row">
-      <h3 class="title"><small>The GPS stream is off.</small></h3>
+      <h4 class="title"><small>The GPS stream is off.</small></h4>
       <form action="submit" method="POST">{% csrf_token %}
         <div class="form-group">
           <div class="col-xs-4">

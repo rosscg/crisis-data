@@ -11,10 +11,10 @@
 <div class="row">
   <div class="col-lg-8">
   {% if not mid_point == 'null' and not mapbox_pk == 'null' %}
-    <div id="mapid" style="width: 800px; height: 600px;"></div> </br>
+    <div id="mapid" style="width: 100%; height: 500px;"></div>
   </div>
 
-  <div class="col-lg-4" align="right">
+  <div class="col-lg-4">
     <table>
       <tr>
         <td>
@@ -32,7 +32,7 @@
           {% else %}
           <form action="submit" method="POST" class="form-inline">{% csrf_token %}
             <input type="hidden" value="{{i}}" name="data_source_to_activate">
-            <input type="submit" class="btn btn-default btn-md" name="set_active_data_source" value="Disabled">
+            <input type="submit" class="btn btn-primary btn-md" name="set_active_data_source" value="Disabled">
           </form>
           {% endif %}
         </td>
