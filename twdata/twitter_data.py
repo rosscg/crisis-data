@@ -194,7 +194,7 @@ def twitter_stream(gps=False, priority=1):
     twitterStream = Stream(auth, Stream_Listener(gps, data), tweet_mode='extended') #TODO: Test, Adjust on both lines. Test for retweets. Adjust how RTs are hard-coded to handle for IGNORE_RTS
 
     if gps:
-        twitterStream.filter(locations=data, async=False)
+        twitterStream.filter(locations=data, run_async=False)
     elif REFRESH_STREAM:            # Refresh stream to read in new keywords
         while True:
             if twitterStream.running:
@@ -208,11 +208,11 @@ def twitter_stream(gps=False, priority=1):
                     return
                 twitterStream = Stream(auth, Stream_Listener(False, data), tweet_mode='extended')
             print("Running new stream (with refresh)...")
-            twitterStream.filter(track=data, async=False)
+            twitterStream.filter(track=data, run_async=False)
             time.sleep(STREAM_REFRESH_RATE)
     else:
         print('Running stream priority: {} with keywords: {}'.format(priority, data))
-        twitterStream.filter(track=data, async=False)
+        twitterStream.filter(track=data, run_async=False)
 
 
 #TODO: Fold this back into methods?
