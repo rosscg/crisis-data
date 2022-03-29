@@ -109,38 +109,38 @@ class User(models.Model):
     id = models.AutoField(primary_key=True)
     ### Fields from User object ###
     created_at = models.DateTimeField(null=True)
-    default_profile = models.NullBooleanField(null=True)
-    default_profile_image = models.NullBooleanField(null=True)
+    default_profile = models.BooleanField(null=True)
+    default_profile_image = models.BooleanField(null=True)
     description = models.TextField(null=True)
     #TODO entities = NOT YET IMPLEMENTED - refers to URLs in profile and description
     favourites_count = models.IntegerField(null=True)
     followers_count = models.IntegerField(null=True)
     friends_count = models.IntegerField(null=True)
-    geo_enabled = models.NullBooleanField(null=True)                            # DEPRECATED Still available via GET account/settings
-    has_extended_profile = models.NullBooleanField(null=True)                   # DEPRECATED
-    is_translation_enabled = models.NullBooleanField(null=True)                 # DEPRECATED
+    geo_enabled = models.BooleanField(null=True)                            # DEPRECATED Still available via GET account/settings
+    has_extended_profile = models.BooleanField(null=True)                   # DEPRECATED
+    is_translation_enabled = models.BooleanField(null=True)                 # DEPRECATED
     lang = models.CharField(max_length=200, null=True)                          # DEPRECATED Still available via GET account/settings
     listed_count = models.IntegerField(null=True)
     location = models.CharField(max_length=200, null=True)
     name = models.CharField(max_length=200, null=True)
-    needs_phone_verification = models.NullBooleanField(null=True)
+    needs_phone_verification = models.BooleanField(null=True)
     #profile_image_url_https = models.CharField(max_length=200, null=True)
-    protected = models.NullBooleanField(null=True)
+    protected = models.BooleanField(null=True)
     screen_name = models.CharField(max_length=200, null=True)
     statuses_count = models.IntegerField(null=True)
-    #suspended = models.NullBooleanField(null=True)
+    #suspended = models.BooleanField(null=True)
     time_zone = models.CharField(max_length=200, null=True)                     # DEPRECATED Still available via GET account/settings
     translator_type = models.CharField(max_length=200, null=True)               # DEPRECATED
     url = models.CharField(max_length=200, null=True)
     user_id = models.BigIntegerField(unique=True) # This cannot be the primary_key due to errors with Postgres and BigInt
     utc_offset = models.CharField(max_length=200, null=True)                    # DEPRECATED Still available via GET account/settings
-    verified = models.NullBooleanField(null=True)
+    verified = models.BooleanField(null=True)
     ### Fields added at collection ###
     user_class = models.IntegerField() # -1 = Sorted from class 0 as 'spam', 0 = Added from REST API, 1 = sorted from class 0 as not 'spam', 2 = Streamed
     added_at = models.DateTimeField()
     data_source = models.IntegerField(default=0) # 0=Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
     old_screen_name = models.CharField(max_length=200, null=True) # Originally observed screen_name if since-changed.
-    is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
+    is_deleted = models.BooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
     ### Temporary fields ###
     user_following = ArrayField(models.BigIntegerField(), null=True) #   TODO: Testing temporarily storing as list rather than creating relo objects.
@@ -236,7 +236,7 @@ class Tweet(models.Model):
     in_reply_to_status_id = models.BigIntegerField(null=True)
     in_reply_to_user_id = models.BigIntegerField(null=True)
     lang = models.CharField(max_length=10, null=True)
-    #possibly_sensitive = models.NullBooleanField(null=True)
+    #possibly_sensitive = models.BooleanField(null=True)
     quoted_status_id_int = models.BigIntegerField(null=True)
     retweet_count = models.IntegerField()               # This will likely always be zero for Tweets from stream.
     #retweeted_status        // tweet object
@@ -246,7 +246,7 @@ class Tweet(models.Model):
     place = models.ForeignKey(Place, related_name='tweet', on_delete=models.SET_NULL, null=True)
     ### Fields added at collection ###
     data_source = models.IntegerField(default=0) #0 = Added, 1=Low-priority stream, 2=High-priority stream, 3=GPS
-    is_deleted = models.NullBooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
+    is_deleted = models.BooleanField(null=True) # True where profile is detected as deleted (or protected? TODO: check) in update method.
     is_deleted_observed = models.DateTimeField(null=True)
     media_files = ArrayField(models.CharField(max_length=200), null=True)
     media_files_type = models.CharField(max_length=200, null=True) # describes the media_files field: image, video or gif
