@@ -5,7 +5,7 @@ backcall==0.1.0
 beautifulsoup4==4.6.3
 billiard==3.5.0.2
 bleach==3.1.0
-celery==4.0.2
+celery==5.2.2
 certifi==2017.4.17
 chardet==3.0.4
 cycler==0.10.0
