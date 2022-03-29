@@ -8,34 +8,41 @@
   <div class="row">
   {% if error %}
     <h1 class="title"><small>Error: {{error}}</small></h1>
-  {% endif %}
-  {% if success %}
+  {% elif success %}
     <h1 class="title"><small>Token Successfully Added: {{token}}</small></h1>
+  {% else %}
+    <h1 class="title"><small>Load Twitter credentials:</small></h1>
   {% endif %}
   </div>
 
   <div class="row">
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="twitter_auth" value="Add Token">
+    <div class="col">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="twitter_auth" value="Add Token">
+          </div>
         </div>
-      </div>
-    </form>
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="load_tokens" value="Load From Config">
+      </form>
+    </div>
+    <div class="col">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="load_tokens" value="Load From Config">
+          </div>
         </div>
-      </div>
-    </form>
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="export_tokens" value="Export Tokens">
+      </form>
+    </div>
+    <div class="col">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="export_tokens" value="Export Tokens">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 
   {% if tokens %}

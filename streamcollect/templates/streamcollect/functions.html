@@ -3,80 +3,98 @@
 
 <div class="container">
 
-  <div class="row">
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="trim_spam_accounts" value="Trim Spam Accounts">
-        </div>
-      </div>
-    </form>
+  <div class="row mg-top-20">
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="update_user_relos" value="Update Relationship Data">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="trim_spam_accounts" value="Trim Spam Accounts">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="create_relos_from_list" value="Create Relationship Objects from List">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="update_user_relos" value="Update Relationship Data">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="delete_keywords" value="Delete Keywords">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="create_relos_from_list" value="Create Relationship Objects from List">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="terminate_tasks" value="Terminate Tasks">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="delete_keywords" value="Delete Keywords">
+          </div>
         </div>
-      </div>
-    </form>
-  </div>
+      </form>
+    </div>
 
-  <div class="row">
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="user_timeline" value="User Timeline">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="terminate_tasks" value="Terminate Tasks">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="update_data" value="Update Tags & Users">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="user_timeline" value="User Timeline">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="update_screen_names" value="Update Screen Names">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="update_data" value="Update Tags & Users">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
-    <form action="submit" method="POST">{% csrf_token %}
-      <div class="form-group">
-        <div class="col-xs-3">
-          <input type="submit" class="btn btn-primary btn-md" name="network_metrics" value="Calculate Network Metrics">
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="update_screen_names" value="Update Screen Names">
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
+
+    <div class="col-md-4">
+      <form action="submit" method="POST">{% csrf_token %}
+        <div class="form-group">
+          <div class="col-xs-3">
+            <input type="submit" class="btn btn-primary btn-md" name="network_metrics" value="Calculate Network Metrics">
+          </div>
+        </div>
+      </form>
+    </div>
+
   </div>
 
   <div class="row">

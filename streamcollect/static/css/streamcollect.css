@@ -3,7 +3,7 @@ p {
 
 body {
     padding-left: 0px;
-    background: white;
+    /* background: white; */
 }
 
 .user_details {
@@ -35,13 +35,12 @@ body {
     font-size:100%;
 }
 
-.coding_button_row {
-    padding-top: 15px;
-    padding-bottom: 15px;
+.mg-top-20 {
+    margin-top: 20px;
 }
 
-.top_margin_20 {
-  margin-top:20px;
+.mg-bot-20 {
+    margin-bottom: 20px;
 }
 
 .btn-remove:hover {

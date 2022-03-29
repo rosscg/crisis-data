@@ -3,13 +3,13 @@
 
 <div class="container">
 
-  <div class="row">
-    <h1 class="title"><small>Remember to disable computer sleep.</small></h1>
+  <div class="alert alert-warning mg-top-20" role="alert" style="color: black; display: inline-block">
+    <strong>Disable computer sleep!</strong>
   </div>
 
   {% if kw_stream_status is True %}
   <div class="row">
-    <h1 class="title"><small>The keyword stream is running.</small></h1>
+    <h3 class="title">The keyword stream is running.</h3>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">
@@ -22,7 +22,7 @@
 
   {% if kw_stream_status is False %}
   <div class="row">
-    <h1 class="title"><small>The keyword stream is off.</small></h1>
+    <h3 class="title">The keyword stream is off.</h3>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">
@@ -33,7 +33,7 @@
   </div>
   {% endif %}
 
-  <div class="row top_margin_20">
+  <div>
     <p>Keywords:
         {% if keywords|length == 0 %}
           <b>No Keywords Detected.</b>
@@ -49,7 +49,7 @@
 
   {% if gps_stream_status is True %}
   <div class="row">
-    <h1 class="title"><small>The GPS stream is running.</small></h1>
+    <h3 class="title"><small>The GPS stream is running.</small></h3>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">
@@ -62,7 +62,7 @@
 
   {% if gps_stream_status is False %}
   <div class="row">
-    <h1 class="title"><small>The GPS stream is off.</small></h1>
+    <h3 class="title"><small>The GPS stream is off.</small></h3>
     <form action="submit" method="POST">{% csrf_token %}
       <div class="form-group">
         <div class="col-xs-4">

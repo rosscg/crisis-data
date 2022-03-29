@@ -207,7 +207,11 @@ def coding_dash(request):
             active_coding_dimension = None
         request.session['active_coding_dimension'] = active_coding_dimension
 
-    return render(request, 'streamcollect/coding_dash.html', {'dimensions': dimensions, 'active_coding_dimension': active_coding_dimension, 'active_coder': active_coder, 'coding_subject': coding_subject})
+    return render(request, 'streamcollect/coding_dash.html',
+                    {'dimensions': dimensions,
+                    'active_coding_dimension': active_coding_dimension,
+                    'active_coder': active_coder,
+                    'coding_subject': coding_subject})
 
 
 def coding_interface(request):
@@ -728,7 +732,9 @@ def submit(request):
 
     elif "network_metrics" in request.POST:
         users = User.objects.filter(user_class=2)
-        calculate_user_graph_metrics(users, Relo.objects.filter(source_user__user_class=2, target_user__user_class=2))
+        calculate_user_graph_metrics(users, Relo.objects.filter(
+                                                source_user__user_class=2,
+                                                target_user__user_class=2))
         calculate_user_stream_metrics(users)
         return redirect('functions')
 
@@ -736,7 +742,10 @@ def submit(request):
         # Ouput all the data that has been coded by primary coder to file.
         coding_subject = request.session.get('coding_subject', None)
         if coding_subject == 'tweet':
-            data = Tweet.objects.filter(coding_for_tweet__coding_id=1, coding_for_tweet__data_code__data_code_id__gt=0)
+            data = Tweet.objects.filter(coding_for_tweet__coding_id=1,
+                                coding_for_tweet__data_code__data_code_id__gt=0)
+            if len(data) == 0:
+                return redirect('coding_dash')
             with open('tweetData.csv', 'w') as csvFile:
                 writer = csv.writer(csvFile)
                 writer.writerow(data[0].as_row(header=True))
@@ -744,7 +753,10 @@ def submit(request):
                     writer.writerow(tweet.as_row())
             csvFile.close()
         elif coding_subject == 'user':
-            data = User.objects.filter(coding_for_user__coding_id=1, coding_for_user__data_code__data_code_id__gt=0)
+            data = User.objects.filter(coding_for_user__coding_id=1,
+                                coding_for_user__data_code__data_code_id__gt=0)
+            if len(data) == 0:
+                return redirect('coding_dash')
             with open('userData.csv', 'w') as csvFile:
                 writer = csv.writer(csvFile)
                 writer.writerow(data[0].as_row(header=True))

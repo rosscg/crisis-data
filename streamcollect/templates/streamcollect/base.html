@@ -1,42 +1,47 @@
-{% load staticfiles %}
+{% load static %}
 <html>
   <head>
       <title>StreamCollect</title>
-      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+      <!-- <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
+      <link rel="stylesheet" href="https://bootswatch.com/5/darkly/bootstrap.min.css">
       <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 
       <!-- Leaflet for mapping: -->
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.3/dist/leaflet.css"
-   integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
-   crossorigin=""/>
+       integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
+       crossorigin=""/>
       <script src="https://unpkg.com/leaflet@1.3.3/dist/leaflet.js"
-   integrity="sha512-tAGcCfR4Sc5ZP5ZoVz0quoZDYX5aCtEm/eu1KhSLj2c9eFrylXZknQYmxUssFaVJKvvc0dJQixhGjG2yXWiV9Q=="
-   crossorigin=""></script>
+       integrity="sha512-tAGcCfR4Sc5ZP5ZoVz0quoZDYX5aCtEm/eu1KhSLj2c9eFrylXZknQYmxUssFaVJKvvc0dJQixhGjG2yXWiV9Q=="
+       crossorigin=""></script>
 
       <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
   </head>
 
   <body>
 
-    <nav class="navbar navbar-inverse">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
       <div class="container">
-        <div class="navbar-header">
+        <!-- <div class="navbar-header"> -->
           <a class="navbar-brand" href="/">StreamCollect</a>
-        </div>
-        <div class="navbar-collapse collapse">
-          <ul class="nav navbar-nav">
-            <li><a href="/list_users">List Users</a></li>
-            <li><a href="/view_event">View Event</a></li>
-            <li><a href="/view_entities">View Entities</a></li>
-            <li><a href="/view_network">View Network</a></li>
-            <li><a href="/stream_status">Stream Status</a></li>
-            <li><a href="/functions">Functions</a></li>
-            <li><a href="/coding_dash">Data Coding</a></li>
-            <li><a href="/twitter_auth">Twitter Authentication</a></li>
+        <!-- </div> -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-collapse collapse" id="navbarSupportedContent">
+          <ul class="nav navbar-nav mr-auto">
+            <li class="nav-link"><a class="nav-link" href="/list_users">List Users</a></li>
+            <li class="nav-link"><a class="nav-link" href="/view_event">View Event</a></li>
+            <li class="nav-link"><a class="nav-link" href="/view_entities">View Entities</a></li>
+            <li class="nav-link"><a class="nav-link" href="/view_network">View Network</a></li>
+            <li class="nav-link"><a class="nav-link" href="/stream_status">Stream Status</a></li>
+            <li class="nav-link"><a class="nav-link" href="/functions">Functions</a></li>
+            <li class="nav-link"><a class="nav-link" href="/coding_dash">Data Coding</a></li>
+            <li class="nav-link"><a class="nav-link" href="/twitter_auth">Twitter Auth</a></li>
           </ul>
         </div>
       </div>
     </nav>
+
 
     <div class="container">
       {% block content %}
