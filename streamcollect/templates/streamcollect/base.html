@@ -15,11 +15,15 @@
        crossorigin=""></script>
 
       <link rel="stylesheet" href="{% static 'css/streamcollect.css' %}">
+
+      {% load plotly_dash%}
+      {% plotly_header %}
+
   </head>
 
   <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mg-bot-20">
       <div class="container">
         <!-- <div class="navbar-header"> -->
           <a class="navbar-brand" href="/">StreamCollect</a>
@@ -29,10 +33,11 @@
         </button>
         <div class="navbar-collapse collapse" id="navbarSupportedContent">
           <ul class="nav navbar-nav mr-auto">
+            <li class="nav-link"><a class="nav-link" href="/dash_plot">Dashboard</a></li>
             <li class="nav-link"><a class="nav-link" href="/list_users">List Users</a></li>
             <li class="nav-link"><a class="nav-link" href="/view_event">View Event</a></li>
             <li class="nav-link"><a class="nav-link" href="/view_entities">View Entities</a></li>
-            <li class="nav-link"><a class="nav-link" href="/view_network">View Network</a></li>
+            <!-- <li class="nav-link"><a class="nav-link" href="/view_network">View Network</a></li> -->
             <li class="nav-link"><a class="nav-link" href="/stream_status">Stream Status</a></li>
             <li class="nav-link"><a class="nav-link" href="/functions">Functions</a></li>
             <li class="nav-link"><a class="nav-link" href="/coding_dash">Data Coding</a></li>
@@ -49,4 +54,7 @@
     </div>
 
   </body>
+
+  {% plotly_footer %}
+
 </html>
