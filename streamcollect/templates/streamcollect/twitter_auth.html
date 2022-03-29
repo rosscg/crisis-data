@@ -3,53 +3,54 @@
 {% block content %}
 
 <div class="container">
-
-
   <div class="row">
-  {% if error %}
-    <h1 class="title"><small>Error: {{error}}</small></h1>
-  {% elif success %}
-    <h1 class="title"><small>Token Successfully Added: {{token}}</small></h1>
-  {% else %}
-    <h1 class="title"><small>Load Twitter credentials:</small></h1>
-  {% endif %}
-  </div>
-
-  <div class="row">
-    <div class="col">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="twitter_auth" value="Add Token">
-          </div>
-        </div>
-      </form>
+    <div class="col-sm-3">
     </div>
-    <div class="col">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="load_tokens" value="Load From Config">
-          </div>
+
+    <div class="col-sm-9">
+
+      <div class="row">
+      {% if error %}
+        <h3 class="title">Error: {{error}}</h3>
+      {% elif success %}
+        <h3 class="title">Token Successfully Added:</h3>
+        {{token}}
+      {% else %}
+        <h3 class="title">Load Twitter credentials:</h3>
+      {% endif %}
+      </div>
+
+      <div class="row">
+        <div class="col-sm-6">
+
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <input type="submit" class="btn btn-primary btn-md" name="twitter_auth" value="Add Token">
+            </div>
+          </form>
+
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <input type="submit" class="btn btn-primary btn-md" name="load_tokens" value="Load From Config">
+            </div>
+          </form>
+
+          <form action="submit" method="POST">{% csrf_token %}
+            <div class="form-group">
+              <input type="submit" class="btn btn-primary btn-md" name="export_tokens" value="Export Tokens">
+            </div>
+          </form>
+
         </div>
-      </form>
-    </div>
-    <div class="col">
-      <form action="submit" method="POST">{% csrf_token %}
-        <div class="form-group">
-          <div class="col-xs-3">
-            <input type="submit" class="btn btn-primary btn-md" name="export_tokens" value="Export Tokens">
-          </div>
-        </div>
-      </form>
+      </div>
+
+      {% if tokens %}
+      <div class="row">
+        <h5>{{ tokens|length }} Existing Tokens</h5>
+      </div>
+      {% endif %}
+
     </div>
   </div>
-
-  {% if tokens %}
-  <div class="row">
-  <h1 class="title"><small>{{ tokens|length }} Existing Keysets</small></h1>
-  </div>
-  {% endif %}
-
 </div>
 {% endblock %}
