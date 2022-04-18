@@ -81,7 +81,7 @@ class Place(models.Model):
     full_name = models.CharField(max_length=100, null=True)
     country_code = models.CharField(max_length=5, null=True)
     country = models.CharField(max_length=100, null=True)
-    #TODO: Consider making these Geepoint objects and fix GeoPoint spec.
+    #TODO: Consider making these Geopoint objects and fix GeoPoint spec.
     #TODO: Check if boxes are ever non-rectangle (and therefore need all 4 points)
     lat_1 = models.FloatField(null=True)
     lon_1 = models.FloatField(null=True)
