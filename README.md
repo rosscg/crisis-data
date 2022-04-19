@@ -64,13 +64,13 @@ The key functionality of the software is tracking keywords and GPS coordinates.
 Create dump of database:
 
 > ```
-> $ docker exec -t crisis-data_db_1 pg_dump -c -U username eventdb | gzip > dump_$(date +"%Y-%m-%d").gz
+> $ docker exec -t crisis-data_db_1 pg_dump -c -U username eventdb | gzip > dump_$(date +"%Y-%m-%d").sql.gz
 > ```
 
 Restore db from dump:
 
 > ```
-> $ gzip -d -c dump.gz | cat | docker exec -i crisis-data_db_1 psql -U username eventdb
+> $ gzip -d -c FILENAME.sql.gz | cat | docker exec -i crisis-data_db_1 psql -U username eventdb
 > ```
 
 ------------
