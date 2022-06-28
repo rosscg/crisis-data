@@ -41,13 +41,13 @@ The key functionality of the software is tracking keywords and GPS coordinates.
 * Edit `config.py` details as needed.
     * The exclusions aim to reduce the amount of processing and noise but affect the sample and therefore need to be considered with respect to the proposed analysis.
 * OPTIONAL: Decide on periodic tasks in `tasks.py` (uncomment the decorators to run, uncomment celery beat contained in docker-compose.yml).  
-* If media is downloaded (default behaviour), it uses the local directory mapped to /data in the web container -- update DOCKER_WEB_VOLUME in .env before building if required.
+* If media is downloaded (default behaviour), it uses the local directory mapped to /data in the web container -- update `DOCKER_WEB_VOLUME` in `.env` before building if required.
 
 * Edit the event name via the 'View Event' page.
 * Add keywords. Keywords cannot include spaces.
   * High-priority keywords run as normal, low-priority keywords are saved when the queue is not full. Use this to reduce load.
 * Add coordinates for the geo stream.
-* Run streams from the 'Stream Status' page. Disable OS auto-sleep.
+* Run streams from the 'Stream Status' page. Disable OS auto-sleep (for example, with [caffeine](https://caffeine.en.softonic.com/mac)).
 
 ### Post collection:
 
@@ -96,8 +96,9 @@ The results link will show the proportions distributed to each code, and the dis
 
 The build can host python notebooks which use Django to access models.
 * Rebuild using requirements_incl_notebooks.txt
-* Uncomment the notebook container in docker-compose.yml
-* Open 0.0.0.0:8888 and use the token provided in the console
+* Uncomment the line in `settings.py` so that `django_extensions` is included in `INSTALLED_APPS`
+* Uncomment the notebook container in `docker-compose.yml`
+* Open [0.0.0.0:8888](0.0.0.0:8888) and use the token provided in the console
 
 #### Local Installation
 For non-Docker installation, see commit [here](https://github.com/rosscg/crisis-data/tree/3125563d4798ee7a2598da2af8b9c6719219a67b)

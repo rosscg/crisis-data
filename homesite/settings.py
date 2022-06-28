@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'streamcollect.templatetags',
     'twdata',
     'django_celery_beat',
-    'django_extensions'
+    # 'django_extensions' # required for notebooks
 ]
 
 MIDDLEWARE = [
