@@ -38,15 +38,15 @@
         </td>
         <td>
           {% if i == '3' %}
-            <img src='static/img/marker-icon-2x-red.png' height='41px'> = 3 (Geo Stream)
+            <img src='static/img/marker-icon-red.png' height='41px'> = 3 (Geo Stream)
           {% elif i == '4' %}
-            <img src='static/img/marker-icon-2x-grey.png' height='41px'> = 4 (Geo Stream - Place)
+            <img src='static/img/marker-icon-blue.png' height='41px'> = 4 (Geo Stream - Place)
           {% elif i == '2' %}
-            <img src='static/img/marker-icon-2x-blue.png' height='41px'> = 2 (High-Priority Stream)
+            <img src='static/img/marker-icon-green.png' height='41px'> = 2 (High-Priority Stream)
           {% elif i == '1' %}
-            <img src='static/img/marker-icon-2x-orange.png' height='41px'> = 1 (Low-Priority Stream)
+            <img src='static/img/marker-icon-orange.png' height='41px'> = 1 (Low-Priority Stream)
           {% else %}
-            <img src='static/img/marker-icon-2x-grey.png' height='41px'> = 0 (Added Tweet)
+            <img src='static/img/marker-icon-grey.png' height='41px'> = 0 (Added Tweet)
           {% endif %}
         </td>
       </tr>
@@ -75,16 +75,16 @@
     var LeafIcon = L.Icon.extend({
     options: {
         shadowUrl: 'static/img/marker-shadow.png',
-      	iconSize: [25, 41],
-      	iconAnchor: [12, 41],
-      	popupAnchor: [1, -34],
-      	shadowSize: [41, 41]
+      	iconSize: [13, 21],
+      	iconAnchor: [7, 21],
+      	popupAnchor: [1, -16],
+      	shadowSize: [21, 21]
       }
     });
-    var greyIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-grey.png'}),
-      redIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-red.png'}),
-      orangeIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-orange.png'}),
-      blueIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-2x-blue.png'});
+    var blueIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-blue.png'}),
+      redIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-red.png'}),
+      greenIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-green.png'}),
+      orangeIcon = new LeafIcon({iconUrl: 'static/img/marker-icon-orange.png'});
 
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=' + mapboxPK, {
   		maxZoom: 18,
@@ -99,11 +99,11 @@
 
     for (i=0; i < js_list.length; i++) {
       if ( js_list[i].data_source == 4) {
-        icon = greyIcon;
+        icon = blueIcon;
       } else if (js_list[i].data_source == 3) {
         icon = redIcon;
       } else if (js_list[i].data_source == 2) {
-        icon = blueIcon;
+        icon = greenIcon;
       } else if (js_list[i].data_source == 1) {
         icon = orangeIcon;
       } else {
