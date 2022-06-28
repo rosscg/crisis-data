@@ -1,5 +1,56 @@
 # Don't run this as a script - paste code as needed.
 
+########################################################################################################
+########################################################################################################
+# Export event data to file
+
+from streamcollect.models import Keyword, Event, GeoPoint, Tweet, User, Hashtag, Url, Mention
+
+filename = 'Event_Summaries.txt'
+event = Event.objects.all()[0]
+
+with open(filename, 'a') as out_file:
+    out_file.write('####################\n')
+    out_file.write('{}\n\n'.format(event.name))
+    out_file.write('time_start\t\t{}\n'.format(event.time_start))
+    out_file.write('time_end\t\t{}\n'.format(event.time_end))
+    out_file.write('kw_stream_start\t\t{}\n'.format(event.kw_stream_start))
+    out_file.write('kw_stream_end\t\t{}\n'.format(event.kw_stream_end))
+    out_file.write('gps_stream_start\t{}\n'.format(event.gps_stream_start))
+    out_file.write('gps_stream_end\t\t{}\n'.format(event.gps_stream_end))
+    out_file.write('min created_at\t\t{}\n'.format(min(Tweet.objects.filter(data_source__gte=1).values_list('created_at'))[0]))
+    out_file.write('max created_at\t\t{}\n'.format(max(Tweet.objects.filter(data_source__gte=1).values_list('created_at'))[0]))
+
+    for i in [1,2]:
+        out_file.write('\nKeyword Priority = {}\n'.format(i))
+        for k in Keyword.objects.filter(priority=i):
+          out_file.write(k.keyword+'\n')
+
+    ps = GeoPoint.objects.all()
+    out_file.write('\nBounding Box')
+    out_file.write('\n({}, {}), ({}, {})'.format(ps[0].latitude, ps[0].longitude, ps[1].latitude, ps[1].longitude))
+
+    out_file.write('\n\nTweet counts:')
+    out_file.write('\nTotal:\t\t{}'.format(Tweet.objects.all().count()))
+    out_file.write('\nTotal >0\t{}'.format(Tweet.objects.filter(data_source__gt=0).count()))
+    for i in range(-1,5):
+      out_file.write('\n{}:\t\t{}'.format(i, Tweet.objects.filter(data_source=i).count()))
+
+    out_file.write('\n\nUser counts:')
+    out_file.write('\nTotal:\t\t{}'.format(User.objects.all().count()))
+    out_file.write('\nTotal >0:\t{}'.format(User.objects.filter(user_class__gt=0).count()))
+    for i in range(-1,5):
+      out_file.write('\n{}:\t\t{}'.format(i, User.objects.filter(user_class=i).count()))
+
+    out_file.write('\n\nHashtags:\t{}'.format(Hashtag.objects.all().count()))
+    out_file.write('\nUrls:\t\t{}'.format(Url.objects.all().count()))
+    out_file.write('\nMentions:\t{}'.format(Mention.objects.all().count()))
+
+    out_file.write('\n\n')
+
+########################################################################################################
+########################################################################################################
+
 
 #These snippets are used to track data during capture:
 
